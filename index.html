@@ -674,17 +674,24 @@ async function loadAll() {
   try {
     const [balRes, potsRes, txRes] = await Promise.all([
       gasCall({ action: 'balance', account_id: ACCOUNT_ID }),
-      gasCall({ action: 'pots', account_id: ACCOUNT_ID }),
+      gasCall({ action: 'pots', account_id: ACCOUNT_ID }).catch(e => ({ data: { pots: [] } })),
       gasCall({ action: 'transactions', account_id: ACCOUNT_ID })
     ]);
 
+    console.log('balance:', JSON.stringify(balRes));
+    console.log('pots:', JSON.stringify(potsRes));
+    console.log('transactions:', JSON.stringify(txRes).slice(0, 300));
+
     const bal = balRes.data;
-    const pots = (potsRes.data.pots || []).filter(p => !p.deleted);
-    allTransactions = (txRes.data.transactions || []).filter(t => t.amount < 0 && !t.is_load);
+    const potsData = potsRes.data;
+    const pots = Array.isArray(potsData.pots) ? potsData.pots.filter(p => !p.deleted) : [];
+    const txData = txRes.data;
+    const allTx = Array.isArray(txData.transactions) ? txData.transactions : [];
+    allTransactions = allTx.filter(t => t.amount < 0 && !t.is_load);
 
     renderStatCards(bal, pots, allTransactions);
     renderCategories(allTransactions);
-    renderTransactions(txRes.data.transactions || []);
+    renderTransactions(allTx);
     renderPots(pots);
     renderDailyChart(allTransactions);
     renderInsights(allTransactions);
@@ -693,7 +700,8 @@ async function loadAll() {
     document.getElementById('month-label').textContent = now.toLocaleString('default', { month: 'long' });
 
   } catch(e) {
-    document.getElementById('stat-cards').innerHTML = '<div class="loading" style="color:var(--coral-soft);">Error: ' + e.message + '</div>';
+    document.getElementById('stat-cards').innerHTML = '<div class="loading" style="color:var(--coral-soft);">Error: ' + e.message + '<br><small style="color:var(--text-muted)">Open browser console (F12) for details</small></div>';
+    console.error('loadAll error:', e);
   }
 }
 
