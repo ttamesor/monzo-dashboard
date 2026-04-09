@@ -460,10 +460,16 @@ function loadAll(){
   document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1'><div class='spinner'></div></div>";
   updateHistoryBtn();
 
+  var now=new Date();
+  var startOfThisMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+
   Promise.all([
     gasCall({action:"balance",account_id:ACCOUNT_ID}),
     gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
-    gasCall({action:"transactions",account_id:ACCOUNT_ID})
+    // Fetch this month first (guaranteed recent)
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfThisMonth}),
+    // Then fetch the 100 most recent before start of this month
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,before:startOfThisMonth})
   ]).then(function(results){
     cachedBal=results[0].data;
 
@@ -473,14 +479,16 @@ function loadAll(){
     cachedSavings=active.filter(function(p){return STYPES.indexOf(p.type)>=0||p.locked||(p.style||"").indexOf("investments_")===0;});
     cachedPots=active.filter(function(p){return STYPES.indexOf(p.type)<0&&!p.locked&&(p.style||"").indexOf("investments_")!==0;});
 
-    var txns=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
-    allTransactions=txns.filter(function(t){return t.amount!==0;});
+    var thisMo=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
+    var prev=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
 
-    console.log("Loaded: "+allTransactions.length+" transactions");
-    if(allTransactions.length){
-      var dates=allTransactions.map(function(t){return new Date(t.created);});
-      console.log("Range: "+new Date(Math.min.apply(null,dates)).toDateString()+" to "+new Date(Math.max.apply(null,dates)).toDateString());
-    }
+    var seen={};
+    allTransactions=[];
+    thisMo.concat(prev).forEach(function(t){
+      if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}
+    });
+
+    console.log("Loaded: this month="+thisMo.length+" previous="+prev.length+" total="+allTransactions.length);
 
     populateCatFilter();
     renderAll();
