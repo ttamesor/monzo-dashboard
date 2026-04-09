@@ -426,28 +426,37 @@ function loadMoreHistory(){
   var oldestTx=getOldestTx();
   if(!oldestTx||historyExhausted)return;
   if(btn){btn.disabled=true;btn.innerHTML="Loading...";}
-  // Use created timestamp of oldest tx as the before param
   var beforeTs=oldestTx.created;
+  console.log("Loading before:", beforeTs, "| Total so far:", allTransactions.length);
   gasCall({action:"transactions",account_id:ACCOUNT_ID,before:beforeTs})
     .then(function(res){
       if(res.status!=="ok"||!res.data||!res.data.transactions){
+        console.log("Error response:", res);
         historyExhausted=true;updateHistoryBtn();return;
       }
       var batch=res.data.transactions;
-      // Filter out any we already have (dedupe by id)
+      console.log("Batch size:", batch.length);
+      if(batch.length){
+        var ds=batch.map(function(t){return t.created.slice(0,10);}).sort();
+        console.log("Batch range:", ds[0], "to", ds[ds.length-1]);
+      }
       var ids={};
       allTransactions.forEach(function(t){ids[t.id]=true;});
       var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
+      console.log("New unique tx:", newOnes.length);
       if(newOnes.length>0){
         allTransactions=newOnes.concat(allTransactions);
         populateCatFilter();
         renderAll();
       }
-      // Exhausted only if Monzo returned fewer than 100 (no more data)
-      if(batch.length<100){historyExhausted=true;}
+      if(batch.length<100){
+        console.log("Marking exhausted - batch was", batch.length);
+        historyExhausted=true;
+      }
       updateHistoryBtn();
     })
-    .catch(function(){
+    .catch(function(e){
+      console.error("loadMoreHistory error:", e);
       if(btn){btn.disabled=false;btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";}
     });
 }
