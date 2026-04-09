@@ -135,6 +135,24 @@
   .spinner { width: 22px; height: 22px; border: 2px solid var(--navy-border); border-top-color: var(--coral); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Manual accounts modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--navy-card); border: 1px solid var(--navy-border); border-radius: 16px; padding: 2rem; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; }
+  .modal h3 { font-size: 17px; font-weight: 500; margin-bottom: 0.3rem; }
+  .modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; }
+  .manual-row { display: grid; grid-template-columns: 1fr 130px 34px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .manual-row input { margin-bottom: 0; }
+  .icon-btn { background: transparent; border: 1px solid var(--navy-border); border-radius: 6px; width: 34px; height: 38px; color: var(--text-muted); cursor: pointer; font-size: 16px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .icon-btn:hover { border-color: var(--coral); color: var(--coral); }
+  .add-row-btn { background: transparent; border: 1px dashed var(--navy-border); border-radius: 8px; padding: 9px; width: 100%; font-family: var(--font); font-size: 13px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; margin-bottom: 1.4rem; }
+  .add-row-btn:hover { border-color: var(--coral); color: var(--coral); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 0.5rem; }
+  .btn-secondary { background: transparent; border: 1px solid var(--navy-border); border-radius: 8px; padding: 9px 18px; font-family: var(--font); font-size: 14px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .btn-secondary:hover { border-color: var(--coral); color: var(--coral); }
+  .btn-save { background: var(--coral); border: none; border-radius: 8px; padding: 9px 20px; font-family: var(--font); font-size: 14px; font-weight: 500; color: white; cursor: pointer; transition: opacity 0.2s; }
+  .btn-save:hover { opacity: 0.88; }
+
   @media (max-width: 1100px) {
     .grid-5 { grid-template-columns: repeat(3, 1fr); }
     .insight-strip { grid-template-columns: repeat(2, 1fr); }
@@ -183,6 +201,7 @@
         <button class="month-tab" id="tab-last" onclick="switchMonth('last')">Last month</button>
       </div>
       <div class="account-pill" id="account-pill"></div>
+      <button class="pill-btn" onclick="openAccountsModal()">Accounts</button>
       <button class="pill-btn" onclick="loadAll()">Refresh</button>
       <button class="pill-btn" onclick="resetConfig()">Disconnect</button>
     </div>
@@ -247,12 +266,82 @@
   </div>
 </div>
 
+<!-- Manual accounts modal -->
+<div class="modal-overlay" id="accounts-modal">
+  <div class="modal">
+    <h3>Manual accounts</h3>
+    <p class="modal-sub">Add investment or asset values that aren't available via the Monzo API. These are saved locally and included in your net worth calculation.</p>
+    <div id="manual-accounts-rows"></div>
+    <button class="add-row-btn" onclick="addManualRow()">+ Add account</button>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAccountsModal()">Cancel</button>
+      <button class="btn-save" onclick="saveManualAccounts()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'monzo_dash_v2';
 let GAS_URL = '', ACCOUNT_ID = '';
 let allTransactions = [], cachedPots = [], cachedSavings = [], cachedBal = null;
 let viewMonth = 'this';
 let dailyChartInstance = null;
+
+// ---- Manual accounts ----
+const MANUAL_KEY = 'monzo_manual_accounts';
+
+function loadManualAccounts() {
+  try { return JSON.parse(localStorage.getItem(MANUAL_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveManualAccounts() {
+  const rows = document.querySelectorAll('.manual-account-row-data');
+  const accounts = [];
+  rows.forEach(row => {
+    const name = row.querySelector('.ma-name').value.trim();
+    const val = parseFloat(row.querySelector('.ma-value').value.replace(/[^0-9.]/g, ''));
+    if (name && !isNaN(val) && val > 0) accounts.push({ name, value: val });
+  });
+  localStorage.setItem(MANUAL_KEY, JSON.stringify(accounts));
+  closeAccountsModal();
+  renderAll();
+}
+
+function getManualTotal() {
+  return loadManualAccounts().reduce((s, a) => s + a.value, 0);
+}
+
+function openAccountsModal() {
+  const modal = document.getElementById('accounts-modal');
+  const container = document.getElementById('manual-accounts-rows');
+  const accounts = loadManualAccounts();
+  container.innerHTML = '';
+  if (accounts.length === 0) {
+    addManualRow('Investments', '57948.32');
+  } else {
+    accounts.forEach(a => addManualRow(a.name, a.value.toFixed(2)));
+  }
+  modal.classList.add('open');
+}
+
+function closeAccountsModal() {
+  document.getElementById('accounts-modal').classList.remove('open');
+}
+
+function addManualRow(name, value) {
+  const container = document.getElementById('manual-accounts-rows');
+  const div = document.createElement('div');
+  div.className = 'manual-row manual-account-row-data';
+  div.innerHTML = '<input type="text" class="ma-name" placeholder="Account name" value="' + (name || '') + '">'
+    + '<input type="text" class="ma-value" placeholder="0.00" value="' + (value || '') + '" style="font-family:var(--mono);">'
+    + '<button class="icon-btn" onclick="this.closest('.manual-account-row-data').remove()">&times;</button>';
+  container.appendChild(div);
+}
+
+// Close modal on overlay click
+document.addEventListener('click', e => {
+  if (e.target.id === 'accounts-modal') closeAccountsModal();
+});
 
 function loadConfig() {
   try {
@@ -448,6 +537,7 @@ function renderStatCards(bal, pots, savings, viewTxns, thisTxns, lastTxns) {
   // Only sum active pots with actual balances
   const potTotal = pots.reduce((s, p) => s + (p.balance || 0), 0);
   const savingsTotal = savings.reduce((s, p) => s + (p.balance || 0), 0);
+  const manualTotal = getManualTotal() * 100; // convert to pence
 
   const thisSpend = thisTxns.reduce((s, t) => s + Math.abs(t.amount), 0);
   const lastSpend = lastTxns.reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -462,7 +552,7 @@ function renderStatCards(bal, pots, savings, viewTxns, thisTxns, lastTxns) {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const projected = viewMonth === 'this' && daysElapsed > 0 ? (viewSpend / daysElapsed) * daysInMonth : null;
 
-  const netWorth = bal.balance + potTotal + savingsTotal;
+  const netWorth = bal.balance + potTotal + savingsTotal + manualTotal;
 
   document.getElementById('stat-cards').innerHTML = `
     <div class="card stat-card">
@@ -479,9 +569,9 @@ function renderStatCards(bal, pots, savings, viewTxns, thisTxns, lastTxns) {
     </div>
     <div class="card stat-card">
       <div class="stat-accent" style="background:var(--purple)"></div>
-      <div class="stat-label">Savings &amp; investments</div>
-      <div class="stat-value">${fmt(savingsTotal)}</div>
-      <div class="stat-sub">${savings.length} account${savings.length !== 1 ? 's' : ''}</div>
+      <div class="stat-label">Investments</div>
+      <div class="stat-value">${fmt(savingsTotal + manualTotal)}</div>
+      <div class="stat-sub">${savings.length ? savings.length + ' pot' + (savings.length !== 1 ? 's' : '') + ' + ' : ''}manual: ${fmt(manualTotal)}</div>
     </div>
     <div class="card stat-card">
       <div class="stat-accent" style="background:var(--amber)"></div>
@@ -615,7 +705,21 @@ function renderPotsPanel(pots, savings) {
   `).join('') : '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No pots</div>';
 
   // Savings/investments
-  document.getElementById('investments-panel').innerHTML = savings.length ? savings.map(p => {
+  const manualAccounts = loadManualAccounts();
+  const manualHtml = manualAccounts.map(a => `
+    <div class="pot-item">
+      <div class="pot-left">
+        <div class="pot-dot" style="background:var(--amber)"></div>
+        <div>
+          <div class="pot-name">\${a.name}</div>
+          <div class="pot-type">Manual entry</div>
+        </div>
+      </div>
+      <span style="font-size:14px;font-family:var(--mono);font-weight:500;color:var(--amber)">\${'£' + a.value.toLocaleString('en-GB', {minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('investments-panel').innerHTML = (savings.length || manualAccounts.length) ? savings.map(p => {
     const isInv = (p.style || '').startsWith('investments_');
     const color = isInv ? 'var(--amber)' : 'var(--purple)';
     return `
