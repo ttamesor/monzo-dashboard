@@ -243,8 +243,8 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="card" style="grid-column:span 2;">
         <div class="card-header"><span class="card-title">Transactions</span><span class="badge badge-coral" id="tx-count-badge"></span></div>
         <div class="filter-bar">
-          <input class="filter-input" id="filter-search" placeholder="Search merchant..." oninput="applyFilters()">
-          <select class="filter-select" id="filter-cat" onchange="applyFilters()">
+          <input class="filter-input" id="tx-search" placeholder="Search merchant..." oninput="applyFilters()">
+          <select class="filter-select" id="tx-cat" onchange="applyFilters()">
             <option value="">All categories</option>
             <option value="eating_out">Eating out</option>
             <option value="groceries">Groceries</option>
@@ -260,14 +260,16 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
             <option value="general">General</option>
           </select>
           <div class="filter-range">
-            <input class="filter-input" id="filter-min" placeholder="Min £" style="min-width:70px;width:70px;" oninput="applyFilters()">
+            <input class="filter-input" id="tx-min" placeholder="Min £" style="min-width:70px;width:70px;" oninput="applyFilters()">
             <span style="color:var(--text-muted);font-size:13px;">to</span>
-            <input class="filter-input" id="filter-max" placeholder="Max £" style="min-width:70px;width:70px;" oninput="applyFilters()">
+            <input class="filter-input" id="tx-max" placeholder="Max £" style="min-width:70px;width:70px;" oninput="applyFilters()">
           </div>
           <button class="filter-clear" id="filter-clear-btn" onclick="clearFilters()">Clear</button>
           <span class="tx-count-label" id="filter-count-label"></span>
         </div>
         <div id="tx-list"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="load-more-btn" id="load-more-btn" style="display:none;" onclick="showMoreTx()">Show more transactions</button>
+        <button class="load-more-btn" id="load-history-btn" style="display:none;border-color:var(--purple);color:var(--purple);" onclick="loadMoreHistory()">Load more history</button>
       </div>
       <div>
         <div class="card" style="margin-bottom:1rem;">
