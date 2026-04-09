@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monzo Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --coral: #FF5A5F;
+    --coral-soft: #FF8A8E;
+    --coral-dim: rgba(255,90,95,0.12);
+    --navy: #0D1B2A;
+    --navy-mid: #162236;
+    --navy-card: #1C2D42;
+    --navy-border: rgba(255,255,255,0.07);
+    --text-primary: #F0F4FF;
+    --text-secondary: #8BA0B4;
+    --text-muted: #4A6480;
+    --green: #2DD4A0;
+    --amber: #F5A623;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--navy);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Config screen */
+  #config-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .config-card {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .config-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .config-logo-mark {
+    width: 36px;
+    height: 36px;
+    background: var(--coral);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    color: white;
+  }
+
+  .config-logo-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .config-card h2 {
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+  }
+
+  .config-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 1.8rem;
+    line-height: 1.6;
+  }
+
+  .config-card p a {
+    color: var(--coral-soft);
+    text-decoration: none;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 1.2rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, input[type="password"]:focus {
+    border-color: var(--coral);
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--coral);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .error-msg {
+    background: rgba(255,90,95,0.12);
+    border: 1px solid rgba(255,90,95,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--coral-soft);
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  /* Dashboard */
+  #dashboard { display: none; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 2rem;
+    border-bottom: 1px solid var(--navy-border);
+    background: var(--navy-mid);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .topbar-logo-mark {
+    width: 30px;
+    height: 30px;
+    background: var(--coral);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .account-pill {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--navy-border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .refresh-btn:hover {
+    border-color: var(--coral);
+    color: var(--coral);
+  }
+
+  .main {
+    padding: 2rem;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  /* Grid layouts */
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .grid-3-1 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.5rem;
+  }
+
+  .card-value {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--mono);
+    letter-spacing: -0.02em;
+  }
+
+  .card-value.large {
+    font-size: 36px;
+  }
+
+  .card-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  .badge-coral { background: var(--coral-dim); color: var(--coral-soft); }
+  .badge-green { background: rgba(45,212,160,0.12); color: var(--green); }
+
+  /* Stat card accent */
+  .stat-card { position: relative; overflow: hidden; }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--coral);
+    opacity: 0.4;
+  }
+
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.amber::after { background: var(--amber); }
+
+  /* Pots list */
+  .pot-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  .pot-item:last-child { border-bottom: none; }
+
+  .pot-name {
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .pot-amount {
+    font-size: 14px;
+    font-family: var(--mono);
+    color: var(--green);
+  }
+
+  /* Transaction list */
+  .tx-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  .tx-item:last-child { border-bottom: none; }
+
+  .tx-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .tx-details { flex: 1; min-width: 0; }
+
+  .tx-merchant {
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tx-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .tx-amount {
+    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .tx-amount.debit { color: var(--coral-soft); }
+  .tx-amount.credit { color: var(--green); }
+
+  /* Category bar */
+  .cat-item {
+    margin-bottom: 14px;
+  }
+
+  .cat-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 13px;
+  }
+
+  .cat-name { color: var(--text-secondary); }
+  .cat-amount { color: var(--text-primary); font-family: var(--mono); }
+
+  .cat-bar-bg {
+    height: 5px;
+    background: var(--navy-mid);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .cat-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--coral);
+    transition: width 0.6s ease;
+  }
+
+  /* Insight box */
+  .insight-box {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+
+  .insight-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .insight-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .insight-value span {
+    color: var(--coral-soft);
+  }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-size: 14px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--navy-border);
+    border-top-color: var(--coral);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-3-1 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .main { padding: 1rem; }
+  }
+
+  @media (max-width: 500px) {
+    .grid-4, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Config screen -->
+<div id="config-screen">
+  <div class="config-card">
+    <div class="config-logo">
+      <div class="config-logo-mark">M</div>
+      <div class="config-logo-text">Monzo Dashboard</div>
+    </div>
+    <h2>Connect your account</h2>
+    <p>Enter your GAS relay URL and Monzo account ID. Get these from <a href="https://developers.monzo.com" target="_blank">developers.monzo.com</a>. Your access token should be stored in GAS Script Properties.</p>
+    <div id="error-msg" class="error-msg"></div>
+    <label>GAS relay URL</label>
+    <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
+    <label>Monzo account ID</label>
+    <input type="text" id="account-id" placeholder="acc_...">
+    <button class="btn-primary" onclick="connect()">Connect</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo-mark">M</div>
+      <div class="topbar-title">Monzo Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="account-pill" id="account-pill">acc_...</div>
+      <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+      <button class="refresh-btn" onclick="resetConfig()" style="color: var(--text-muted);">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Stat cards row -->
+    <div class="grid-4" id="stat-cards">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid-3-1">
+      <!-- Daily spend chart -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Daily spend this month</span>
+          <span class="badge badge-coral" id="month-label">This month</span>
+        </div>
+        <div style="position: relative; height: 200px;">
+          <canvas id="daily-chart" role="img" aria-label="Daily spending chart for current month"></canvas>
+        </div>
+      </div>
+
+      <!-- Category spend -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Top categories</span>
+        </div>
+        <div id="cat-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="grid-2">
+      <!-- Recent transactions -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent transactions</span>
+        </div>
+        <div id="tx-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+
+      <!-- Pots + Insights -->
+      <div>
+        <div class="card" style="margin-bottom: 1rem;">
+          <div class="card-header">
+            <span class="card-title">Pots</span>
+          </div>
+          <div id="pots-list"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Insights</span>
+          </div>
+          <div id="insights-panel"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'monzo_dash_config';
+let GAS_URL = '';
+let ACCOUNT_ID = '';
+let allTransactions = [];
+let dailyChartInstance = null;
+
+// -- Config --
+function loadConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (c.gasUrl && c.accountId) {
+      GAS_URL = c.gasUrl;
+      ACCOUNT_ID = c.accountId;
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function saveConfig(url, id) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ gasUrl: url, accountId: id }));
+}
+
+function resetConfig() {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+async function connect() {
+  const url = document.getElementById('gas-url').value.trim();
+  const id = document.getElementById('account-id').value.trim();
+  if (!url || !id) { showError('Please fill in both fields.'); return; }
+  GAS_URL = url;
+  ACCOUNT_ID = id;
+  showError('');
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+  try {
+    const res = await gasCall({ action: 'ping' });
+    if (res.status !== 'ok') throw new Error('Ping failed');
+    saveConfig(url, id);
+    showDashboard();
+  } catch(e) {
+    showError('Could not connect: ' + e.message);
+    btn.textContent = 'Connect';
+    btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg;
+}
+
+function showDashboard() {
+  document.getElementById('config-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('account-pill').textContent = ACCOUNT_ID.slice(0, 16) + '...';
+  loadAll();
+}
+
+// -- API --
+async function gasCall(params) {
+  const qs = Object.entries(params).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
+  const r = await fetch(GAS_URL + '?' + qs);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function loadAll() {
+  document.getElementById('stat-cards').innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading...</span></div>';
+  document.getElementById('cat-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('tx-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('pots-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('insights-panel').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const [balRes, potsRes, txRes] = await Promise.all([
+      gasCall({ action: 'balance', account_id: ACCOUNT_ID }),
+      gasCall({ action: 'pots', account_id: ACCOUNT_ID }),
+      gasCall({ action: 'transactions', account_id: ACCOUNT_ID })
+    ]);
+
+    const bal = balRes.data;
+    const pots = (potsRes.data.pots || []).filter(p => !p.deleted);
+    allTransactions = (txRes.data.transactions || []).filter(t => t.amount < 0 && !t.is_load);
+
+    renderStatCards(bal, pots, allTransactions);
+    renderCategories(allTransactions);
+    renderTransactions(txRes.data.transactions || []);
+    renderPots(pots);
+    renderDailyChart(allTransactions);
+    renderInsights(allTransactions);
+
+    const now = new Date();
+    document.getElementById('month-label').textContent = now.toLocaleString('default', { month: 'long' });
+
+  } catch(e) {
+    document.getElementById('stat-cards').innerHTML = '<div class="loading" style="color:var(--coral-soft);">Error: ' + e.message + '</div>';
+  }
+}
+
+// -- Render functions --
+function pence(n) {
+  return (n / 100).toFixed(2);
+}
+
+function gbp(n) {
+  const v = Math.abs(n) / 100;
+  return 'GBP ' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderStatCards(bal, pots, txns) {
+  const potTotal = pots.reduce((s, p) => s + p.balance, 0);
+  const monthSpend = txns.reduce((s, t) => s + Math.abs(t.amount), 0);
+  const txCount = txns.length;
+  const avgDaily = txCount > 0 ? (monthSpend / new Date().getDate()) : 0;
+
+  document.getElementById('stat-cards').innerHTML = `
+    <div class="card stat-card">
+      <div class="card-label">Balance</div>
+      <div class="card-value large">GBP ${pence(bal.balance)}</div>
+      <div class="card-sub">Available: GBP ${pence(bal.spend_today ? bal.balance - bal.spend_today : bal.balance)}</div>
+    </div>
+    <div class="card stat-card green">
+      <div class="card-label">Pots total</div>
+      <div class="card-value large">GBP ${pence(potTotal)}</div>
+      <div class="card-sub">${pots.length} pot${pots.length !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="card stat-card amber">
+      <div class="card-label">Month spend</div>
+      <div class="card-value large">GBP ${pence(monthSpend)}</div>
+      <div class="card-sub">${txCount} transactions</div>
+    </div>
+    <div class="card stat-card">
+      <div class="card-label">Daily average</div>
+      <div class="card-value large">GBP ${(avgDaily / 100).toFixed(2)}</div>
+      <div class="card-sub">Avg per day this month</div>
+    </div>
+  `;
+}
+
+const CAT_EMOJI = {
+  eating_out: '🍽',
+  groceries: '🛒',
+  transport: '🚌',
+  shopping: '🛍',
+  entertainment: '🎬',
+  bills: '📄',
+  general: '💳',
+  personal_care: '💆',
+  holidays: '✈️',
+  family: '👨‍👩‍👧',
+  cash: '💵',
+  charity: '❤️',
+  education: '📚',
+  expenses: '📎',
+  finances: '🏦',
+  mondo: '💳',
+  transfers: '🔄',
+};
+
+function renderCategories(txns) {
+  const cats = {};
+  txns.forEach(t => {
+    const c = t.category || 'general';
+    cats[c] = (cats[c] || 0) + Math.abs(t.amount);
+  });
+
+  const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0, 6);
+  const max = sorted[0]?.[1] || 1;
+
+  document.getElementById('cat-list').innerHTML = sorted.map(([cat, amt]) => `
+    <div class="cat-item">
+      <div class="cat-header">
+        <span class="cat-name">${CAT_EMOJI[cat] || '💳'} ${cat.replace(/_/g, ' ')}</span>
+        <span class="cat-amount">GBP ${(amt/100).toFixed(2)}</span>
+      </div>
+      <div class="cat-bar-bg">
+        <div class="cat-bar-fill" style="width: ${Math.round((amt/max)*100)}%"></div>
+      </div>
+    </div>
+  `).join('') || '<div class="loading" style="color:var(--text-muted)">No data</div>';
+}
+
+function renderTransactions(txns) {
+  const sorted = [...txns].sort((a,b) => new Date(b.created) - new Date(a.created)).slice(0, 12);
+  document.getElementById('tx-list').innerHTML = sorted.map(t => {
+    const merchant = t.merchant?.name || t.description || 'Unknown';
+    const emoji = CAT_EMOJI[t.category] || '💳';
+    const isCredit = t.amount > 0;
+    const date = new Date(t.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return `
+      <div class="tx-item">
+        <div class="tx-icon">${emoji}</div>
+        <div class="tx-details">
+          <div class="tx-merchant">${merchant}</div>
+          <div class="tx-date">${date}</div>
+        </div>
+        <div class="tx-amount ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}GBP ${(Math.abs(t.amount)/100).toFixed(2)}</div>
+      </div>
+    `;
+  }).join('') || '<div class="loading" style="color:var(--text-muted)">No transactions</div>';
+}
+
+function renderPots(pots) {
+  if (!pots.length) {
+    document.getElementById('pots-list').innerHTML = '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No pots found</div>';
+    return;
+  }
+  document.getElementById('pots-list').innerHTML = pots.map(p => `
+    <div class="pot-item">
+      <span class="pot-name">${p.name}</span>
+      <span class="pot-amount">GBP ${(p.balance/100).toFixed(2)}</span>
+    </div>
+  `).join('');
+}
+
+function renderDailyChart(txns) {
+  const now = new Date();
+  const days = now.getDate();
+  const labels = Array.from({ length: days }, (_, i) => i + 1);
+  const data = new Array(days).fill(0);
+
+  txns.forEach(t => {
+    const d = new Date(t.created).getDate();
+    if (d >= 1 && d <= days) data[d-1] += Math.abs(t.amount) / 100;
+  });
+
+  if (dailyChartInstance) dailyChartInstance.destroy();
+
+  const ctx = document.getElementById('daily-chart').getContext('2d');
+  dailyChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: data.map((v, i) => i === days - 1 ? '#FF5A5F' : 'rgba(255,90,95,0.25)'),
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => 'GBP ' + ctx.raw.toFixed(2)
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#4A6480', font: { size: 11 }, autoSkip: true, maxTicksLimit: 10 },
+          grid: { display: false },
+          border: { display: false }
+        },
+        y: {
+          ticks: { color: '#4A6480', font: { size: 11 }, callback: v => 'GBP' + v.toFixed(0) },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderInsights(txns) {
+  if (!txns.length) {
+    document.getElementById('insights-panel').innerHTML = '<div style="color:var(--text-muted);font-size:14px;">No data yet</div>';
+    return;
+  }
+
+  // Most visited merchant
+  const merchantCounts = {};
+  txns.forEach(t => {
+    const m = t.merchant?.name || t.description || 'Unknown';
+    merchantCounts[m] = (merchantCounts[m] || 0) + 1;
+  });
+  const topMerchant = Object.entries(merchantCounts).sort((a,b) => b[1]-a[1])[0];
+
+  // Biggest single transaction
+  const biggest = [...txns].sort((a,b) => Math.abs(b.amount)-Math.abs(a.amount))[0];
+
+  // Daily spend check - days under GBP 20
+  const daily = {};
+  txns.forEach(t => {
+    const d = new Date(t.created).toDateString();
+    daily[d] = (daily[d] || 0) + Math.abs(t.amount);
+  });
+  const quietDays = Object.values(daily).filter(v => v < 2000).length;
+
+  document.getElementById('insights-panel').innerHTML = `
+    <div class="insight-box">
+      <div class="insight-label">Top merchant</div>
+      <div class="insight-value"><span>${topMerchant[0]}</span> - ${topMerchant[1]} visits</div>
+    </div>
+    <div class="insight-box">
+      <div class="insight-label">Biggest spend</div>
+      <div class="insight-value"><span>GBP ${(Math.abs(biggest.amount)/100).toFixed(2)}</span> at ${biggest.merchant?.name || biggest.description || 'Unknown'}</div>
+    </div>
+    <div class="insight-box">
+      <div class="insight-label">Quiet days (under GBP 20)</div>
+      <div class="insight-value"><span>${quietDays}</span> day${quietDays !== 1 ? 's' : ''} this month</div>
+    </div>
+  `;
+}
+
+// -- Init --
+if (loadConfig()) {
+  showDashboard();
+}
+</script>
+</body>
+</html>
