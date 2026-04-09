@@ -365,8 +365,11 @@ async function loadAll() {
     const allTx = Array.isArray(txRes.data?.transactions) ? txRes.data.transactions : [];
     allTransactions = allTx;
 
-    console.log('Active pots:', activePots.length, 'Regular:', cachedPots.length, 'Savings:', cachedSavings.length);
-    console.log('Transactions loaded:', allTx.length);
+    const now = new Date();
+    const thisMth = allTx.filter(t => { const d = new Date(t.created); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); });
+    const lastMth = allTx.filter(t => { const d = new Date(t.created); const lm = new Date(now.getFullYear(), now.getMonth()-1, 1); return d.getFullYear() === lm.getFullYear() && d.getMonth() === lm.getMonth(); });
+    console.log('Total tx loaded:', allTx.length, '| This month:', thisMth.length, '| Last month:', lastMth.length);
+    if (allTx.length) console.log('Date range:', new Date(allTx[allTx.length-1].created).toDateString(), 'to', new Date(allTx[0].created).toDateString());
 
     renderAll();
     renderPotsPanel(cachedPots, cachedSavings);
