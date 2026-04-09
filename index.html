@@ -412,13 +412,11 @@ function getOldestTx(){
 function updateHistoryBtn(){
   var btn=document.getElementById("load-history-btn");
   if(!btn)return;
-  if(historyExhausted||allTransactions.length>=2000){
-    btn.style.display="none";
-  } else if(allTransactions.length===0){
+  if(historyExhausted||allTransactions.length===0||allTransactions.length>=2000){
     btn.style.display="none";
   } else {
     btn.style.display="inline-flex";
-    btn.textContent="← Load earlier ("+allTransactions.length+" loaded)";
+    btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";
     btn.disabled=false;
   }
 }
@@ -426,29 +424,34 @@ function updateHistoryBtn(){
 function loadMoreHistory(){
   var btn=document.getElementById("load-history-btn");
   var oldestTx=getOldestTx();
-  if(!oldestTx)return;
-  if(btn){btn.disabled=true;btn.textContent="Loading...";}
-  setProgress(allTransactions.length+" transactions loaded");
-  gasCall({action:"transactions",account_id:ACCOUNT_ID,before:oldestTx.created})
+  if(!oldestTx||historyExhausted)return;
+  if(btn){btn.disabled=true;btn.innerHTML="Loading...";}
+  // Use created timestamp of oldest tx as the before param
+  var beforeTs=oldestTx.created;
+  gasCall({action:"transactions",account_id:ACCOUNT_ID,before:beforeTs})
     .then(function(res){
-      setProgress(null);
       if(res.status!=="ok"||!res.data||!res.data.transactions){
         historyExhausted=true;updateHistoryBtn();return;
       }
-      var batch=res.data.transactions.filter(function(t){return t.amount!==0;});
-      if(batch.length===0){historyExhausted=true;updateHistoryBtn();return;}
+      var batch=res.data.transactions;
+      // Filter out any we already have (dedupe by id)
       var ids={};
       allTransactions.forEach(function(t){ids[t.id]=true;});
-      var newOnes=batch.filter(function(t){return!ids[t.id];});
-      allTransactions=newOnes.concat(allTransactions);
-      populateCatFilter();
-      renderAll();
-      if(batch.length<100){historyExhausted=true;}
+      var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
+      if(newOnes.length===0){
+        // Got nothing new - exhausted
+        historyExhausted=true;
+      } else {
+        allTransactions=newOnes.concat(allTransactions);
+        populateCatFilter();
+        renderAll();
+        // Only mark exhausted if Monzo returned fewer than 100 raw (not our filtered count)
+        if(batch.length<100){historyExhausted=true;}
+      }
       updateHistoryBtn();
     })
     .catch(function(){
-      setProgress(null);
-      if(btn){btn.disabled=false;btn.textContent="Retry";}
+      if(btn){btn.disabled=false;btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";}
     });
 }
 
