@@ -19,7 +19,9 @@
     --text-secondary: #8BA0B4;
     --text-muted: #4A6480;
     --green: #2DD4A0;
+    --green-dim: rgba(45,212,160,0.12);
     --amber: #F5A623;
+    --amber-dim: rgba(245,166,35,0.12);
     --font: 'DM Sans', sans-serif;
     --mono: 'DM Mono', monospace;
   }
@@ -31,10 +33,9 @@
     background: var(--navy);
     color: var(--text-primary);
     min-height: 100vh;
-    padding: 0;
   }
 
-  /* Config screen */
+  /* ---- Config screen ---- */
   #config-screen {
     display: flex;
     align-items: center;
@@ -52,431 +53,276 @@
     max-width: 440px;
   }
 
-  .config-logo {
+  .logo-row {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 2rem;
   }
 
-  .config-logo-mark {
-    width: 36px;
-    height: 36px;
+  .logo-mark {
+    width: 36px; height: 36px;
     background: var(--coral);
     border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 16px;
-    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 16px; color: white;
+    flex-shrink: 0;
   }
 
-  .config-logo-text {
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
+  .logo-text { font-size: 18px; font-weight: 500; }
 
-  .config-card h2 {
-    font-size: 22px;
-    font-weight: 500;
-    margin-bottom: 0.4rem;
-  }
+  .config-card h2 { font-size: 22px; font-weight: 500; margin-bottom: 0.4rem; }
 
   .config-card p {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 1.8rem;
-    line-height: 1.6;
+    font-size: 14px; color: var(--text-secondary);
+    margin-bottom: 1.8rem; line-height: 1.6;
   }
 
-  .config-card p a {
-    color: var(--coral-soft);
-    text-decoration: none;
-  }
+  .config-card p a { color: var(--coral-soft); text-decoration: none; }
 
   label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 6px;
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 6px;
   }
 
-  input[type="text"], input[type="password"] {
-    width: 100%;
-    background: var(--navy-mid);
-    border: 1px solid var(--navy-border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-primary);
-    margin-bottom: 1.2rem;
-    outline: none;
-    transition: border-color 0.2s;
+  input[type="text"] {
+    width: 100%; background: var(--navy-mid);
+    border: 1px solid var(--navy-border); border-radius: 8px;
+    padding: 10px 14px; font-family: var(--mono); font-size: 13px;
+    color: var(--text-primary); margin-bottom: 1.2rem;
+    outline: none; transition: border-color 0.2s;
   }
 
-  input[type="text"]:focus, input[type="password"]:focus {
-    border-color: var(--coral);
-  }
+  input[type="text"]:focus { border-color: var(--coral); }
 
   .btn-primary {
-    width: 100%;
-    background: var(--coral);
-    border: none;
-    border-radius: 8px;
-    padding: 12px;
-    font-family: var(--font);
-    font-size: 15px;
-    font-weight: 500;
-    color: white;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
+    width: 100%; background: var(--coral); border: none;
+    border-radius: 8px; padding: 12px; font-family: var(--font);
+    font-size: 15px; font-weight: 500; color: white;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
   }
 
   .btn-primary:hover { opacity: 0.88; }
   .btn-primary:active { transform: scale(0.98); }
 
   .error-msg {
-    background: rgba(255,90,95,0.12);
-    border: 1px solid rgba(255,90,95,0.3);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--coral-soft);
-    margin-bottom: 1rem;
-    display: none;
+    background: var(--coral-dim); border: 1px solid rgba(255,90,95,0.3);
+    border-radius: 8px; padding: 10px 14px; font-size: 13px;
+    color: var(--coral-soft); margin-bottom: 1rem; display: none;
   }
 
-  /* Dashboard */
+  /* ---- Dashboard ---- */
   #dashboard { display: none; }
 
   .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.2rem 2rem;
-    border-bottom: 1px solid var(--navy-border);
-    background: var(--navy-mid);
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 2rem; border-bottom: 1px solid var(--navy-border);
+    background: var(--navy-mid); position: sticky; top: 0; z-index: 10;
   }
 
-  .topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
 
   .topbar-logo-mark {
-    width: 30px;
-    height: 30px;
-    background: var(--coral);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 13px;
-    color: white;
-    flex-shrink: 0;
+    width: 28px; height: 28px; background: var(--coral);
+    border-radius: 7px; display: flex; align-items: center;
+    justify-content: center; font-weight: 600; font-size: 12px;
+    color: white; flex-shrink: 0;
   }
 
-  .topbar-title {
-    font-size: 15px;
-    font-weight: 500;
+  .topbar-title { font-size: 15px; font-weight: 500; }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  /* Month selector */
+  .month-tabs {
+    display: flex; background: var(--navy-card);
+    border: 1px solid var(--navy-border); border-radius: 8px;
+    overflow: hidden;
   }
 
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .account-pill {
-    background: var(--navy-card);
-    border: 1px solid var(--navy-border);
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-family: var(--mono);
-  }
-
-  .refresh-btn {
-    background: transparent;
-    border: 1px solid var(--navy-border);
-    border-radius: 8px;
-    padding: 6px 14px;
+  .month-tab {
+    padding: 6px 16px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer;
+    transition: all 0.15s; border: none; background: transparent;
     font-family: var(--font);
-    font-size: 13px;
-    color: var(--text-secondary);
-    cursor: pointer;
+  }
+
+  .month-tab.active {
+    background: var(--coral); color: white;
+  }
+
+  .month-tab:hover:not(.active) { color: var(--text-primary); }
+
+  .pill-btn {
+    background: transparent; border: 1px solid var(--navy-border);
+    border-radius: 8px; padding: 6px 14px; font-family: var(--font);
+    font-size: 13px; color: var(--text-secondary); cursor: pointer;
     transition: all 0.2s;
   }
 
-  .refresh-btn:hover {
-    border-color: var(--coral);
-    color: var(--coral);
+  .pill-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+  .account-pill {
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-radius: 20px; padding: 5px 12px; font-size: 12px;
+    color: var(--text-muted); font-family: var(--mono);
   }
 
-  .main {
-    padding: 2rem;
-    max-width: 1300px;
-    margin: 0 auto;
-  }
+  /* ---- Main layout ---- */
+  .main { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
 
-  /* Grid layouts */
   .grid-4 {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1rem; margin-bottom: 1.2rem;
   }
 
   .grid-3-1 {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    display: grid; grid-template-columns: 2fr 1fr;
+    gap: 1rem; margin-bottom: 1.2rem;
   }
 
-  /* Cards */
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem; margin-bottom: 1.2rem;
+  }
+
+  /* ---- Cards ---- */
   .card {
-    background: var(--navy-card);
-    border: 1px solid var(--navy-border);
-    border-radius: 14px;
-    padding: 1.3rem 1.5rem;
-  }
-
-  .card-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    margin-bottom: 0.5rem;
-  }
-
-  .card-value {
-    font-size: 28px;
-    font-weight: 500;
-    color: var(--text-primary);
-    font-family: var(--mono);
-    letter-spacing: -0.02em;
-  }
-
-  .card-value.large {
-    font-size: 36px;
-  }
-
-  .card-sub {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-top: 4px;
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-radius: 14px; padding: 1.2rem 1.4rem;
   }
 
   .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
   }
 
   .card-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-size: 13px; font-weight: 500; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.05em;
   }
 
   .badge {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 8px;
+    font-size: 11px; font-weight: 500; padding: 3px 8px;
     border-radius: 20px;
   }
 
   .badge-coral { background: var(--coral-dim); color: var(--coral-soft); }
-  .badge-green { background: rgba(45,212,160,0.12); color: var(--green); }
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); }
 
-  /* Stat card accent */
+  /* Stat cards */
   .stat-card { position: relative; overflow: hidden; }
-  .stat-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--coral);
-    opacity: 0.4;
+
+  .stat-accent {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; opacity: 0.5;
   }
 
-  .stat-card.green::after { background: var(--green); }
-  .stat-card.amber::after { background: var(--amber); }
+  .stat-label {
+    font-size: 11px; font-weight: 500; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px;
+  }
 
-  /* Pots list */
+  .stat-value {
+    font-size: 30px; font-weight: 500; color: var(--text-primary);
+    font-family: var(--mono); letter-spacing: -0.02em; line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .stat-sub { font-size: 13px; color: var(--text-secondary); }
+
+  /* Pots */
   .pot-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--navy-border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; border-bottom: 1px solid var(--navy-border);
   }
 
   .pot-item:last-child { border-bottom: none; }
 
-  .pot-name {
-    font-size: 14px;
-    color: var(--text-primary);
-  }
+  .pot-name { font-size: 14px; color: var(--text-primary); }
 
   .pot-amount {
-    font-size: 14px;
-    font-family: var(--mono);
-    color: var(--green);
-  }
-
-  /* Transaction list */
-  .tx-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--navy-border);
-  }
-
-  .tx-item:last-child { border-bottom: none; }
-
-  .tx-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--navy-mid);
-    border: 1px solid var(--navy-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .tx-details { flex: 1; min-width: 0; }
-
-  .tx-merchant {
-    font-size: 14px;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .tx-date {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-
-  .tx-amount {
-    font-size: 14px;
-    font-family: var(--mono);
+    font-size: 14px; font-family: var(--mono); color: var(--green);
     font-weight: 500;
-    flex-shrink: 0;
   }
 
-  .tx-amount.debit { color: var(--coral-soft); }
-  .tx-amount.credit { color: var(--green); }
-
-  /* Category bar */
-  .cat-item {
-    margin-bottom: 14px;
-  }
+  /* Categories */
+  .cat-item { margin-bottom: 12px; }
 
   .cat-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 13px;
+    display: flex; justify-content: space-between;
+    margin-bottom: 5px; font-size: 13px;
   }
 
   .cat-name { color: var(--text-secondary); }
   .cat-amount { color: var(--text-primary); font-family: var(--mono); }
 
   .cat-bar-bg {
-    height: 5px;
-    background: var(--navy-mid);
-    border-radius: 3px;
-    overflow: hidden;
+    height: 4px; background: rgba(255,255,255,0.05);
+    border-radius: 2px; overflow: hidden;
   }
 
   .cat-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    background: var(--coral);
+    height: 100%; border-radius: 2px; background: var(--coral);
     transition: width 0.6s ease;
   }
 
-  /* Insight box */
-  .insight-box {
-    background: var(--navy-mid);
-    border: 1px solid var(--navy-border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
+  /* Transactions */
+  .tx-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 0; border-bottom: 1px solid var(--navy-border);
   }
+
+  .tx-item:last-child { border-bottom: none; }
+
+  .tx-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--navy-mid); border: 1px solid var(--navy-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+
+  .tx-details { flex: 1; min-width: 0; }
+
+  .tx-merchant {
+    font-size: 14px; color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .tx-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .tx-amount { font-size: 14px; font-family: var(--mono); font-weight: 500; flex-shrink: 0; }
+  .tx-amount.debit { color: var(--coral-soft); }
+  .tx-amount.credit { color: var(--green); }
+
+  /* Insights */
+  .insight-box {
+    background: var(--navy-mid); border: 1px solid var(--navy-border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+  }
+
+  .insight-box:last-child { margin-bottom: 0; }
 
   .insight-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 4px;
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
   }
 
-  .insight-value {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-
-  .insight-value span {
-    color: var(--coral-soft);
-  }
+  .insight-value { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+  .insight-value .hi { color: var(--coral-soft); }
+  .insight-value .good { color: var(--green); }
 
   /* Loading */
   .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem;
-    color: var(--text-muted);
-    font-size: 14px;
-    flex-direction: column;
-    gap: 12px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 2.5rem; color: var(--text-muted); font-size: 14px;
+    flex-direction: column; gap: 10px;
   }
 
   .spinner {
-    width: 24px;
-    height: 24px;
+    width: 22px; height: 22px;
     border: 2px solid var(--navy-border);
     border-top-color: var(--coral);
     border-radius: 50%;
@@ -485,30 +331,37 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  @media (max-width: 900px) {
+  /* Section label */
+  .section-label {
+    font-size: 11px; font-weight: 500; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 0.8rem; margin-top: 0.4rem;
+  }
+
+  @media (max-width: 1000px) {
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
-    .grid-3 { grid-template-columns: 1fr 1fr; }
     .grid-3-1 { grid-template-columns: 1fr; }
     .grid-2 { grid-template-columns: 1fr; }
     .main { padding: 1rem; }
   }
 
-  @media (max-width: 500px) {
-    .grid-4, .grid-3 { grid-template-columns: 1fr; }
+  @media (max-width: 540px) {
+    .grid-4 { grid-template-columns: 1fr; }
+    .month-tab { padding: 6px 10px; font-size: 12px; }
   }
 </style>
 </head>
 <body>
 
-<!-- Config screen -->
+<!-- Config -->
 <div id="config-screen">
   <div class="config-card">
-    <div class="config-logo">
-      <div class="config-logo-mark">M</div>
-      <div class="config-logo-text">Monzo Dashboard</div>
+    <div class="logo-row">
+      <div class="logo-mark">M</div>
+      <div class="logo-text">Monzo Dashboard</div>
     </div>
     <h2>Connect your account</h2>
-    <p>Enter your GAS relay URL and Monzo account ID. Get these from <a href="https://developers.monzo.com" target="_blank">developers.monzo.com</a>. Your access token should be stored in GAS Script Properties.</p>
+    <p>Enter your GAS relay URL and Monzo account ID. Your access token should be stored in GAS Script Properties. Get your account ID from <a href="https://developers.monzo.com" target="_blank">developers.monzo.com</a> via List accounts.</p>
     <div id="error-msg" class="error-msg"></div>
     <label>GAS relay URL</label>
     <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
@@ -526,33 +379,35 @@
       <div class="topbar-title">Monzo Dashboard</div>
     </div>
     <div class="topbar-right">
-      <div class="account-pill" id="account-pill">acc_...</div>
-      <button class="refresh-btn" onclick="loadAll()">Refresh</button>
-      <button class="refresh-btn" onclick="resetConfig()" style="color: var(--text-muted);">Disconnect</button>
+      <div class="month-tabs">
+        <button class="month-tab active" id="tab-this" onclick="switchMonth('this')">This month</button>
+        <button class="month-tab" id="tab-last" onclick="switchMonth('last')">Last month</button>
+      </div>
+      <div class="account-pill" id="account-pill"></div>
+      <button class="pill-btn" onclick="loadAll()">Refresh</button>
+      <button class="pill-btn" onclick="resetConfig()">Disconnect</button>
     </div>
   </div>
 
   <div class="main">
 
-    <!-- Stat cards row -->
+    <!-- Stat cards -->
     <div class="grid-4" id="stat-cards">
-      <div class="loading"><div class="spinner"></div></div>
+      <div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>
     </div>
 
-    <!-- Charts row -->
+    <!-- Daily chart + categories -->
     <div class="grid-3-1">
-      <!-- Daily spend chart -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Daily spend this month</span>
-          <span class="badge badge-coral" id="month-label">This month</span>
+          <span class="card-title">Daily spend</span>
+          <span class="badge badge-coral" id="month-badge">This month</span>
         </div>
-        <div style="position: relative; height: 200px;">
-          <canvas id="daily-chart" role="img" aria-label="Daily spending chart for current month"></canvas>
+        <div style="position:relative;height:210px;">
+          <canvas id="daily-chart" role="img" aria-label="Daily spending chart"></canvas>
         </div>
       </div>
 
-      <!-- Category spend -->
       <div class="card">
         <div class="card-header">
           <span class="card-title">Top categories</span>
@@ -561,9 +416,8 @@
       </div>
     </div>
 
-    <!-- Bottom row -->
+    <!-- Transactions + right column -->
     <div class="grid-2">
-      <!-- Recent transactions -->
       <div class="card">
         <div class="card-header">
           <span class="card-title">Recent transactions</span>
@@ -571,9 +425,8 @@
         <div id="tx-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
 
-      <!-- Pots + Insights -->
       <div>
-        <div class="card" style="margin-bottom: 1rem;">
+        <div class="card" style="margin-bottom:1rem;">
           <div class="card-header">
             <span class="card-title">Pots</span>
           </div>
@@ -593,13 +446,14 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'monzo_dash_config';
+const STORAGE_KEY = 'monzo_dash_v2';
 let GAS_URL = '';
 let ACCOUNT_ID = '';
 let allTransactions = [];
+let viewMonth = 'this';
 let dailyChartInstance = null;
 
-// -- Config --
+// ---- Config ----
 function loadConfig() {
   try {
     const c = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -625,12 +479,10 @@ async function connect() {
   const url = document.getElementById('gas-url').value.trim();
   const id = document.getElementById('account-id').value.trim();
   if (!url || !id) { showError('Please fill in both fields.'); return; }
-  GAS_URL = url;
-  ACCOUNT_ID = id;
+  GAS_URL = url; ACCOUNT_ID = id;
   showError('');
   const btn = document.querySelector('.btn-primary');
-  btn.textContent = 'Connecting...';
-  btn.disabled = true;
+  btn.textContent = 'Connecting...'; btn.disabled = true;
   try {
     const res = await gasCall({ action: 'ping' });
     if (res.status !== 'ok') throw new Error('Ping failed');
@@ -638,8 +490,7 @@ async function connect() {
     showDashboard();
   } catch(e) {
     showError('Could not connect: ' + e.message);
-    btn.textContent = 'Connect';
-    btn.disabled = false;
+    btn.textContent = 'Connect'; btn.disabled = false;
   }
 }
 
@@ -652,11 +503,39 @@ function showError(msg) {
 function showDashboard() {
   document.getElementById('config-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  document.getElementById('account-pill').textContent = ACCOUNT_ID.slice(0, 16) + '...';
+  document.getElementById('account-pill').textContent = ACCOUNT_ID.slice(0, 18) + '...';
   loadAll();
 }
 
-// -- API --
+// ---- Month switching ----
+function switchMonth(which) {
+  viewMonth = which;
+  document.getElementById('tab-this').classList.toggle('active', which === 'this');
+  document.getElementById('tab-last').classList.toggle('active', which === 'last');
+  const now = new Date();
+  const label = which === 'this'
+    ? now.toLocaleString('default', { month: 'long' })
+    : new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleString('default', { month: 'long' });
+  document.getElementById('month-badge').textContent = label;
+  renderAll();
+}
+
+function getMonthTxns(txns, which) {
+  const now = new Date();
+  let y, m;
+  if (which === 'this') {
+    y = now.getFullYear(); m = now.getMonth();
+  } else {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    y = d.getFullYear(); m = d.getMonth();
+  }
+  return txns.filter(t => {
+    const d = new Date(t.created);
+    return d.getFullYear() === y && d.getMonth() === m;
+  });
+}
+
+// ---- API ----
 async function gasCall(params) {
   const qs = Object.entries(params).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
   const r = await fetch(GAS_URL + '?' + qs);
@@ -664,106 +543,127 @@ async function gasCall(params) {
   return r.json();
 }
 
+let cachedPots = [];
+let cachedBal = null;
+
 async function loadAll() {
-  document.getElementById('stat-cards').innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading...</span></div>';
-  document.getElementById('cat-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  document.getElementById('tx-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  document.getElementById('pots-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  document.getElementById('insights-panel').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  ['stat-cards','cat-list','tx-list','pots-list','insights-panel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (id === 'stat-cards') el.innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>';
+    else el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  });
 
   try {
     const [balRes, potsRes, txRes] = await Promise.all([
       gasCall({ action: 'balance', account_id: ACCOUNT_ID }),
-      gasCall({ action: 'pots', account_id: ACCOUNT_ID }).catch(e => ({ data: { pots: [] } })),
+      gasCall({ action: 'pots', account_id: ACCOUNT_ID }).catch(() => ({ data: { pots: [] } })),
       gasCall({ action: 'transactions', account_id: ACCOUNT_ID })
     ]);
 
-    console.log('balance:', JSON.stringify(balRes));
-    console.log('pots:', JSON.stringify(potsRes));
-    console.log('transactions:', JSON.stringify(txRes).slice(0, 300));
+    cachedBal = balRes.data;
+    cachedPots = Array.isArray(potsRes.data?.pots)
+      ? potsRes.data.pots.filter(p => !p.deleted)
+      : [];
 
-    const bal = balRes.data;
-    const potsData = potsRes.data;
-    const pots = Array.isArray(potsData.pots) ? potsData.pots.filter(p => !p.deleted) : [];
-    const txData = txRes.data;
-    const allTx = Array.isArray(txData.transactions) ? txData.transactions : [];
-    allTransactions = allTx.filter(t => t.amount < 0 && !t.is_load);
+    const allTx = Array.isArray(txRes.data?.transactions) ? txRes.data.transactions : [];
+    // All spending transactions (exclude loads/top-ups)
+    allTransactions = allTx.filter(t => !t.is_load);
 
-    renderStatCards(bal, pots, allTransactions);
-    renderCategories(allTransactions);
-    renderTransactions(allTx);
-    renderPots(pots);
-    renderDailyChart(allTransactions);
-    renderInsights(allTransactions);
-
-    const now = new Date();
-    document.getElementById('month-label').textContent = now.toLocaleString('default', { month: 'long' });
+    renderAll();
+    renderPots(cachedPots);
 
   } catch(e) {
-    document.getElementById('stat-cards').innerHTML = '<div class="loading" style="color:var(--coral-soft);">Error: ' + e.message + '<br><small style="color:var(--text-muted)">Open browser console (F12) for details</small></div>';
-    console.error('loadAll error:', e);
+    document.getElementById('stat-cards').innerHTML =
+      '<div class="loading" style="grid-column:1/-1;color:var(--coral-soft);">Error: ' + e.message + '</div>';
+    console.error(e);
   }
 }
 
-// -- Render functions --
-function pence(n) {
-  return (n / 100).toFixed(2);
+function renderAll() {
+  const monthTxns = getMonthTxns(allTransactions, viewMonth).filter(t => t.amount < 0);
+  const allMonthTxns = getMonthTxns(allTransactions, viewMonth); // includes credits
+
+  renderStatCards(cachedBal, cachedPots, monthTxns);
+  renderCategories(monthTxns);
+  renderTransactions(allMonthTxns);
+  renderDailyChart(monthTxns);
+  renderInsights(monthTxns);
 }
 
-function gbp(n) {
-  const v = Math.abs(n) / 100;
-  return 'GBP ' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// ---- Helpers ----
+function fmt(pence) {
+  return '\u00A3' + (Math.abs(pence) / 100).toLocaleString('en-GB', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
 }
 
-function renderStatCards(bal, pots, txns) {
-  const potTotal = pots.reduce((s, p) => s + p.balance, 0);
-  const monthSpend = txns.reduce((s, t) => s + Math.abs(t.amount), 0);
-  const txCount = txns.length;
-  const avgDaily = txCount > 0 ? (monthSpend / new Date().getDate()) : 0;
-
-  document.getElementById('stat-cards').innerHTML = `
-    <div class="card stat-card">
-      <div class="card-label">Balance</div>
-      <div class="card-value large">GBP ${pence(bal.balance)}</div>
-      <div class="card-sub">Available: GBP ${pence(bal.spend_today ? bal.balance - bal.spend_today : bal.balance)}</div>
-    </div>
-    <div class="card stat-card green">
-      <div class="card-label">Pots total</div>
-      <div class="card-value large">GBP ${pence(potTotal)}</div>
-      <div class="card-sub">${pots.length} pot${pots.length !== 1 ? 's' : ''}</div>
-    </div>
-    <div class="card stat-card amber">
-      <div class="card-label">Month spend</div>
-      <div class="card-value large">GBP ${pence(monthSpend)}</div>
-      <div class="card-sub">${txCount} transactions</div>
-    </div>
-    <div class="card stat-card">
-      <div class="card-label">Daily average</div>
-      <div class="card-value large">GBP ${(avgDaily / 100).toFixed(2)}</div>
-      <div class="card-sub">Avg per day this month</div>
-    </div>
-  `;
+function cleanMerchant(t) {
+  if (t.merchant?.name) return t.merchant.name;
+  const desc = t.description || '';
+  // Strip internal pot references
+  if (desc.startsWith('pot_')) return 'Pot transfer';
+  // Strip common Monzo prefixes
+  return desc.replace(/^(MONZO |SUM UP |iZettle \*)/i, '').trim() || 'Unknown';
 }
 
 const CAT_EMOJI = {
-  eating_out: '🍽',
-  groceries: '🛒',
-  transport: '🚌',
-  shopping: '🛍',
-  entertainment: '🎬',
-  bills: '📄',
-  general: '💳',
-  personal_care: '💆',
-  holidays: '✈️',
-  family: '👨‍👩‍👧',
-  cash: '💵',
-  charity: '❤️',
-  education: '📚',
-  expenses: '📎',
-  finances: '🏦',
-  mondo: '💳',
-  transfers: '🔄',
+  eating_out: '🍽', groceries: '🛒', transport: '🚌', shopping: '🛍',
+  entertainment: '🎬', bills: '📄', general: '💳', personal_care: '💆',
+  holidays: '✈️', family: '👨‍👩‍👧', cash: '💵', charity: '❤️',
+  education: '📚', expenses: '📎', finances: '🏦', mondo: '💳',
+  transfers: '🔄', savings: '🏦',
 };
+
+// ---- Render functions ----
+function renderStatCards(bal, pots, txns) {
+  if (!bal) return;
+  const potTotal = pots.reduce((s,p) => s + p.balance, 0);
+  const monthSpend = txns.reduce((s,t) => s + Math.abs(t.amount), 0);
+  const txCount = txns.length;
+
+  // Days elapsed in selected month
+  const now = new Date();
+  let daysElapsed;
+  if (viewMonth === 'this') {
+    daysElapsed = now.getDate();
+  } else {
+    const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    daysElapsed = lastMonth.getDate();
+  }
+  const avgDaily = daysElapsed > 0 ? monthSpend / daysElapsed : 0;
+
+  // Projection (only meaningful for this month)
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const projected = viewMonth === 'this' && daysElapsed > 0
+    ? (monthSpend / daysElapsed) * daysInMonth : null;
+
+  document.getElementById('stat-cards').innerHTML = `
+    <div class="card stat-card">
+      <div class="stat-accent" style="background:var(--coral)"></div>
+      <div class="stat-label">Balance</div>
+      <div class="stat-value">${fmt(bal.balance)}</div>
+      <div class="stat-sub">Total inc. pots: ${fmt(bal.balance + potTotal)}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-accent" style="background:var(--green)"></div>
+      <div class="stat-label">Pots total</div>
+      <div class="stat-value">${fmt(potTotal)}</div>
+      <div class="stat-sub">${pots.length} pot${pots.length !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-accent" style="background:var(--amber)"></div>
+      <div class="stat-label">Month spend</div>
+      <div class="stat-value">${fmt(monthSpend)}</div>
+      <div class="stat-sub">${txCount} transaction${txCount !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-accent" style="background:var(--coral)"></div>
+      <div class="stat-label">Daily average</div>
+      <div class="stat-value">${fmt(avgDaily)}</div>
+      <div class="stat-sub">${projected ? 'On pace for ' + fmt(projected) + ' this month' : 'Full month average'}</div>
+    </div>
+  `;
+}
 
 function renderCategories(txns) {
   const cats = {};
@@ -771,27 +671,30 @@ function renderCategories(txns) {
     const c = t.category || 'general';
     cats[c] = (cats[c] || 0) + Math.abs(t.amount);
   });
-
-  const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0, 6);
+  const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0, 7);
   const max = sorted[0]?.[1] || 1;
 
-  document.getElementById('cat-list').innerHTML = sorted.map(([cat, amt]) => `
+  document.getElementById('cat-list').innerHTML = sorted.length ? sorted.map(([cat, amt]) => `
     <div class="cat-item">
       <div class="cat-header">
-        <span class="cat-name">${CAT_EMOJI[cat] || '💳'} ${cat.replace(/_/g, ' ')}</span>
-        <span class="cat-amount">GBP ${(amt/100).toFixed(2)}</span>
+        <span class="cat-name">${CAT_EMOJI[cat] || '💳'} ${cat.replace(/_/g,' ')}</span>
+        <span class="cat-amount">${fmt(amt)}</span>
       </div>
       <div class="cat-bar-bg">
-        <div class="cat-bar-fill" style="width: ${Math.round((amt/max)*100)}%"></div>
+        <div class="cat-bar-fill" style="width:${Math.round((amt/max)*100)}%"></div>
       </div>
     </div>
-  `).join('') || '<div class="loading" style="color:var(--text-muted)">No data</div>';
+  `).join('') : '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No spend data</div>';
 }
 
 function renderTransactions(txns) {
-  const sorted = [...txns].sort((a,b) => new Date(b.created) - new Date(a.created)).slice(0, 12);
-  document.getElementById('tx-list').innerHTML = sorted.map(t => {
-    const merchant = t.merchant?.name || t.description || 'Unknown';
+  const sorted = [...txns]
+    .filter(t => t.amount !== 0)
+    .sort((a,b) => new Date(b.created) - new Date(a.created))
+    .slice(0, 15);
+
+  document.getElementById('tx-list').innerHTML = sorted.length ? sorted.map(t => {
+    const merchant = cleanMerchant(t);
     const emoji = CAT_EMOJI[t.category] || '💳';
     const isCredit = t.amount > 0;
     const date = new Date(t.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -802,10 +705,10 @@ function renderTransactions(txns) {
           <div class="tx-merchant">${merchant}</div>
           <div class="tx-date">${date}</div>
         </div>
-        <div class="tx-amount ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}GBP ${(Math.abs(t.amount)/100).toFixed(2)}</div>
+        <div class="tx-amount ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}${fmt(t.amount)}</div>
       </div>
     `;
-  }).join('') || '<div class="loading" style="color:var(--text-muted)">No transactions</div>';
+  }).join('') : '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No transactions</div>';
 }
 
 function renderPots(pots) {
@@ -816,57 +719,63 @@ function renderPots(pots) {
   document.getElementById('pots-list').innerHTML = pots.map(p => `
     <div class="pot-item">
       <span class="pot-name">${p.name}</span>
-      <span class="pot-amount">GBP ${(p.balance/100).toFixed(2)}</span>
+      <span class="pot-amount">${fmt(p.balance)}</span>
     </div>
   `).join('');
 }
 
 function renderDailyChart(txns) {
   const now = new Date();
-  const days = now.getDate();
-  const labels = Array.from({ length: days }, (_, i) => i + 1);
-  const data = new Array(days).fill(0);
+  let year, month, daysInMonth;
+  if (viewMonth === 'this') {
+    year = now.getFullYear(); month = now.getMonth();
+    daysInMonth = now.getDate(); // only show days so far
+  } else {
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    year = lm.getFullYear(); month = lm.getMonth();
+    daysInMonth = new Date(year, month + 1, 0).getDate();
+  }
+
+  const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const data = new Array(daysInMonth).fill(0);
 
   txns.forEach(t => {
-    const d = new Date(t.created).getDate();
-    if (d >= 1 && d <= days) data[d-1] += Math.abs(t.amount) / 100;
+    const d = new Date(t.created);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const day = d.getDate();
+      if (day >= 1 && day <= daysInMonth) data[day-1] += Math.abs(t.amount) / 100;
+    }
   });
 
   if (dailyChartInstance) dailyChartInstance.destroy();
 
+  const isToday = (i) => viewMonth === 'this' && i === now.getDate() - 1;
   const ctx = document.getElementById('daily-chart').getContext('2d');
   dailyChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: labels,
+      labels,
       datasets: [{
-        data: data,
-        backgroundColor: data.map((v, i) => i === days - 1 ? '#FF5A5F' : 'rgba(255,90,95,0.25)'),
-        borderRadius: 4,
-        borderSkipped: false
+        data,
+        backgroundColor: data.map((_, i) => isToday(i) ? '#FF5A5F' : 'rgba(255,90,95,0.22)'),
+        borderRadius: 3,
+        borderSkipped: false,
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => 'GBP ' + ctx.raw.toFixed(2)
-          }
-        }
+        tooltip: { callbacks: { label: c => '\u00A3' + c.raw.toFixed(2) } }
       },
       scales: {
         x: {
-          ticks: { color: '#4A6480', font: { size: 11 }, autoSkip: true, maxTicksLimit: 10 },
-          grid: { display: false },
-          border: { display: false }
+          ticks: { color: '#4A6480', font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 },
+          grid: { display: false }, border: { display: false }
         },
         y: {
-          ticks: { color: '#4A6480', font: { size: 11 }, callback: v => 'GBP' + v.toFixed(0) },
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { display: false }
+          ticks: { color: '#4A6480', font: { size: 10 }, callback: v => '\u00A3' + v.toFixed(0) },
+          grid: { color: 'rgba(255,255,255,0.03)' }, border: { display: false }
         }
       }
     }
@@ -879,45 +788,54 @@ function renderInsights(txns) {
     return;
   }
 
-  // Most visited merchant
-  const merchantCounts = {};
+  // Top merchant by count
+  const mCounts = {};
   txns.forEach(t => {
-    const m = t.merchant?.name || t.description || 'Unknown';
-    merchantCounts[m] = (merchantCounts[m] || 0) + 1;
+    const m = cleanMerchant(t);
+    mCounts[m] = (mCounts[m] || 0) + 1;
   });
-  const topMerchant = Object.entries(merchantCounts).sort((a,b) => b[1]-a[1])[0];
+  const topMerchant = Object.entries(mCounts).sort((a,b) => b[1]-a[1])[0];
 
-  // Biggest single transaction
+  // Biggest spend
   const biggest = [...txns].sort((a,b) => Math.abs(b.amount)-Math.abs(a.amount))[0];
 
-  // Daily spend check - days under GBP 20
+  // Busiest day
   const daily = {};
   txns.forEach(t => {
     const d = new Date(t.created).toDateString();
     daily[d] = (daily[d] || 0) + Math.abs(t.amount);
   });
-  const quietDays = Object.values(daily).filter(v => v < 2000).length;
+  const busiestDay = Object.entries(daily).sort((a,b) => b[1]-a[1])[0];
+  const busiestLabel = busiestDay
+    ? new Date(busiestDay[0]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    : null;
+
+  // Quiet days (under 10 GBP)
+  const quietDays = Object.values(daily).filter(v => v < 1000).length;
 
   document.getElementById('insights-panel').innerHTML = `
     <div class="insight-box">
       <div class="insight-label">Top merchant</div>
-      <div class="insight-value"><span>${topMerchant[0]}</span> - ${topMerchant[1]} visits</div>
+      <div class="insight-value"><span class="hi">${topMerchant[0]}</span> &mdash; ${topMerchant[1]} visit${topMerchant[1] !== 1 ? 's' : ''}</div>
     </div>
     <div class="insight-box">
-      <div class="insight-label">Biggest spend</div>
-      <div class="insight-value"><span>GBP ${(Math.abs(biggest.amount)/100).toFixed(2)}</span> at ${biggest.merchant?.name || biggest.description || 'Unknown'}</div>
+      <div class="insight-label">Biggest single spend</div>
+      <div class="insight-value"><span class="hi">${fmt(biggest.amount)}</span> at ${cleanMerchant(biggest)}</div>
     </div>
+    ${busiestLabel ? `
     <div class="insight-box">
-      <div class="insight-label">Quiet days (under GBP 20)</div>
-      <div class="insight-value"><span>${quietDays}</span> day${quietDays !== 1 ? 's' : ''} this month</div>
+      <div class="insight-label">Most expensive day</div>
+      <div class="insight-value"><span class="hi">${busiestLabel}</span> &mdash; ${fmt(busiestDay[1])}</div>
+    </div>` : ''}
+    <div class="insight-box">
+      <div class="insight-label">Quiet days (under &pound;10)</div>
+      <div class="insight-value"><span class="good">${quietDays}</span> day${quietDays !== 1 ? 's' : ''} this period</div>
     </div>
   `;
 }
 
-// -- Init --
-if (loadConfig()) {
-  showDashboard();
-}
+// ---- Init ----
+if (loadConfig()) showDashboard();
 </script>
 </body>
 </html>
