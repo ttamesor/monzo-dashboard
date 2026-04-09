@@ -115,6 +115,14 @@ input[type="text"]:focus{border-color:var(--coral);}
 @media(max-width:1100px){.grid-5{grid-template-columns:repeat(3,1fr);}.insight-strip{grid-template-columns:repeat(2,1fr);}.grid-3-1{grid-template-columns:1fr;}.grid-3{grid-template-columns:1fr 1fr;}}
 @media(max-width:700px){.grid-5,.grid-3{grid-template-columns:1fr 1fr;}.insight-strip{grid-template-columns:1fr 1fr;}.main{padding:1rem;}}
 @media(max-width:420px){.grid-5,.grid-3,.insight-strip{grid-template-columns:1fr;}}
+.grid-2-1{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.2rem;}
+.best-worst{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1rem;}
+.bw-tile{background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:8px;padding:10px 12px;}
+.bw-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;}
+.bw-value{font-size:14px;font-weight:500;font-family:var(--mono);}
+.bw-date{font-size:11px;color:var(--text-muted);margin-top:1px;}
+@media(max-width:1100px){.grid-2-1{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.grid-2-1{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -155,12 +163,32 @@ input[type="text"]:focus{border-color:var(--coral);}
     </div>
     <div class="grid-3-1">
       <div class="card">
-        <div class="card-header"><span class="card-title">Daily spend</span><span class="badge badge-coral" id="month-badge">This month</span></div>
+        <div class="card-header">
+          <span class="card-title">Daily spend</span>
+          <span class="badge badge-coral" id="month-badge">This month</span>
+        </div>
         <div style="position:relative;height:210px;"><canvas id="daily-chart" role="img" aria-label="Daily spending chart"></canvas></div>
+        <div class="best-worst" id="best-worst-strip"></div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Categories vs last month</span></div>
         <div id="cat-compare"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+    <div class="grid-2-1">
+      <div class="card" style="grid-column:span 2;">
+        <div class="card-header">
+          <span class="card-title">This month vs last month</span>
+          <div style="display:flex;gap:12px;font-size:12px;align-items:center;">
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:3px;background:#FF5A5F;display:inline-block;border-radius:2px;"></span>This month</span>
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:3px;background:rgba(255,255,255,0.15);display:inline-block;border-radius:2px;"></span>Last month</span>
+          </div>
+        </div>
+        <div style="position:relative;height:180px;"><canvas id="compare-chart" role="img" aria-label="Month comparison chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Top merchants</span></div>
+        <div style="position:relative;height:180px;"><canvas id="merchant-chart" role="img" aria-label="Top merchants chart"></canvas></div>
       </div>
     </div>
     <div class="grid-3">
@@ -304,7 +332,7 @@ function renderAll(){
   renderInsightStrip(viewSpend,viewMonth==="this"?lastTx:thisTx);
   renderCatCompare(thisTx,lastTx);
   renderTransactions(viewAll);
-  renderDailyChart(viewSpend);
+  renderDailyChart(viewSpend,thisTx,lastTx);
 }
 
 function fmt(p){return"£"+(Math.abs(p)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -381,7 +409,9 @@ function renderPotsPanel(pots,savings){
   document.getElementById("investments-panel").innerHTML=(sh+mh)||"<div style='color:var(--text-muted);font-size:13px;line-height:1.6;'>Click Accounts in the toolbar to add investment values manually.</div>";
 }
 
-function renderDailyChart(txns){
+var compareChartInstance=null,merchantChartInstance=null;
+
+function renderDailyChart(txns,thisTxns,lastTxns){
   var now=new Date(),year,month,dim;
   if(viewMonth==="this"){year=now.getFullYear();month=now.getMonth();dim=now.getDate();}
   else{var lm=new Date(now.getFullYear(),now.getMonth()-1,1);year=lm.getFullYear();month=lm.getMonth();dim=new Date(year,month+1,0).getDate();}
@@ -391,6 +421,86 @@ function renderDailyChart(txns){
   var ti=viewMonth==="this"?now.getDate()-1:-1;
   var ctx=document.getElementById("daily-chart").getContext("2d");
   dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+
+  // Best/worst day strip
+  var bwEl=document.getElementById("best-worst-strip");
+  if(bwEl&&data.length){
+    var nonZero=data.map(function(v,i){return{v:v,i:i};}).filter(function(x){return x.v>0;});
+    if(nonZero.length>=2){
+      var best=nonZero.slice().sort(function(a,b){return a.v-b.v;})[0];
+      var worst=nonZero.slice().sort(function(a,b){return b.v-a.v;})[0];
+      var mName=viewMonth==="this"?new Date().toLocaleString("default",{month:"short"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"short"});
+      bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>£"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
+        +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>£"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
+    } else { bwEl.innerHTML=""; }
+  }
+
+  // Month comparison chart
+  renderCompareChart(thisTxns,lastTxns);
+
+  // Top merchants chart
+  renderMerchantChart(txns);
+}
+
+function renderCompareChart(thisTxns,lastTxns){
+  var now=new Date();
+  var thisYear=now.getFullYear(),thisMon=now.getMonth();
+  var lastDate=new Date(thisYear,thisMon-1,1);
+  var lastYear=lastDate.getFullYear(),lastMon=lastDate.getMonth();
+  var daysInLast=new Date(lastYear,lastMon+1,0).getDate();
+  var daysInThis=new Date(thisYear,thisMon+1,0).getDate();
+  var numDays=Math.max(daysInLast,daysInThis);
+
+  var thisData=new Array(numDays).fill(0);
+  var lastData=new Array(numDays).fill(0);
+
+  thisTxns.forEach(function(t){
+    var d=new Date(t.created);
+    if(d.getFullYear()===thisYear&&d.getMonth()===thisMon){
+      var day=d.getDate();if(day>=1&&day<=numDays)thisData[day-1]+=Math.abs(t.amount)/100;
+    }
+  });
+  lastTxns.forEach(function(t){
+    var d=new Date(t.created);
+    if(d.getFullYear()===lastYear&&d.getMonth()===lastMon){
+      var day=d.getDate();if(day>=1&&day<=numDays)lastData[day-1]+=Math.abs(t.amount)/100;
+    }
+  });
+
+  // Cumulative
+  var thisCum=[],lastCum=[],runT=0,runL=0;
+  for(var i=0;i<numDays;i++){
+    runT+=thisData[i]; thisCum.push(parseFloat(runT.toFixed(2)));
+    runL+=lastData[i]; lastCum.push(parseFloat(runL.toFixed(2)));
+  }
+
+  var labels=Array.from({length:numDays},function(_,i){return i+1;});
+  if(compareChartInstance)compareChartInstance.destroy();
+  var ctx=document.getElementById("compare-chart").getContext("2d");
+  compareChartInstance=new Chart(ctx,{
+    type:"line",
+    data:{labels:labels,datasets:[
+      {label:"This month",data:thisCum,borderColor:"#FF5A5F",backgroundColor:"rgba(255,90,95,0.08)",borderWidth:2,pointRadius:0,tension:0.3,fill:true},
+      {label:"Last month",data:lastCum,borderColor:"rgba(255,255,255,0.2)",backgroundColor:"transparent",borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[4,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+": £"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:10},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}
+  });
+}
+
+function renderMerchantChart(txns){
+  var mc={};
+  txns.filter(function(t){return t.amount<0&&t.include_in_spending!==false;}).forEach(function(t){
+    var m=merchant(t);
+    if(m!=="Pot transfer")mc[m]=(mc[m]||0)+Math.abs(t.amount)/100;
+  });
+  var sorted=Object.keys(mc).map(function(k){return{name:k,total:mc[k]};}).sort(function(a,b){return b.total-a.total;}).slice(0,6);
+  if(merchantChartInstance)merchantChartInstance.destroy();
+  var ctx=document.getElementById("merchant-chart").getContext("2d");
+  merchantChartInstance=new Chart(ctx,{
+    type:"bar",
+    data:{labels:sorted.map(function(x){return x.name.length>14?x.name.slice(0,13)+"...":x.name;}),datasets:[{data:sorted.map(function(x){return parseFloat(x.total.toFixed(2));}),backgroundColor:"rgba(155,127,255,0.5)",borderColor:"rgba(155,127,255,0.8)",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}},y:{ticks:{color:"#8BA0B4",font:{size:10}},grid:{display:false},border:{display:false}}}}
+  });
 }
 
 if(loadConfig())showDashboard();
