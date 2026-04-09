@@ -447,7 +447,7 @@ function loadMoreHistory(){
 
 // ---- Initial load ----
 function loadAll(){
-  stopBgLoad();
+  historyExhausted=false;
   allTransactions=[];
   txDisplayCount=30;
   document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1'><div class='spinner'></div></div>";
