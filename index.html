@@ -49,6 +49,9 @@ input[type="text"]:focus{border-color:var(--coral);}
 .month-tab.active{background:var(--coral);color:white;}
 .month-tab:hover:not(.active){color:var(--text-primary);}
 .pill-btn{background:transparent;border:1px solid var(--navy-border);border-radius:8px;padding:6px 14px;font-family:var(--font);font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
+.hist-btn{background:transparent;border:1px solid var(--purple);border-radius:8px;padding:5px 12px;font-family:var(--font);font-size:12px;color:var(--purple);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.hist-btn:hover{background:var(--purple-dim);}
+.hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
 .main{padding:1.5rem 2rem;max-width:1400px;margin:0 auto;}
@@ -187,6 +190,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
     <div class="topbar-left">
       <div class="topbar-logo-mark">M</div>
       <div class="topbar-title">Monzo Dashboard</div>
+      <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
     </div>
     <div class="topbar-right">
@@ -269,7 +273,6 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
         </div>
         <div id="tx-list"><div class="loading"><div class="spinner"></div></div></div>
         <button class="load-more-btn" id="load-more-btn" style="display:none;" onclick="showMoreTx()">Show more transactions</button>
-        <button class="load-more-btn" id="load-history-btn" style="display:none;border-color:var(--purple);color:var(--purple);" onclick="loadMoreHistory()">Load more history</button>
       </div>
       <div>
         <div class="card" style="margin-bottom:1rem;">
@@ -411,9 +414,11 @@ function updateHistoryBtn(){
   if(!btn)return;
   if(historyExhausted||allTransactions.length>=2000){
     btn.style.display="none";
+  } else if(allTransactions.length===0){
+    btn.style.display="none";
   } else {
-    btn.style.display="block";
-    btn.textContent="Load more history ("+allTransactions.length+" loaded)";
+    btn.style.display="inline-flex";
+    btn.textContent="← Load earlier ("+allTransactions.length+" loaded)";
     btn.disabled=false;
   }
 }
@@ -453,18 +458,12 @@ function loadAll(){
   allTransactions=[];
   txDisplayCount=30;
   document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1'><div class='spinner'></div></div>";
-
-  var now=new Date();
-  var startOfMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
-  var startOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString();
+  updateHistoryBtn();
 
   Promise.all([
     gasCall({action:"balance",account_id:ACCOUNT_ID}),
     gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
-    // This month
-    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfMonth}),
-    // Last month
-    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfMonth})
+    gasCall({action:"transactions",account_id:ACCOUNT_ID})
   ]).then(function(results){
     cachedBal=results[0].data;
 
@@ -474,23 +473,18 @@ function loadAll(){
     cachedSavings=active.filter(function(p){return STYPES.indexOf(p.type)>=0||p.locked||(p.style||"").indexOf("investments_")===0;});
     cachedPots=active.filter(function(p){return STYPES.indexOf(p.type)<0&&!p.locked&&(p.style||"").indexOf("investments_")!==0;});
 
-    var thisTx=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
-    var lastTx=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
+    var txns=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
+    allTransactions=txns.filter(function(t){return t.amount!==0;});
 
-    // Combine, dedupe
-    var seen={};
-    allTransactions=[];
-    thisTx.concat(lastTx).forEach(function(t){
-      if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}
-    });
-
-    console.log("Loaded: this month="+thisTx.length+" last month="+lastTx.length);
+    console.log("Loaded: "+allTransactions.length+" transactions");
+    if(allTransactions.length){
+      var dates=allTransactions.map(function(t){return new Date(t.created);});
+      console.log("Range: "+new Date(Math.min.apply(null,dates)).toDateString()+" to "+new Date(Math.max.apply(null,dates)).toDateString());
+    }
 
     populateCatFilter();
     renderAll();
     renderPotsPanel(cachedPots,cachedSavings);
-
-    historyExhausted=false;
     updateHistoryBtn();
 
   }).catch(function(e){
