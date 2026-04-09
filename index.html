@@ -300,7 +300,6 @@ var GAS_URL="",ACCOUNT_ID="";
 var allTransactions=[],cachedPots=[],cachedSavings=[],cachedBal=null;
 var viewMonth="this",dailyChartInstance=null,compareChartInstance=null,merchantChartInstance=null;
 var txDisplayCount=30,filteredTxns=[];
-var bgLoadActive=false,bgLoadTimer=null;
 
 var CAT_EMOJI={eating_out:"🍽",groceries:"🛒",transport:"🚌",shopping:"🛍",entertainment:"🎬",bills:"📄",general:"💳",personal_care:"💆",holidays:"✈️",family:"👪",cash:"💵",charity:"❤️",education:"📚",expenses:"📎",finances:"🏦",mondo:"💳",transfers:"🔄",savings:"🏦"};
 
@@ -393,60 +392,57 @@ function setProgress(text){
   else{pill.classList.add("active");if(txt)txt.textContent=text;}
 }
 
-// ---- Background loader ----
-function stopBgLoad(){
-  bgLoadActive=false;
-  if(bgLoadTimer){clearTimeout(bgLoadTimer);bgLoadTimer=null;}
-  setProgress(null);
+// ---- Load more history ----
+var historyExhausted=false;
+
+function getOldestTx(){
+  var oldest=null,oldestTx=null;
+  allTransactions.forEach(function(t){
+    var d=new Date(t.created);
+    if(!oldest||d<oldest){oldest=d;oldestTx=t;}
+  });
+  return oldestTx;
 }
 
-function startBgLoad(){
-  if(bgLoadActive)return;
-  bgLoadActive=true;
-  scheduleBgPage();
-}
-
-function scheduleBgPage(){
-  if(!bgLoadActive)return;
-  bgLoadTimer=setTimeout(function(){loadNextPage();},2000);
-}
-
-function loadNextPage(){
-  if(!bgLoadActive||allTransactions.length>=2000)return stopBgLoad();
-  // Find oldest transaction we have
-  var oldest=null;
-  for(var i=0;i<allTransactions.length;i++){
-    var d=new Date(allTransactions[i].created);
-    if(!oldest||d<oldest){oldest=d;oldestTx=allTransactions[i];}
+function updateHistoryBtn(){
+  var btn=document.getElementById("load-history-btn");
+  if(!btn)return;
+  if(historyExhausted||allTransactions.length>=2000){
+    btn.style.display="none";
+  } else {
+    btn.style.display="block";
+    btn.textContent="Load more history ("+allTransactions.length+" loaded)";
+    btn.disabled=false;
   }
-  if(!oldest)return stopBgLoad();
+}
 
-  setProgress("Loading... "+allTransactions.length+" transactions");
-
+function loadMoreHistory(){
+  var btn=document.getElementById("load-history-btn");
+  var oldestTx=getOldestTx();
+  if(!oldestTx)return;
+  if(btn){btn.disabled=true;btn.textContent="Loading...";}
+  setProgress(allTransactions.length+" transactions loaded");
   gasCall({action:"transactions",account_id:ACCOUNT_ID,before:oldestTx.created})
     .then(function(res){
-      if(res.status!=="ok"||!res.data||!res.data.transactions)return stopBgLoad();
+      setProgress(null);
+      if(res.status!=="ok"||!res.data||!res.data.transactions){
+        historyExhausted=true;updateHistoryBtn();return;
+      }
       var batch=res.data.transactions.filter(function(t){return t.amount!==0;});
-      if(batch.length===0)return stopBgLoad();
-
-      // Dedupe and merge
+      if(batch.length===0){historyExhausted=true;updateHistoryBtn();return;}
       var ids={};
       allTransactions.forEach(function(t){ids[t.id]=true;});
       var newOnes=batch.filter(function(t){return!ids[t.id];});
-      if(newOnes.length===0)return stopBgLoad();
-
       allTransactions=newOnes.concat(allTransactions);
       populateCatFilter();
       renderAll();
-
-      if(batch.length<100||allTransactions.length>=2000){
-        stopBgLoad();
-        setProgress(null);
-      } else {
-        scheduleBgPage();
-      }
+      if(batch.length<100){historyExhausted=true;}
+      updateHistoryBtn();
     })
-    .catch(function(){stopBgLoad();});
+    .catch(function(){
+      setProgress(null);
+      if(btn){btn.disabled=false;btn.textContent="Retry";}
+    });
 }
 
 // ---- Initial load ----
@@ -492,8 +488,8 @@ function loadAll(){
     renderAll();
     renderPotsPanel(cachedPots,cachedSavings);
 
-    // Start background loading for older history
-    startBgLoad();
+    historyExhausted=false;
+    updateHistoryBtn();
 
   }).catch(function(e){
     document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1;color:var(--coral-soft);'>Error: "+e.message+"</div>";
