@@ -438,16 +438,13 @@ function loadMoreHistory(){
       var ids={};
       allTransactions.forEach(function(t){ids[t.id]=true;});
       var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
-      if(newOnes.length===0){
-        // Got nothing new - exhausted
-        historyExhausted=true;
-      } else {
+      if(newOnes.length>0){
         allTransactions=newOnes.concat(allTransactions);
         populateCatFilter();
         renderAll();
-        // Only mark exhausted if Monzo returned fewer than 100 raw (not our filtered count)
-        if(batch.length<100){historyExhausted=true;}
       }
+      // Exhausted only if Monzo returned fewer than 100 (no more data)
+      if(batch.length<100){historyExhausted=true;}
       updateHistoryBtn();
     })
     .catch(function(){
@@ -500,6 +497,10 @@ function loadAll(){
 function switchMonth(which){
   viewMonth=which;
   txDisplayCount=30;
+  historyExhausted=false;
+  updateHistoryBtn();
+  historyExhausted=false;
+  updateHistoryBtn();
   document.getElementById("tab-this").classList.toggle("active",which==="this");
   document.getElementById("tab-last").classList.toggle("active",which==="last");
   var now=new Date();
