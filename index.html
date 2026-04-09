@@ -27,7 +27,6 @@
     --font: 'DM Sans', sans-serif;
     --mono: 'DM Mono', monospace;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--font); background: var(--navy); color: var(--text-primary); min-height: 100vh; }
 
@@ -48,9 +47,9 @@
   .btn-primary:active { transform: scale(0.98); }
   .error-msg { background: var(--coral-dim); border: 1px solid rgba(255,90,95,0.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--coral-soft); margin-bottom: 1rem; display: none; }
 
-  /* Topbar */
+  /* Dashboard */
   #dashboard { display: none; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 2rem; border-bottom: 1px solid var(--navy-border); background: var(--navy-mid); position: sticky; top: 0; z-index: 10; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 2rem; border-bottom: 1px solid var(--navy-border); background: var(--navy-mid); position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 8px; }
   .topbar-left { display: flex; align-items: center; gap: 12px; }
   .topbar-logo-mark { width: 28px; height: 28px; background: var(--coral); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: white; flex-shrink: 0; }
   .topbar-title { font-size: 15px; font-weight: 500; }
@@ -66,7 +65,6 @@
   /* Layout */
   .main { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
   .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
   .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
@@ -87,33 +85,39 @@
   .stat-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
   .stat-value { font-size: 26px; font-weight: 500; color: var(--text-primary); font-family: var(--mono); letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 4px; }
   .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-
-  /* Delta pill */
   .delta { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 500; padding: 2px 7px; border-radius: 20px; margin-top: 5px; }
   .delta.up-bad { background: var(--coral-dim); color: var(--coral-soft); }
   .delta.down-good { background: var(--green-dim); color: var(--green); }
   .delta.up-good { background: var(--green-dim); color: var(--green); }
   .delta.neutral { background: rgba(255,255,255,0.06); color: var(--text-muted); }
 
-  /* Comparison bars */
+  /* Insight strip */
+  .insight-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
+  .insight-tile { background: var(--navy-card); border: 1px solid var(--navy-border); border-radius: 12px; padding: 1rem 1.2rem; }
+  .insight-tile-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .insight-tile-value { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+  .hi { color: var(--coral-soft); }
+  .good { color: var(--green); }
+  .warn { color: var(--amber); }
+
+  /* Category compare */
   .compare-item { margin-bottom: 14px; }
   .compare-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
   .compare-name { color: var(--text-secondary); }
-  .compare-amounts { display: flex; gap: 8px; }
+  .compare-amounts { display: flex; gap: 6px; align-items: baseline; }
   .compare-this { color: var(--text-primary); font-family: var(--mono); }
-  .compare-last { color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
-  .bar-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: visible; position: relative; margin-bottom: 3px; }
-  .bar-last { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; background: rgba(255,255,255,0.12); }
-  .bar-this { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; background: var(--coral); transition: width 0.6s ease; }
+  .compare-last { color: var(--text-muted); font-family: var(--mono); font-size: 11px; }
+  .bar-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; position: relative; }
+  .bar-last { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; background: rgba(255,255,255,0.1); }
+  .bar-this { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 
-  /* Pots/investments */
+  /* Pots */
   .pot-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--navy-border); }
   .pot-item:last-child { border-bottom: none; }
   .pot-left { display: flex; align-items: center; gap: 8px; }
   .pot-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .pot-name { font-size: 14px; color: var(--text-primary); }
   .pot-type { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-  .pot-amount { font-size: 14px; font-family: var(--mono); font-weight: 500; }
 
   /* Transactions */
   .tx-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--navy-border); }
@@ -125,23 +129,6 @@
   .tx-amount { font-size: 14px; font-family: var(--mono); font-weight: 500; flex-shrink: 0; }
   .tx-amount.debit { color: var(--coral-soft); }
   .tx-amount.credit { color: var(--green); }
-
-  /* Insight strip */
-  .insight-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
-  .insight-tile { background: var(--navy-card); border: 1px solid var(--navy-border); border-radius: 12px; padding: 1rem 1.2rem; }
-  .insight-tile-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
-  .insight-tile-value { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-  .insight-tile-value .hi { color: var(--coral-soft); }
-  .insight-tile-value .good { color: var(--green); }
-  .insight-tile-value .warn { color: var(--amber); }
-
-  /* Category bars */
-  .cat-item { margin-bottom: 12px; }
-  .cat-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
-  .cat-name { color: var(--text-secondary); }
-  .cat-amount { color: var(--text-primary); font-family: var(--mono); }
-  .cat-bar-bg { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
-  .cat-bar-fill { height: 100%; border-radius: 2px; background: var(--coral); transition: width 0.6s ease; }
 
   /* Loading */
   .loading { display: flex; align-items: center; justify-content: center; padding: 2.5rem; color: var(--text-muted); font-size: 14px; flex-direction: column; gap: 10px; }
@@ -155,20 +142,18 @@
     .grid-3 { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 700px) {
-    .grid-5, .grid-4, .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-5, .grid-3 { grid-template-columns: 1fr 1fr; }
     .insight-strip { grid-template-columns: 1fr 1fr; }
     .grid-2 { grid-template-columns: 1fr; }
     .main { padding: 1rem; }
-    .topbar { flex-wrap: wrap; gap: 8px; }
   }
   @media (max-width: 420px) {
-    .grid-5, .grid-4, .grid-3, .grid-2, .insight-strip { grid-template-columns: 1fr; }
+    .grid-5, .grid-3, .grid-2, .insight-strip { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- Config -->
 <div id="config-screen">
   <div class="config-card">
     <div class="logo-row">
@@ -186,7 +171,6 @@
   </div>
 </div>
 
-<!-- Dashboard -->
 <div id="dashboard">
   <div class="topbar">
     <div class="topbar-left">
@@ -206,12 +190,10 @@
 
   <div class="main">
 
-    <!-- Stat cards row (5 wide now) -->
     <div class="grid-5" id="stat-cards">
       <div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>
     </div>
 
-    <!-- Insight strip -->
     <div class="insight-strip" id="insight-strip">
       <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
       <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
@@ -219,7 +201,6 @@
       <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
     </div>
 
-    <!-- Daily chart + category comparison -->
     <div class="grid-3-1">
       <div class="card">
         <div class="card-header">
@@ -230,7 +211,6 @@
           <canvas id="daily-chart" role="img" aria-label="Daily spending chart"></canvas>
         </div>
       </div>
-
       <div class="card">
         <div class="card-header">
           <span class="card-title">Categories vs last month</span>
@@ -239,15 +219,14 @@
       </div>
     </div>
 
-    <!-- Transactions + pots + investments -->
     <div class="grid-3">
-      <div class="card" style="grid-column: span 2;">
+      <div class="card" style="grid-column:span 2;">
         <div class="card-header">
-          <span class="card-title">Recent transactions</span>
+          <span class="card-title">Transactions</span>
+          <span class="badge badge-coral" id="tx-count-badge"></span>
         </div>
         <div id="tx-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
-
       <div>
         <div class="card" style="margin-bottom:1rem;">
           <div class="card-header">
@@ -255,10 +234,9 @@
           </div>
           <div id="pots-list"><div class="loading"><div class="spinner"></div></div></div>
         </div>
-
-        <div class="card" id="investments-card">
+        <div class="card">
           <div class="card-header">
-            <span class="card-title">Investments</span>
+            <span class="card-title">Savings &amp; investments</span>
             <span class="badge badge-purple">GIA</span>
           </div>
           <div id="investments-panel"><div class="loading"><div class="spinner"></div></div></div>
@@ -272,11 +250,10 @@
 <script>
 const STORAGE_KEY = 'monzo_dash_v2';
 let GAS_URL = '', ACCOUNT_ID = '';
-let allTransactions = [], cachedPots = [], cachedBal = null, cachedInvestments = null;
+let allTransactions = [], cachedPots = [], cachedSavings = [], cachedBal = null;
 let viewMonth = 'this';
 let dailyChartInstance = null;
 
-// ---- Config ----
 function loadConfig() {
   try {
     const c = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -284,11 +261,7 @@ function loadConfig() {
   } catch(e) {}
   return false;
 }
-
-function saveConfig(url, id) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ gasUrl: url, accountId: id }));
-}
-
+function saveConfig(url, id) { localStorage.setItem(STORAGE_KEY, JSON.stringify({ gasUrl: url, accountId: id })); }
 function resetConfig() { localStorage.removeItem(STORAGE_KEY); location.reload(); }
 
 async function connect() {
@@ -320,7 +293,6 @@ function showDashboard() {
   loadAll();
 }
 
-// ---- Month ----
 function switchMonth(which) {
   viewMonth = which;
   document.getElementById('tab-this').classList.toggle('active', which === 'this');
@@ -333,17 +305,24 @@ function switchMonth(which) {
   renderAll();
 }
 
-function getMonthTxns(txns, which) {
+function getMonthBounds(which) {
   const now = new Date();
   let y, m;
   if (which === 'this') { y = now.getFullYear(); m = now.getMonth(); }
   else { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); y = d.getFullYear(); m = d.getMonth(); }
-  return txns.filter(t => { const d = new Date(t.created); return d.getFullYear() === y && d.getMonth() === m; });
+  return { y, m };
 }
 
-// ---- API ----
+function getMonthTxns(txns, which) {
+  const { y, m } = getMonthBounds(which);
+  return txns.filter(t => {
+    const d = new Date(t.created);
+    return d.getFullYear() === y && d.getMonth() === m;
+  });
+}
+
 async function gasCall(params) {
-  const qs = Object.entries(params).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
+  const qs = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
   const r = await fetch(GAS_URL + '?' + qs);
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
@@ -353,34 +332,44 @@ async function loadAll() {
   document.getElementById('stat-cards').innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>';
 
   try {
-    const [balRes, potsRes, txRes, invRes] = await Promise.all([
+    const [balRes, potsRes, txRes] = await Promise.all([
       gasCall({ action: 'balance', account_id: ACCOUNT_ID }),
       gasCall({ action: 'pots', account_id: ACCOUNT_ID }).catch(() => ({ data: { pots: [] } })),
-      gasCall({ action: 'transactions', account_id: ACCOUNT_ID }),
-      gasCall({ action: 'investments' }).catch(() => ({ data: { investments: [] } }))
+      gasCall({ action: 'transactions', account_id: ACCOUNT_ID })
     ]);
 
     cachedBal = balRes.data;
 
-    // Separate regular pots from investment/savings pots
-    const allPots = Array.isArray(potsRes.data?.pots) ? potsRes.data.pots.filter(p => !p.deleted) : [];
-    const INVEST_TYPES = ['gia', 'investment', 'stocks_and_shares_isa', 'lisa', 'flexible_savings', 'fixed_savings', 'tax_free_savings'];
-    cachedPots = allPots.filter(p => !INVEST_TYPES.includes(p.style) && !INVEST_TYPES.includes(p.type) && !p.locked);
-    const savingsPots = allPots.filter(p => INVEST_TYPES.includes(p.style) || INVEST_TYPES.includes(p.type) || p.locked);
+    // Split pots: active (not deleted) only
+    const allPots = Array.isArray(potsRes.data?.pots) ? potsRes.data.pots : [];
+    const activePots = allPots.filter(p => !p.deleted);
 
-    // Investments from dedicated endpoint
-    const invData = invRes.data;
-    cachedInvestments = {
-      apiData: invData,
-      savingsPots: savingsPots,
-      allPots: allPots
-    };
+    // Savings/investment pots: instant_access, flexible_savings, fixed_savings, locked
+    // or style starts with 'investments_'
+    const SAVINGS_TYPES = ['instant_access', 'flexible_savings', 'fixed_savings'];
+    cachedSavings = activePots.filter(p =>
+      SAVINGS_TYPES.includes(p.type) ||
+      p.locked ||
+      (p.style || '').startsWith('investments_')
+    );
 
+    // Regular pots: everything else active
+    cachedPots = activePots.filter(p =>
+      !SAVINGS_TYPES.includes(p.type) &&
+      !p.locked &&
+      !(p.style || '').startsWith('investments_')
+    );
+
+    // All transactions - keep everything including pot transfers for display
+    // but use include_in_spending flag for spend calculations
     const allTx = Array.isArray(txRes.data?.transactions) ? txRes.data.transactions : [];
-    allTransactions = allTx.filter(t => !t.is_load);
+    allTransactions = allTx;
+
+    console.log('Active pots:', activePots.length, 'Regular:', cachedPots.length, 'Savings:', cachedSavings.length);
+    console.log('Transactions loaded:', allTx.length);
 
     renderAll();
-    renderPotsAndInvestments(cachedPots, cachedInvestments);
+    renderPotsPanel(cachedPots, cachedSavings);
 
   } catch(e) {
     document.getElementById('stat-cards').innerHTML =
@@ -390,19 +379,22 @@ async function loadAll() {
 }
 
 function renderAll() {
-  const thisTxns = getMonthTxns(allTransactions, 'this').filter(t => t.amount < 0);
-  const lastTxns = getMonthTxns(allTransactions, 'last').filter(t => t.amount < 0);
-  const viewTxns = viewMonth === 'this' ? thisTxns : lastTxns;
-  const allViewTxns = getMonthTxns(allTransactions, viewMonth);
+  // Spending transactions only (include_in_spending = true, amount < 0)
+  const spendTx = allTransactions.filter(t => t.include_in_spending && t.amount < 0);
+  const thisTxns = getMonthTxns(spendTx, 'this');
+  const lastTxns = getMonthTxns(spendTx, 'last');
+  const viewSpendTxns = viewMonth === 'this' ? thisTxns : lastTxns;
 
-  renderStatCards(cachedBal, cachedPots, cachedInvestments, viewTxns, thisTxns, lastTxns);
-  renderInsightStrip(viewTxns, viewMonth === 'this' ? lastTxns : thisTxns);
-  renderCategoryCompare(thisTxns, lastTxns, viewMonth);
-  renderTransactions(allViewTxns);
-  renderDailyChart(viewTxns);
+  // All transactions for the view month (for display in transaction list)
+  const viewAllTxns = getMonthTxns(allTransactions, viewMonth).filter(t => t.amount !== 0);
+
+  renderStatCards(cachedBal, cachedPots, cachedSavings, viewSpendTxns, thisTxns, lastTxns);
+  renderInsightStrip(viewSpendTxns, viewMonth === 'this' ? lastTxns : thisTxns);
+  renderCategoryCompare(thisTxns, lastTxns);
+  renderTransactions(viewAllTxns);
+  renderDailyChart(viewSpendTxns);
 }
 
-// ---- Helpers ----
 function fmt(pence) {
   return '\u00A3' + (Math.abs(pence) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -419,8 +411,8 @@ function deltaHtml(thisVal, lastVal, lowerIsBetter) {
   const up = pct > 0;
   const good = lowerIsBetter ? !up : up;
   const cls = Math.abs(pct) < 1 ? 'neutral' : (good ? (up ? 'up-good' : 'down-good') : (up ? 'up-bad' : 'neutral'));
-  const arrow = up ? '▲' : '▼';
-  return `<span class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% vs last month</span>`;
+  const arrow = up ? '\u25b2' : '\u25bc';
+  return `<div><span class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% vs last month</span></div>`;
 }
 
 function cleanMerchant(t) {
@@ -433,42 +425,41 @@ function cleanMerchant(t) {
 const CAT_EMOJI = {
   eating_out: '🍽', groceries: '🛒', transport: '🚌', shopping: '🛍',
   entertainment: '🎬', bills: '📄', general: '💳', personal_care: '💆',
-  holidays: '✈️', family: '👨‍👩‍👧', cash: '💵', charity: '❤️',
+  holidays: '\u2708\ufe0f', family: '👨\u200d👩\u200d👧', cash: '💵', charity: '❤️',
   education: '📚', expenses: '📎', finances: '🏦', mondo: '💳',
   transfers: '🔄', savings: '🏦',
 };
 
-// ---- Render: stat cards ----
-function renderStatCards(bal, pots, investments, viewTxns, thisTxns, lastTxns) {
+function potTypeLabel(p) {
+  if ((p.style || '').startsWith('investments_')) return 'Investments';
+  if (p.type === 'instant_access') return 'Instant access';
+  if (p.type === 'flexible_savings') return 'Flexible savings';
+  if (p.type === 'fixed_savings') return 'Fixed savings';
+  if (p.locked) return 'Locked';
+  return p.type || '';
+}
+
+function renderStatCards(bal, pots, savings, viewTxns, thisTxns, lastTxns) {
   if (!bal) return;
 
-  const potTotal = pots.reduce((s,p) => s + (p.balance || 0), 0);
+  // Only sum active pots with actual balances
+  const potTotal = pots.reduce((s, p) => s + (p.balance || 0), 0);
+  const savingsTotal = savings.reduce((s, p) => s + (p.balance || 0), 0);
 
-  // Investment total: savings pots + API investments
-  const savPotsTotal = (investments?.savingsPots || []).reduce((s,p) => s + (p.balance || 0), 0);
-  let invApiTotal = 0;
-  if (investments?.apiData?.investments) {
-    investments.apiData.investments.forEach(inv => {
-      invApiTotal += inv.current_value || inv.value || 0;
-    });
-  } else if (investments?.apiData?.current_value) {
-    invApiTotal = investments.apiData.current_value;
-  }
-  const investTotal = savPotsTotal + invApiTotal;
-
-  const thisSpend = thisTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
-  const lastSpend = lastTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
-  const viewSpend = viewTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
+  const thisSpend = thisTxns.reduce((s, t) => s + Math.abs(t.amount), 0);
+  const lastSpend = lastTxns.reduce((s, t) => s + Math.abs(t.amount), 0);
+  const viewSpend = viewTxns.reduce((s, t) => s + Math.abs(t.amount), 0);
   const viewCount = viewTxns.length;
 
   const now = new Date();
-  const daysElapsed = viewMonth === 'this' ? now.getDate()
+  const daysElapsed = viewMonth === 'this'
+    ? now.getDate()
     : new Date(now.getFullYear(), now.getMonth(), 0).getDate();
   const avgDaily = daysElapsed > 0 ? viewSpend / daysElapsed : 0;
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const projected = viewMonth === 'this' && daysElapsed > 0 ? (viewSpend / daysElapsed) * daysInMonth : null;
 
-  const netWorth = bal.balance + potTotal + investTotal;
+  const netWorth = bal.balance + potTotal + savingsTotal;
 
   document.getElementById('stat-cards').innerHTML = `
     <div class="card stat-card">
@@ -485,9 +476,9 @@ function renderStatCards(bal, pots, investments, viewTxns, thisTxns, lastTxns) {
     </div>
     <div class="card stat-card">
       <div class="stat-accent" style="background:var(--purple)"></div>
-      <div class="stat-label">Investments</div>
-      <div class="stat-value">${investTotal > 0 ? fmt(investTotal) : 'N/A'}</div>
-      <div class="stat-sub">${investments?.savingsPots?.length ? investments.savingsPots.length + ' savings pot' + (investments.savingsPots.length !== 1 ? 's' : '') : 'GIA / savings'}</div>
+      <div class="stat-label">Savings &amp; investments</div>
+      <div class="stat-value">${fmt(savingsTotal)}</div>
+      <div class="stat-sub">${savings.length} account${savings.length !== 1 ? 's' : ''}</div>
     </div>
     <div class="card stat-card">
       <div class="stat-accent" style="background:var(--amber)"></div>
@@ -505,37 +496,28 @@ function renderStatCards(bal, pots, investments, viewTxns, thisTxns, lastTxns) {
   `;
 }
 
-// ---- Render: insight strip ----
 function renderInsightStrip(viewTxns, compareTxns) {
   if (!viewTxns.length) {
-    document.getElementById('insight-strip').innerHTML = '';
+    document.getElementById('insight-strip').innerHTML = '<div class="insight-tile" style="grid-column:1/-1"><div class="insight-tile-label">No spend data</div><div class="insight-tile-value" style="color:var(--text-muted)">for this period</div></div>';
     return;
   }
 
-  // Top merchant
   const mCounts = {};
   viewTxns.forEach(t => { const m = cleanMerchant(t); mCounts[m] = (mCounts[m] || 0) + 1; });
-  const topMerchant = Object.entries(mCounts).sort((a,b) => b[1]-a[1])[0];
+  const topMerchant = Object.entries(mCounts).sort((a, b) => b[1] - a[1])[0];
 
-  // Biggest spend
-  const biggest = [...viewTxns].sort((a,b) => Math.abs(b.amount)-Math.abs(a.amount))[0];
+  const biggest = [...viewTxns].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0];
 
-  // Busiest day
   const daily = {};
   viewTxns.forEach(t => { const d = new Date(t.created).toDateString(); daily[d] = (daily[d] || 0) + Math.abs(t.amount); });
-  const busiestDay = Object.entries(daily).sort((a,b) => b[1]-a[1])[0];
+  const busiestDay = Object.entries(daily).sort((a, b) => b[1] - a[1])[0];
   const busiestLabel = busiestDay ? new Date(busiestDay[0]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-';
 
-  // Most improved category vs compare month
-  const thisCats = {}, lastCats = {};
+  const thisCats = {}, cmpCats = {};
   viewTxns.forEach(t => { const c = t.category || 'general'; thisCats[c] = (thisCats[c] || 0) + Math.abs(t.amount); });
-  compareTxns.forEach(t => { const c = t.category || 'general'; lastCats[c] = (lastCats[c] || 0) + Math.abs(t.amount); });
-  const catDeltas = Object.keys({ ...thisCats, ...lastCats }).map(c => ({
-    cat: c,
-    delta: (thisCats[c] || 0) - (lastCats[c] || 0)
-  }));
-  const mostUp = catDeltas.sort((a,b) => b.delta - a.delta)[0];
-  const mostDown = catDeltas.sort((a,b) => a.delta - b.delta)[0];
+  compareTxns.forEach(t => { const c = t.category || 'general'; cmpCats[c] = (cmpCats[c] || 0) + Math.abs(t.amount); });
+  const swings = Object.keys({ ...thisCats, ...cmpCats }).map(c => ({ c, delta: (thisCats[c] || 0) - (cmpCats[c] || 0) }));
+  const biggestUp = swings.sort((a, b) => b.delta - a.delta)[0];
 
   document.getElementById('insight-strip').innerHTML = `
     <div class="insight-tile">
@@ -551,39 +533,37 @@ function renderInsightStrip(viewTxns, compareTxns) {
       <div class="insight-tile-value"><span class="warn">${busiestLabel}</span><br><small style="color:var(--text-muted);font-size:12px;">${fmt(busiestDay?.[1] || 0)}</small></div>
     </div>
     <div class="insight-tile">
-      <div class="insight-tile-label">Biggest category swing</div>
+      <div class="insight-tile-label">Biggest category increase</div>
       <div class="insight-tile-value">
-        ${mostUp && mostUp.delta > 0 ? `<span class="hi">+${fmt(mostUp.delta)}</span> ${(mostUp.cat || '').replace(/_/g,' ')}` : '<span class="good">No increase</span>'}
+        ${biggestUp && biggestUp.delta > 0
+          ? `<span class="hi">+${fmtShort(biggestUp.delta)}</span><br><small style="color:var(--text-muted);font-size:12px;">${(biggestUp.c || '').replace(/_/g, ' ')}</small>`
+          : '<span class="good">No increases</span>'}
       </div>
     </div>
   `;
 }
 
-// ---- Render: category comparison ----
-function renderCategoryCompare(thisTxns, lastTxns, viewMonth) {
+function renderCategoryCompare(thisTxns, lastTxns) {
   const thisCats = {}, lastCats = {};
   thisTxns.forEach(t => { const c = t.category || 'general'; thisCats[c] = (thisCats[c] || 0) + Math.abs(t.amount); });
   lastTxns.forEach(t => { const c = t.category || 'general'; lastCats[c] = (lastCats[c] || 0) + Math.abs(t.amount); });
 
-  const allCats = [...new Set([...Object.keys(thisCats), ...Object.keys(lastCats)])];
   const current = viewMonth === 'this' ? thisCats : lastCats;
   const compare = viewMonth === 'this' ? lastCats : thisCats;
-
-  const sorted = allCats
-    .map(c => ({ cat: c, cur: current[c] || 0, cmp: compare[c] || 0 }))
-    .sort((a,b) => b.cur - a.cur).slice(0, 7);
+  const allCats = [...new Set([...Object.keys(current), ...Object.keys(compare)])];
+  const sorted = allCats.map(c => ({ cat: c, cur: current[c] || 0, cmp: compare[c] || 0 }))
+    .sort((a, b) => b.cur - a.cur).slice(0, 7);
 
   const maxVal = Math.max(...sorted.map(x => Math.max(x.cur, x.cmp)), 1);
 
   document.getElementById('cat-compare').innerHTML = sorted.length ? sorted.map(({ cat, cur, cmp }) => {
     const curPct = Math.round((cur / maxVal) * 100);
     const cmpPct = Math.round((cmp / maxVal) * 100);
-    const up = cur > cmp;
-    const barColor = up ? 'var(--coral)' : 'var(--green)';
+    const color = cur > cmp ? 'var(--coral)' : 'var(--green)';
     return `
       <div class="compare-item">
         <div class="compare-header">
-          <span class="compare-name">${CAT_EMOJI[cat] || '💳'} ${cat.replace(/_/g,' ')}</span>
+          <span class="compare-name">${CAT_EMOJI[cat] || '💳'} ${cat.replace(/_/g, ' ')}</span>
           <span class="compare-amounts">
             <span class="compare-this">${fmtShort(cur)}</span>
             ${cmp > 0 ? `<span class="compare-last">/ ${fmtShort(cmp)}</span>` : ''}
@@ -591,17 +571,16 @@ function renderCategoryCompare(thisTxns, lastTxns, viewMonth) {
         </div>
         <div class="bar-track">
           <div class="bar-last" style="width:${cmpPct}%"></div>
-          <div class="bar-this" style="width:${curPct}%;background:${barColor}"></div>
+          <div class="bar-this" style="width:${curPct}%;background:${color}"></div>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('') : '<div style="color:var(--text-muted);font-size:14px;">No data</div>';
 }
 
-// ---- Render: transactions ----
 function renderTransactions(txns) {
-  const sorted = [...txns].filter(t => t.amount !== 0)
-    .sort((a,b) => new Date(b.created) - new Date(a.created)).slice(0, 18);
+  const sorted = [...txns].sort((a, b) => new Date(b.created) - new Date(a.created)).slice(0, 20);
+  const badge = document.getElementById('tx-count-badge');
+  if (badge) badge.textContent = sorted.length + ' shown';
 
   document.getElementById('tx-list').innerHTML = sorted.length ? sorted.map(t => {
     const merchant = cleanMerchant(t);
@@ -616,79 +595,40 @@ function renderTransactions(txns) {
           <div class="tx-date">${date}</div>
         </div>
         <div class="tx-amount ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}${fmt(t.amount)}</div>
-      </div>
-    `;
-  }).join('') : '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No transactions</div>';
+      </div>`;
+  }).join('') : '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No transactions this period</div>';
 }
 
-// ---- Render: pots + investments ----
-function renderPotsAndInvestments(pots, investments) {
+function renderPotsPanel(pots, savings) {
   // Regular pots
   document.getElementById('pots-list').innerHTML = pots.length ? pots.map(p => `
     <div class="pot-item">
       <div class="pot-left">
         <div class="pot-dot" style="background:var(--green)"></div>
-        <div>
-          <div class="pot-name">${p.name}</div>
-        </div>
+        <div class="pot-name">${p.name}</div>
       </div>
       <span style="font-size:14px;font-family:var(--mono);font-weight:500;color:var(--green)">${fmt(p.balance || 0)}</span>
     </div>
   `).join('') : '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No pots</div>';
 
-  // Investments panel
-  const panel = document.getElementById('investments-panel');
-  const savPots = investments?.savingsPots || [];
-  const apiInv = investments?.apiData;
-
-  let html = '';
-
-  // Savings pots (locked/savings type)
-  if (savPots.length) {
-    html += savPots.map(p => `
+  // Savings/investments
+  document.getElementById('investments-panel').innerHTML = savings.length ? savings.map(p => {
+    const isInv = (p.style || '').startsWith('investments_');
+    const color = isInv ? 'var(--amber)' : 'var(--purple)';
+    return `
       <div class="pot-item">
         <div class="pot-left">
-          <div class="pot-dot" style="background:var(--purple)"></div>
+          <div class="pot-dot" style="background:${color}"></div>
           <div>
             <div class="pot-name">${p.name}</div>
-            <div class="pot-type">${p.locked ? 'Locked' : 'Savings'}</div>
+            <div class="pot-type">${potTypeLabel(p)}</div>
           </div>
         </div>
-        <span style="font-size:14px;font-family:var(--mono);font-weight:500;color:var(--purple)">${fmt(p.balance || 0)}</span>
-      </div>
-    `).join('');
-  }
-
-  // API investments (GIA, ISA etc)
-  if (apiInv && !apiInv.error) {
-    const invList = apiInv.investments || (apiInv.current_value ? [apiInv] : []);
-    if (invList.length) {
-      html += invList.map(inv => `
-        <div class="pot-item">
-          <div class="pot-left">
-            <div class="pot-dot" style="background:var(--amber)"></div>
-            <div>
-              <div class="pot-name">${inv.name || inv.type || 'GIA'}</div>
-              <div class="pot-type">${inv.type || 'Investment'}</div>
-            </div>
-          </div>
-          <span style="font-size:14px;font-family:var(--mono);font-weight:500;color:var(--amber)">${fmt(inv.current_value || inv.value || 0)}</span>
-        </div>
-      `).join('');
-    }
-  }
-
-  if (!html) {
-    html = `<div style="color:var(--text-muted);font-size:13px;line-height:1.6;">
-      No investment data returned.<br>
-      <span style="font-size:12px;">Your GIA may not be accessible via the developer token. Check the pots list - savings pots appear there.</span>
-    </div>`;
-  }
-
-  panel.innerHTML = html;
+        <span style="font-size:14px;font-family:var(--mono);font-weight:500;color:${color}">${fmt(p.balance || 0)}</span>
+      </div>`;
+  }).join('') : '<div style="color:var(--text-muted);font-size:13px;line-height:1.6;">No savings pots found.<br><small>Your GIA value is not accessible via the developer API.</small></div>';
 }
 
-// ---- Render: daily chart ----
 function renderDailyChart(txns) {
   const now = new Date();
   let year, month, daysInMonth;
@@ -706,7 +646,7 @@ function renderDailyChart(txns) {
     const d = new Date(t.created);
     if (d.getFullYear() === year && d.getMonth() === month) {
       const day = d.getDate();
-      if (day >= 1 && day <= daysInMonth) data[day-1] += Math.abs(t.amount) / 100;
+      if (day >= 1 && day <= daysInMonth) data[day - 1] += Math.abs(t.amount) / 100;
     }
   });
 
@@ -730,7 +670,6 @@ function renderDailyChart(txns) {
   });
 }
 
-// ---- Init ----
 if (loadConfig()) showDashboard();
 </script>
 </body>
