@@ -101,7 +101,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .tx-amount.debit{color:var(--coral-soft);}.tx-amount.credit{color:var(--green);}
 .loading{display:flex;align-items:center;justify-content:center;padding:2.5rem;color:var(--text-muted);font-size:14px;flex-direction:column;gap:10px;}
 .spinner{width:22px;height:22px;border:2px solid var(--navy-border);border-top-color:var(--coral);border-radius:50%;animation:spin 0.7s linear infinite;}
-.progress-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);display:flex;align-items:center;gap:6px;}
+
 .progress-dot{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:pulse 1.2s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:0.3;}50%{opacity:1;}}
 .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;flex-wrap:wrap;}
@@ -113,8 +113,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .filter-clear:hover{background:var(--coral-dim);}
 .filter-range{display:flex;align-items:center;gap:6px;}
 .filter-range input{width:80px;}
-.theme-btn{background:transparent;border:1px solid var(--navy-border);border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
-.theme-btn:hover{border-color:var(--coral);color:var(--coral);}
+
 .tx-count-label{font-size:12px;color:var(--text-muted);white-space:nowrap;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -185,18 +184,19 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 </div>
 <div id="dashboard">
   <div class="topbar">
-    <div class="topbar-left"><div class="topbar-logo-mark">M</div><div class="topbar-title">Monzo Dashboard</div></div>
+    <div class="topbar-left">
+      <div class="topbar-logo-mark">M</div>
+      <div class="topbar-title">Monzo Dashboard</div>
+      <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
+    </div>
     <div class="topbar-right">
       <div class="month-tabs">
         <button class="month-tab active" id="tab-this" onclick="switchMonth('this')">This month</button>
         <button class="month-tab" id="tab-last" onclick="switchMonth('last')">Last month</button>
       </div>
       <div class="account-pill" id="account-pill"></div>
-      <div class="progress-pill" id="progress-pill" style="display:none;"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
-      <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
       <button class="pill-btn" onclick="openAccountsModal()">Accounts</button>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">Light</button>
       <button class="pill-btn" onclick="loadAll()">Refresh</button>
       <button class="pill-btn" onclick="resetConfig()">Disconnect</button>
     </div>
@@ -312,7 +312,7 @@ function initTheme(){
 function applyTheme(t){
   document.body.classList.toggle("light",t==="light");
   var btn=document.getElementById("theme-btn");
-  if(btn)btn.textContent=t==="light"?"Dark":"Light";
+  if(btn)btn.innerHTML=t==="light"?"&#9728;&#65039;":"&#127769;";
   localStorage.setItem(THEME_KEY,t);
 }
 function toggleTheme(){
@@ -388,8 +388,9 @@ function gasCall(params){
 function setProgress(text){
   var pill=document.getElementById("progress-pill");
   var txt=document.getElementById("progress-text");
+  if(!pill)return;
   if(!text){pill.classList.remove("active");}
-  else{pill.classList.add("active");txt.textContent=text;}
+  else{pill.classList.add("active");if(txt)txt.textContent=text;}
 }
 
 // ---- Background loader ----
