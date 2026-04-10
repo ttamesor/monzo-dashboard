@@ -403,7 +403,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.2</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.4</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1173,8 +1173,9 @@ function renderCatCompare(viewTx,cmpTx){
   var all=Object.keys(Object.assign({},cur,cmp)).map(function(c){return{cat:c,cur:cur[c]||0,cmp:cmp[c]||0};}).sort(function(a,b){return b.cur-a.cur;}).slice(0,7);
   var mx=Math.max.apply(null,all.map(function(x){return Math.max(x.cur,x.cmp);}));mx=mx||1;
   document.getElementById("cat-compare").innerHTML=all.length?all.map(function(x){
-    var cp=Math.round((x.cur/mx)*100),pp=Math.round((x.cmp/mx)*100),col=x.cur>x.cmp?"var(--coral)":"var(--green)";
-    return "<div class='compare-item'><div class='compare-header'><span class='compare-name'>"+(CAT_EMOJI[x.cat]||"💳")+" "+x.cat.replace(/_/g," ")+"</span><span class='compare-amounts'><span class='compare-this'>"+fmtShort(x.cur)+"</span>"+(x.cmp>0?"<span class='compare-last'>/ "+fmtShort(x.cmp)+"</span>":"")+"</span></div><div class='bar-track'><div class='bar-last' style='width:"+pp+"%'></div><div class='bar-this' style='width:"+cp+"%;background:"+col+"'></div></div></div>";
+    var isSavings=(x.cat==="savings"||x.cat==="monzo_flex_saving"||x.cat==="savings_overdraft");
+    var cp=Math.round((x.cur/mx)*100),pp=Math.round((x.cmp/mx)*100),col=isSavings?"var(--green)":x.cur>x.cmp?"var(--coral)":"var(--green)";
+    return "<div class='compare-item' style='cursor:pointer;' onclick='showCatTransactions(\""+x.cat+"\")' title='Click to see transactions'><div class='compare-header'><span class='compare-name'>"+(CAT_EMOJI[x.cat]||"💳")+" "+x.cat.replace(/_/g," ")+"</span><span class='compare-amounts'><span class='compare-this'>"+fmtShort(x.cur)+"</span>"+(x.cmp>0?"<span class='compare-last'>/ "+fmtShort(x.cmp)+"</span>":"")+"</span></div><div class='bar-track'><div class='bar-last' style='width:"+pp+"%'></div><div class='bar-this' style='width:"+cp+"%;background:"+col+"'></div></div></div>";
   }).join(""):"<div style='color:var(--text-muted);font-size:14px;'>No data</div>";
 }
 
@@ -1232,12 +1233,15 @@ function renderDailyChart(txns,thisTxns,lastTxns,vMonth){
   // Best/worst strip
   var bwEl=document.getElementById("best-worst-strip");
   if(bwEl){
-    var nonZero=data.map(function(v,i){return{v:v,i:i};}).filter(function(x){return x.v>0;});
-    if(nonZero.length>=2){
-      var best=nonZero.slice().sort(function(a,b){return a.v-b.v;})[0];
+    var allDays=data.map(function(v,i){return{v:v,i:i};});
+    var nonZero=allDays.filter(function(x){return x.v>0;});
+    var zeroDays=allDays.filter(function(x){return x.v===0;});
+    var mName=new Date(year,month,1).toLocaleString("default",{month:"short"});
+    if(nonZero.length>=1){
       var worst=nonZero.slice().sort(function(a,b){return b.v-a.v;})[0];
-      var mName=new Date(year,month,1).toLocaleString("default",{month:"short"});
-      bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>£"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
+      var cheapVal=zeroDays.length>0?"£0.00":"£"+nonZero.slice().sort(function(a,b){return a.v-b.v;})[0].v.toFixed(2);
+      var cheapDate=zeroDays.length>1?zeroDays.length+" days with no spend":zeroDays.length===1?"1 day with no spend":nonZero.slice().sort(function(a,b){return a.v-b.v;})[0].i+1+" "+mName;
+      bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>"+cheapVal+"</div><div class='bw-date'>"+cheapDate+"</div></div>"
         +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>£"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
     } else {bwEl.innerHTML="";}
   }
