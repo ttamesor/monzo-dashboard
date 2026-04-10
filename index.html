@@ -422,74 +422,73 @@ function loadMoreHistory(){
   var btn=document.getElementById("load-history-btn");
   if(!btn||historyExhausted)return;
 
-  // Find the oldest transaction we have
   var oldestTx=getOldestTx();
   if(!oldestTx)return;
 
-  // Work out which month is just before our oldest tx
+  // Target month = month of our oldest tx
   var oldestDate=new Date(oldestTx.created);
-  var targetYear,targetMonth;
-  if(oldestDate.getDate()===1&&oldestDate.getHours()===0){
-    // Already at start of month, go to previous month
-    var prev=new Date(oldestDate.getFullYear(),oldestDate.getMonth()-1,1);
-    targetYear=prev.getFullYear();targetMonth=prev.getMonth();
-  } else {
-    // Load the rest of the month containing our oldest tx
-    targetYear=oldestDate.getFullYear();targetMonth=oldestDate.getMonth();
+  var targetYear=oldestDate.getFullYear(),targetMonth=oldestDate.getMonth();
+
+  // If oldest is right at month start (within 1 second), load the previous month
+  var monthStart=new Date(targetYear,targetMonth,1);
+  if(oldestDate-monthStart<1000){
+    targetMonth--;if(targetMonth<0){targetMonth=11;targetYear--;}
   }
 
-  var monthStart=new Date(targetYear,targetMonth,1).toISOString();
-  var monthEnd=new Date(targetYear,targetMonth+1,1).toISOString();
+  var since=new Date(targetYear,targetMonth,1).toISOString();
+  var before=new Date(targetYear,targetMonth+1,1).toISOString();
+  var mName=new Date(targetYear,targetMonth,1).toLocaleString("default",{month:"long",year:"numeric"});
 
   btn.disabled=true;
-  var mName=new Date(targetYear,targetMonth,1).toLocaleString("default",{month:"long",year:"numeric"});
   btn.innerHTML="Loading "+mName+"...";
 
-  fetchFullMonth(monthStart,monthEnd,function(newCount,done){
-    if(done){
-      updateHistoryBtn();
-      renderAll();
-    }
-  });
-}
+  // Collect all IDs we already have
+  var knownIds={};
+  allTransactions.forEach(function(t){knownIds[t.id]=true;});
 
-function fetchFullMonth(since,before,callback){
-  // Find oldest tx we have within this month window
-  var inMonth=allTransactions.filter(function(t){
-    var d=t.created;return d>=since&&d<before;
-  });
-  var beforeTs=inMonth.length>0
+  // Start cursor at the oldest tx we have in this month,
+  // or at monthEnd if we have none yet
+  var inMonth=allTransactions.filter(function(t){return t.created>=since&&t.created<before;});
+  var cursor=inMonth.length
     ? inMonth.reduce(function(a,b){return a.created<b.created?a:b;}).created
     : before;
 
-  gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:beforeTs})
-    .then(function(res){
-      if(res.status!=="ok"||!res.data||!res.data.transactions){
-        historyExhausted=true;callback(0,true);return;
-      }
-      var batch=res.data.transactions;
-      var ids={};
-      allTransactions.forEach(function(t){ids[t.id]=true;});
-      var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
-      if(newOnes.length>0){
-        allTransactions=newOnes.concat(allTransactions);
-        populateCatFilter();
-      }
-      // If we got 100, there may be more in this month - recurse
-      if(batch.length===100&&newOnes.length>0){
-        fetchFullMonth(since,before,callback);
-      } else {
-        // Month fully loaded (or empty)
-        if(batch.length===0&&newOnes.length===0){
-          historyExhausted=true;
+  function fetchPage(){
+    // Fetch [since .. cursor) - gets tx BEFORE our current oldest in this month
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:cursor})
+      .then(function(res){
+        if(res.status!=="ok"||!res.data||!res.data.transactions){done();return;}
+        var batch=res.data.transactions;
+        if(!batch.length){done();return;}
+
+        var newOnes=batch.filter(function(t){return t.amount!==0&&!knownIds[t.id];});
+        newOnes.forEach(function(t){knownIds[t.id]=true;});
+        if(newOnes.length){
+          allTransactions=newOnes.concat(allTransactions);
+          populateCatFilter();
         }
-        callback(newOnes.length,true);
-      }
-    })
-    .catch(function(){
-      var btn=document.getElementById("load-history-btn");
-      if(btn){btn.disabled=false;btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";}
-    });
+
+        // New cursor = oldest tx in this batch
+        var oldestInBatch=batch.reduce(function(a,b){return a.created<b.created?a:b;});
+        if(batch.length===100&&oldestInBatch.created<cursor){
+          cursor=oldestInBatch.created;
+          fetchPage();
+        } else {
+          done();
+        }
+      })
+      .catch(function(){
+        btn.disabled=false;
+        btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";
+      });
+  }
+
+  function done(){
+    renderAll();
+    updateHistoryBtn();
+  }
+
+  fetchPage();
 }
 
 // ---- Initial load ----
@@ -805,7 +804,7 @@ function renderDailyChart(txns,thisTxns,lastTxns){
   if(dailyChartInstance)dailyChartInstance.destroy();
   var ti=isCurrentMonth?now.getDate()-1:-1;
   var ctx=document.getElementById("daily-chart").getContext("2d");
-  dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+  dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(128,128,128,0.1)"},border:{display:false}}}}});
 
   // Best/worst strip
   var bwEl=document.getElementById("best-worst-strip");
@@ -839,7 +838,7 @@ function renderCompareChart(thisTxns,lastTxns){
   var labels=Array.from({length:numDays},function(_,i){return i+1;});
   if(compareChartInstance)compareChartInstance.destroy();
   var ctx=document.getElementById("compare-chart").getContext("2d");
-  compareChartInstance=new Chart(ctx,{type:"line",data:{labels:labels,datasets:[{label:"This month",data:thisCum,borderColor:"#FF5A5F",backgroundColor:"rgba(255,90,95,0.08)",borderWidth:2,pointRadius:0,tension:0.3,fill:true},{label:"Last month",data:lastCum,borderColor:"rgba(255,255,255,0.2)",backgroundColor:"transparent",borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+": £"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:10},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+  compareChartInstance=new Chart(ctx,{type:"line",data:{labels:labels,datasets:[{label:"This month",data:thisCum,borderColor:"#FF5A5F",backgroundColor:"rgba(255,90,95,0.08)",borderWidth:2,pointRadius:0,tension:0.3,fill:true},{label:"Last month",data:lastCum,borderColor:"#8BA0B4",backgroundColor:"transparent",borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+": £"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:10},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(128,128,128,0.1)"},border:{display:false}}}}});
 }
 
 function renderMerchantChart(txns){
