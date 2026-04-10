@@ -189,7 +189,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.2</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.3</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -416,7 +416,7 @@ function updateHistoryBtn(){
     btn.style.display="none";
   } else {
     btn.style.display="inline-flex";
-    btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";
+    btn.innerHTML="← Load 6 more months";
     btn.disabled=false;
   }
 }
@@ -424,10 +424,13 @@ function updateHistoryBtn(){
 // Load one full calendar month worth of transactions before what we have
 // ---- Silent background loader ----
 // Fetches 5-day windows silently from today backwards
-function startBgFetch(){
+function startBgFetch(fromCursor){
   if(bgFetching)return;
   bgFetching=true;
-  bgCursor=new Date().toISOString();
+  // If resuming (load more), use where we left off; otherwise start from today
+  bgCursor=fromCursor||new Date().toISOString();
+  // Default limit: 6 months back from today
+  if(!bgLimit){var d=new Date();d.setMonth(d.getMonth()-6);bgLimit=d;}
   bgFetchStep();
 }
 
@@ -438,7 +441,6 @@ function stopBgFetch(){
 
 function bgFetchStep(){
   if(!bgFetching)return;
-  // 5-day window ending at cursor
   var endDate=new Date(bgCursor);
   var startDate=new Date(endDate);
   startDate.setDate(startDate.getDate()-14);
@@ -460,12 +462,12 @@ function bgFetchStep(){
           renderAll();
         }
       }
-      // Move cursor back 5 days and continue
       bgCursor=since;
-      // Stop if we've gone back 18 months
-      var limit=new Date();limit.setMonth(limit.getMonth()-18);
-      if(new Date(bgCursor)<limit){
-        stopBgFetch();return;
+      if(new Date(bgCursor)<bgLimit){
+        stopBgFetch();
+        historyExhausted=false;
+        updateHistoryBtn();
+        return;
       }
       setTimeout(bgFetchStep,400);
     })
@@ -476,99 +478,22 @@ function bgFetchStep(){
 
 function loadMoreHistory(){
   var btn=document.getElementById("load-history-btn");
-  if(!btn||historyExhausted)return;
-
-  var oldestTx=getOldestTx();
-  if(!oldestTx)return;
-
-  // Target month = month BEFORE our oldest tx
-  var oldestDate=new Date(oldestTx.created);
-  var targetYear=oldestDate.getFullYear(),targetMonth=oldestDate.getMonth();
-
-  // Check if this month is already fully loaded (has tx at/near start of month)
-  var monthStart=new Date(targetYear,targetMonth,1).toISOString();
-  var monthEnd=new Date(targetYear,targetMonth+1,1).toISOString();
-  var inThisMonth=allTransactions.filter(function(t){return t.created>=monthStart&&t.created<monthEnd;});
-  var hasEarlyTx=inThisMonth.some(function(t){return new Date(t.created).getDate()<=2;});
-
-  if(hasEarlyTx){
-    // Month appears complete - load the previous month
-    targetMonth--;if(targetMonth<0){targetMonth=11;targetYear--;}
-  }
-
-  var since=new Date(targetYear,targetMonth,1).toISOString();
-  var before=new Date(targetYear,targetMonth+1,1).toISOString();
-  var mName=new Date(targetYear,targetMonth,1).toLocaleString("default",{month:"long",year:"numeric"});
-
-  btn.disabled=true;
-  btn.innerHTML="Loading "+mName+"...";
-
-  // Collect all IDs we already have
-  var knownIds={};
-  allTransactions.forEach(function(t){knownIds[t.id]=true;});
-
-  // Find newest tx we have in this month - fetch forward from there
-  var inMonth=allTransactions.filter(function(t){return t.created>=since&&t.created<before;});
-  var cursor=inMonth.length
-    ? inMonth.reduce(function(a,b){return a.created>b.created?a:b;}).created
-    : since;
-
-  function fetchPage(){
-    // Fetch since cursor up to end of month
-    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:cursor,before:before})
-      .then(function(res){
-        if(res.status!=="ok"||!res.data||!res.data.transactions){done();return;}
-        var batch=res.data.transactions;
-        if(!batch.length){done();return;}
-
-        var newOnes=batch.filter(function(t){return t.amount!==0&&!knownIds[t.id];});
-        newOnes.forEach(function(t){knownIds[t.id]=true;});
-        if(newOnes.length){
-          allTransactions=allTransactions.concat(newOnes);
-          populateCatFilter();
-        }
-
-        // New cursor = newest tx in this batch
-        var newestInBatch=batch.reduce(function(a,b){return a.created>b.created?a:b;});
-        if(batch.length===100&&newestInBatch.created>cursor){
-          cursor=newestInBatch.created;
-          fetchPage();
-        } else {
-          done();
-        }
-      })
-      .catch(function(){
-        btn.disabled=false;
-        btn.innerHTML="← Load earlier ("+allTransactions.length+" loaded)";
-      });
-  }
-
-  function done(){
-    renderAll();
-    // Check if we actually got anything in this month
-    // If not, the month is empty - move to previous month automatically
-    var inMonthNow=allTransactions.filter(function(t){return t.created>=since&&t.created<before;});
-    if(inMonthNow.length===0){
-      // Empty month - try the one before
-      var prevMonth=targetMonth-1,prevYear=targetYear;
-      if(prevMonth<0){prevMonth=11;prevYear--;}
-      var prevSince=new Date(prevYear,prevMonth,1).toISOString();
-      var prevBefore=since;
-      var prevInMonth=allTransactions.filter(function(t){return t.created>=prevSince&&t.created<prevBefore;});
-      if(prevInMonth.length===0){
-        // Nothing there either - exhausted
-        historyExhausted=true;
-      }
-    }
-    updateHistoryBtn();
-  }
-
-  fetchPage();
+  if(!btn)return;
+  // Extend limit by another 6 months from where we currently are
+  var currentLimit=bgLimit||new Date();
+  var newLimit=new Date(currentLimit);
+  newLimit.setMonth(newLimit.getMonth()-6);
+  bgLimit=newLimit;
+  historyExhausted=true;
+  updateHistoryBtn();
+  // Resume from where bg fetch left off (bgCursor)
+  if(!bgFetching)startBgFetch(bgCursor);
 }
 
 // ---- Initial load ----
 function loadAll(){
   stopBgFetch();
+  bgLimit=null;
   historyExhausted=false;
   allTransactions=[];
   txDisplayCount=30;
