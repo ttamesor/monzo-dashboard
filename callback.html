@@ -1,44 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Connecting...</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monzo Dashboard - Connecting...</title>
+<style>
+  body{font-family:sans-serif;background:#0D1B2A;color:#F0F4FF;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+  .box{background:#1C2D42;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:2.5rem;max-width:420px;width:100%;text-align:center;}
+  .logo{width:44px;height:44px;background:#FF5A5F;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:white;margin:0 auto 1.5rem;}
+  h2{font-size:18px;font-weight:500;margin-bottom:0.5rem;}
+  p{font-size:14px;color:#8BA0B4;line-height:1.6;}
+  .spinner{width:28px;height:28px;border:2px solid rgba(255,255,255,0.1);border-top-color:#FF5A5F;border-radius:50%;animation:spin 0.7s linear infinite;margin:1.5rem auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .btn{display:block;width:100%;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:500;cursor:pointer;margin-top:1rem;background:#FF5A5F;color:white;}
+  .btn:disabled{opacity:0.5;cursor:default;}
+  .err{color:#FF8A8E;font-size:13px;margin-top:1rem;background:rgba(255,90,95,0.1);border-radius:8px;padding:10px;display:none;}
+</style>
 </head>
 <body>
-  <p>Connecting to Monzo...</p>
-
+<div class="box">
+  <div class="logo">M</div>
+  <h2 id="title">Authorise in Monzo app</h2>
+  <p id="msg">Click below after approving the request in your Monzo app.</p>
+  <button class="btn" id="btn">I have approved - connect</button>
+  <div class="spinner" id="spinner" style="display:none;"></div>
+  <div class="err" id="err"></div>
+</div>
 <script>
-(function(){
-  function getParam(name){
-    return new URLSearchParams(window.location.search).get(name);
-  }
+window.addEventListener('DOMContentLoaded', function(){
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code');
+  var state = params.get('state');
+  var gasUrl = localStorage.getItem('monzo_gas_url');
 
-  var code = getParam('code');
-  var state = getParam('state');
-  var gas = localStorage.getItem('monzo_gas_url');
-
-  if(!code || !state || !gas){
-    document.body.innerHTML = 'Missing OAuth parameters';
+  if(!code || !gasUrl){
+    showErr('Missing parameters. Please return to the dashboard and try again.');
     return;
   }
 
-  fetch(gas + '?action=exchange&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state))
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-     if(res.status !== 'ok'){
-  document.body.innerHTML = 'Token exchange failed: ' + JSON.stringify(res);
-  return;
-}
+  document.getElementById('btn').addEventListener('click', function(){
+    document.getElementById('btn').style.display = 'none';
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('title').textContent = 'Connecting...';
+    document.getElementById('msg').textContent = 'Exchanging authorisation code.';
 
-      // Save state so dashboard can use it
-      localStorage.setItem('monzo_state', state);
+    fetch(gasUrl + '?action=exchange&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state||''))
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res.status !== 'ok'){
+          showErr('Failed: ' + (res.message || JSON.stringify(res)));
+          return;
+        }
+        var accountId = res.data && res.data.account_id;
+        var savedState = res.data && res.data.state || state;
+        localStorage.setItem('monzo_dash_v3', JSON.stringify({
+          gasUrl: gasUrl,
+          accountId: accountId || '',
+          state: savedState
+        }));
+        document.getElementById('title').textContent = 'Connected!';
+        document.getElementById('msg').textContent = 'Redirecting to your dashboard...';
+        document.getElementById('spinner').style.display = 'none';
+        setTimeout(function(){
+          window.location.href = 'https://ttamesor.github.io/monzo-dashboard/';
+        }, 1000);
+      })
+      .catch(function(e){ showErr('Error: ' + e.message); });
+  });
 
-      // Redirect back to main dashboard
-      window.location.href = 'index.html';
-    })
-    .catch(function(){
-      document.body.innerHTML = 'Error connecting to backend';
-    });
-})();
+  function showErr(msg){
+    document.getElementById('btn').style.display = 'block';
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('title').textContent = 'Something went wrong';
+    var el = document.getElementById('err');
+    el.style.display = 'block';
+    el.textContent = msg;
+  }
+});
 </script>
 </body>
 </html>
