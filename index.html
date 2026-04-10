@@ -52,7 +52,17 @@ input[type="text"]:focus{border-color:var(--coral);}
 .hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
-.main{padding:1.5rem 2rem;max-width:1400px;margin:0 auto;}
+.app-body{display:flex;height:calc(100vh - 53px);overflow:hidden;}
+.sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
+.sidebar-section{font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;padding:0 1.2rem;margin:1rem 0 0.4rem;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
+.nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
+.nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;}
+.tab-panel{display:none;padding:1.5rem 2rem;max-width:1300px;}
+.tab-panel.active{display:block;}
+.main{padding:0;}
 .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.2rem;}
 .grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.2rem;}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.2rem;}
@@ -101,6 +111,43 @@ input[type="text"]:focus{border-color:var(--coral);}
 .tx-amount{font-size:14px;font-family:var(--mono);font-weight:500;flex-shrink:0;}
 .tx-amount.debit{color:var(--coral-soft);}.tx-amount.credit{color:var(--green);}
 .loading{display:flex;align-items:center;justify-content:center;padding:2.5rem;color:var(--text-muted);font-size:14px;flex-direction:column;gap:10px;}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:1rem;}
+.cal-header-cell{text-align:center;font-size:11px;font-weight:500;color:var(--text-muted);padding:6px 0;text-transform:uppercase;letter-spacing:0.05em;}
+.cal-cell{min-height:80px;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:8px;padding:6px;cursor:pointer;transition:all 0.15s;position:relative;}
+.cal-cell:hover{border-color:var(--coral);transform:translateY(-1px);}
+.cal-cell.today{border-color:var(--coral);box-shadow:0 0 0 1px var(--coral);}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default;}
+.cal-cell.empty:hover{transform:none;}
+.cal-day-num{font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;}
+.cal-cell.today .cal-day-num{color:var(--coral-soft);}
+.cal-spend{font-size:13px;font-weight:500;font-family:var(--mono);}
+.cal-tx-count{font-size:10px;color:var(--text-muted);margin-top:2px;}
+.cal-bar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 8px 8px;background:var(--coral);opacity:0.6;}
+.cal-day-panel{position:fixed;right:0;top:53px;bottom:0;width:360px;background:var(--navy-card);border-left:1px solid var(--navy-border);z-index:50;transform:translateX(100%);transition:transform 0.25s ease;overflow-y:auto;padding:1.5rem;}
+.cal-day-panel.open{transform:translateX(0);}
+.cal-day-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
+.cal-day-panel-title{font-size:16px;font-weight:500;}
+.cal-day-panel-close{background:transparent;border:1px solid var(--navy-border);border-radius:6px;width:30px;height:30px;cursor:pointer;color:var(--text-muted);font-size:18px;display:flex;align-items:center;justify-content:center;}
+.cal-day-panel-close:hover{border-color:var(--coral);color:var(--coral);}
+.cal-day-total{font-size:24px;font-weight:500;font-family:var(--mono);color:var(--coral-soft);margin-bottom:1rem;}
+
+/* Trends */
+.trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;}
+.trend-stat{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.2rem 1.4rem;}
+.trend-stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+.trend-stat-value{font-size:22px;font-weight:500;font-family:var(--mono);color:var(--text-primary);}
+.trend-stat-sub{font-size:12px;color:var(--text-secondary);margin-top:3px;}
+.merchant-bar-item{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.merchant-bar-name{font-size:13px;color:var(--text-secondary);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.merchant-bar-track{flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;position:relative;}
+.merchant-bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:3px;background:var(--purple);transition:width 0.6s ease;}
+.merchant-bar-val{font-size:12px;font-family:var(--mono);color:var(--text-primary);width:60px;text-align:right;flex-shrink:0;}
+.summary-box{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.4rem;margin-bottom:1.2rem;}
+.summary-box p{font-size:14px;color:var(--text-secondary);line-height:1.8;margin-bottom:8px;}
+.summary-box p:last-child{margin-bottom:0;}
+.summary-box strong{color:var(--text-primary);font-weight:500;}
 .spinner{width:22px;height:22px;border:2px solid var(--navy-border);border-top-color:var(--coral);border-radius:50%;animation:spin 0.7s linear infinite;}
 
 .progress-dot{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:pulse 1.2s ease-in-out infinite;}
@@ -189,7 +236,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.4</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.5</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -203,7 +250,29 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <button class="pill-btn" onclick="resetConfig()">Disconnect</button>
     </div>
   </div>
-  <div class="main">
+  <div class="app-body">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">Overview</div>
+    <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span class="nav-icon">📊</span>Dashboard
+    </div>
+    <div class="nav-item" data-tab="calendar" onclick="switchTab('calendar')">
+      <span class="nav-icon">📅</span>Calendar
+    </div>
+    <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">
+      <span class="nav-icon">📈</span>Trends
+    </div>
+    <div class="sidebar-section">Detail</div>
+    <div class="nav-item" data-tab="transactions" onclick="switchTab('transactions')">
+      <span class="nav-icon">💳</span>Transactions
+    </div>
+    <div class="nav-item" data-tab="wealth" onclick="switchTab('wealth')">
+      <span class="nav-icon">🏦</span>Wealth
+    </div>
+  </div>
+  <div class="tab-content" id="tab-content">
+  <div class="tab-panel active" id="tab-dashboard">
+  <div class="main" style="max-width:1300px;">
     <div class="grid-5" id="stat-cards"><div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div></div>
     <div class="insight-strip" id="insight-strip">
       <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
@@ -285,6 +354,77 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
     </div>
   </div>
 </div>
+  </div><!-- end tab-dashboard -->
+
+  <!-- Calendar tab -->
+  <div class="tab-panel" id="tab-calendar">
+    <div style="max-width:1100px;padding:1.5rem 2rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+        <h2 style="font-size:18px;font-weight:500;" id="cal-month-title">Calendar</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="pill-btn" onclick="calPrev()">&#8592; Prev</button>
+          <button class="pill-btn" onclick="calNext()">Next &#8594;</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid">
+        <div class="cal-header-cell">Mon</div>
+        <div class="cal-header-cell">Tue</div>
+        <div class="cal-header-cell">Wed</div>
+        <div class="cal-header-cell">Thu</div>
+        <div class="cal-header-cell">Fri</div>
+        <div class="cal-header-cell">Sat</div>
+        <div class="cal-header-cell">Sun</div>
+      </div>
+    </div>
+    <!-- Day slide panel -->
+    <div class="cal-day-panel" id="cal-day-panel">
+      <div class="cal-day-panel-header">
+        <div class="cal-day-panel-title" id="cal-day-title">1 April</div>
+        <button class="cal-day-panel-close" onclick="closeDayPanel()">&#215;</button>
+      </div>
+      <div class="cal-day-total" id="cal-day-total"></div>
+      <div id="cal-day-txns"></div>
+    </div>
+  </div>
+
+  <!-- Trends tab -->
+  <div class="tab-panel" id="tab-trends">
+    <div style="max-width:1000px;padding:1.5rem 2rem;" id="trends-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Transactions tab -->
+  <div class="tab-panel" id="tab-transactions">
+    <div style="max-width:1100px;padding:1.5rem 2rem;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All transactions</span>
+          <span class="badge badge-coral" id="tx-tab-count"></span>
+        </div>
+        <div class="tx-filters" id="tx-tab-filters">
+          <input class="tx-filter-input" id="ttx-search" placeholder="Search merchant..." oninput="applyTabFilters()" style="flex:1;min-width:120px;">
+          <select class="tx-filter-select" id="ttx-cat" onchange="applyTabFilters()"><option value="">All categories</option></select>
+          <input class="tx-filter-input" id="ttx-min" placeholder="Min £" oninput="applyTabFilters()" style="width:70px;">
+          <input class="tx-filter-input" id="ttx-max" placeholder="Max £" oninput="applyTabFilters()" style="width:70px;">
+          <button class="tx-clear-btn" onclick="clearTabFilters()">Clear</button>
+        </div>
+        <div id="tx-tab-list"></div>
+        <button class="load-more-btn" id="tx-tab-more" style="display:none;" onclick="showMoreTabTx()">Show more</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wealth tab -->
+  <div class="tab-panel" id="tab-wealth">
+    <div style="max-width:900px;padding:1.5rem 2rem;" id="wealth-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  </div><!-- end tab-content -->
+  </div><!-- end app-body -->
+
 <div class="modal-overlay" id="accounts-modal" onclick="if(event.target===this)closeAccountsModal()">
   <div class="modal">
     <h3>Manual accounts</h3>
@@ -875,6 +1015,284 @@ function renderMerchantChart(txns){
 
 var now=new Date();
 viewMonth=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+// ---- Tab switching ----
+var currentTab='dashboard';
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.nav-item').forEach(function(el){
+    el.classList.toggle('active',el.getAttribute('data-tab')===tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(el){
+    el.classList.toggle('active',el.id==='tab-'+tab);
+  });
+  if(tab==='calendar')renderCalendar();
+  if(tab==='trends')renderTrends();
+  if(tab==='transactions')renderTxTab();
+  if(tab==='wealth')renderWealth();
+}
+
+// ---- Calendar ----
+var calYear,calMonth;
+
+function initCal(){
+  var now=new Date();
+  var vp=viewMonth.split('-');
+  calYear=parseInt(vp[0]);calMonth=parseInt(vp[1])-1;
+}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+function renderCalendar(){
+  if(!calYear){initCal();}
+  var y=calYear,m=calMonth;
+  document.getElementById('cal-month-title').textContent=new Date(y,m,1).toLocaleString('default',{month:'long',year:'numeric'});
+
+  var monthStart=new Date(y,m,1).toISOString();
+  var monthEnd=new Date(y,m+1,1).toISOString();
+  var monthTx=allTransactions.filter(function(t){return t.created>=monthStart&&t.created<monthEnd&&t.amount<0&&t.include_in_spending!==false;});
+
+  // Group by day
+  var byDay={};
+  monthTx.forEach(function(t){
+    var d=new Date(t.created).getDate();
+    if(!byDay[d])byDay[d]=[];
+    byDay[d].push(t);
+  });
+
+  // Max spend for colour scaling
+  var maxSpend=0;
+  Object.values(byDay).forEach(function(txs){
+    var s=txs.reduce(function(a,t){return a+Math.abs(t.amount);},0);
+    if(s>maxSpend)maxSpend=s;
+  });
+
+  var daysInMonth=new Date(y,m+1,0).getDate();
+  var firstDow=new Date(y,m,1).getDay();
+  // Mon=0 offset
+  var offset=(firstDow+6)%7;
+
+  var grid=document.getElementById('cal-grid');
+  // Keep header cells, remove day cells
+  var cells=grid.querySelectorAll('.cal-cell,.cal-empty-cell');
+  cells.forEach(function(c){c.remove();});
+
+  var today=new Date();
+
+  // Empty cells before month start
+  for(var i=0;i<offset;i++){
+    var empty=document.createElement('div');
+    empty.className='cal-cell empty';
+    grid.appendChild(empty);
+  }
+
+  for(var d=1;d<=daysInMonth;d++){
+    var cell=document.createElement('div');
+    var isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
+    cell.className='cal-cell'+(isToday?' today':'');
+    var txs=byDay[d]||[];
+    var spend=txs.reduce(function(a,t){return a+Math.abs(t.amount);},0);
+    var intensity=maxSpend>0?spend/maxSpend:0;
+    var alpha=(0.1+intensity*0.6).toFixed(2);
+
+    cell.style.background=spend>0?'rgba(255,90,95,'+alpha+')':'';
+    cell.innerHTML='<div class="cal-day-num">'+d+'</div>'
+      +(spend>0?'<div class="cal-spend">'+fmt(spend)+'</div>':'')
+      +(txs.length>0?'<div class="cal-tx-count">'+txs.length+' tx</div>':'');
+
+    (function(day,dayTxs){
+      cell.onclick=function(){openDayPanel(y,m,day,dayTxs);};
+    })(d,txs);
+
+    grid.appendChild(cell);
+  }
+}
+
+function openDayPanel(y,m,d,txs){
+  var date=new Date(y,m,d);
+  document.getElementById('cal-day-title').textContent=date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  var total=txs.reduce(function(a,t){return a+Math.abs(t.amount);},0);
+  document.getElementById('cal-day-total').textContent=total>0?fmt(total):'No spend';
+
+  // Also show credits
+  var monthStart=new Date(y,m,d).toISOString();
+  var dayEnd=new Date(y,m,d+1).toISOString();
+  var allDayTx=allTransactions.filter(function(t){return t.created>=monthStart&&t.created<dayEnd;});
+
+  document.getElementById('cal-day-txns').innerHTML=allDayTx.length?allDayTx.map(function(t){
+    var cr=t.amount>0;
+    return "<div class='tx-item'><div class='tx-icon'>"+(CAT_EMOJI[t.category]||'💳')+"</div><div class='tx-details'><div class='tx-merchant'>"+merchant(t)+"</div></div><div class='tx-amount "+(cr?'credit':'debit')+"'>"+(cr?'+':'-')+fmt(t.amount)+"</div></div>";
+  }).join(''):'<div style="color:var(--text-muted);font-size:14px;">No transactions</div>';
+
+  document.getElementById('cal-day-panel').classList.add('open');
+}
+
+function closeDayPanel(){
+  document.getElementById('cal-day-panel').classList.remove('open');
+}
+
+// ---- Trends ----
+function renderTrends(){
+  var el=document.getElementById('trends-content');
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var viewTx=getMonthTxns(spendTx,viewMonth);
+  var cmpKey=getPrevMonthKey(viewMonth);
+  var cmpTx=getMonthTxns(spendTx,cmpKey);
+
+  if(!viewTx.length){el.innerHTML='<div class="loading"><div class="loading" style="color:var(--text-muted)">No data for this month</div></div>';return;}
+
+  var totalSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var cmpSpend=cmpTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var txCount=viewTx.length;
+
+  // Category breakdown
+  var cats={};
+  viewTx.forEach(function(t){var c=t.category||'general';cats[c]=(cats[c]||0)+Math.abs(t.amount);});
+  var topCat=Object.entries(cats).sort(function(a,b){return b[1]-a[1];})[0];
+
+  // Merchant frequency
+  var merchants={};
+  viewTx.forEach(function(t){var m=merchant(t);if(m!=='Pot transfer')merchants[m]=(merchants[m]||0)+Math.abs(t.amount);});
+  var topMerchants=Object.entries(merchants).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  var maxM=topMerchants[0]?topMerchants[0][1]:1;
+
+  // Days with spend
+  var daily={};
+  viewTx.forEach(function(t){var d=new Date(t.created).getDate();daily[d]=(daily[d]||0)+Math.abs(t.amount);});
+  var daysWithSpend=Object.keys(daily).length;
+  var avgPerSpendDay=daysWithSpend>0?totalSpend/daysWithSpend:0;
+  var biggestDay=Object.entries(daily).sort(function(a,b){return b[1]-a[1];})[0];
+
+  // Simple summary sentences
+  var pct=cmpSpend>0?Math.round(((totalSpend-cmpSpend)/cmpSpend)*100):null;
+  var pctText=pct!==null?(pct>0?'up '+pct+'% vs last month':'down '+Math.abs(pct)+'% vs last month'):'';
+  var vp=viewMonth.split('-');
+  var mName=new Date(parseInt(vp[0]),parseInt(vp[1])-1,1).toLocaleString('default',{month:'long'});
+
+  var s1='You spent <strong>'+fmt(totalSpend)+'</strong> across <strong>'+txCount+' transactions</strong> in '+mName+(pctText?', <strong>'+pctText+'</strong>.':', '+'with no prior month to compare.')+'.';
+  var s2='Your biggest category was <strong>'+(topCat?topCat[0].replace(/_/g,' '):'-')+'</strong> at <strong>'+(topCat?fmt(topCat[1]):'-')+'</strong>, and you spent money on <strong>'+daysWithSpend+' days</strong> averaging <strong>'+fmt(avgPerSpendDay)+'</strong> per active day.';
+  var s3=biggestDay?'Your most expensive single day was <strong>'+biggestDay[0]+' '+mName+'</strong> at <strong>'+fmt(biggestDay[1])+'</strong>.':'';
+
+  el.innerHTML=
+    '<div class="summary-box"><p>'+s1+'</p><p>'+s2+'</p>'+(s3?'<p>'+s3+'</p>':'')+'</div>'
+    +'<div class="trend-grid">'
+    +'<div class="trend-stat"><div class="trend-stat-label">Total spend</div><div class="trend-stat-value">'+fmt(totalSpend)+'</div><div class="trend-stat-sub">'+txCount+' transactions</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-label">Daily average</div><div class="trend-stat-value">'+fmt(avgPerSpendDay)+'</div><div class="trend-stat-sub">On spend days only</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-label">Top category</div><div class="trend-stat-value" style="font-size:16px;">'+(topCat?topCat[0].replace(/_/g,' '):'-')+'</div><div class="trend-stat-sub">'+(topCat?fmt(topCat[1]):'-')+'</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-label">vs last month</div><div class="trend-stat-value" style="font-size:16px;color:'+(pct===null?'var(--text-muted)':pct>0?'var(--coral-soft)':'var(--green)')+'">'+(pct===null?'N/A':(pct>0?'+':'')+pct+'%')+'</div><div class="trend-stat-sub">'+(cmpSpend>0?fmt(cmpSpend)+' last month':'No prior data')+'</div></div>'
+    +'</div>'
+    +'<div class="card"><div class="card-header"><span class="card-title">Top merchants by spend</span></div>'
+    +topMerchants.map(function(m){
+      return '<div class="merchant-bar-item"><span class="merchant-bar-name">'+m[0]+'</span><div class="merchant-bar-track"><div class="merchant-bar-fill" style="width:'+Math.round((m[1]/maxM)*100)+'%"></div></div><span class="merchant-bar-val">'+fmt(m[1])+'</span></div>';
+    }).join('')
+    +'</div>';
+}
+
+// ---- Transactions tab ----
+var txTabDisplayCount=50,txTabFiltered=[];
+
+function renderTxTab(){
+  // Populate category filter
+  var sel=document.getElementById('ttx-cat');
+  if(sel&&sel.options.length===1){
+    var cats={};allTransactions.forEach(function(t){if(t.category)cats[t.category]=true;});
+    Object.keys(cats).sort().forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c.replace(/_/g,' ');sel.appendChild(o);});
+  }
+  applyTabFilters();
+}
+
+function applyTabFilters(){
+  var search=(document.getElementById('ttx-search')||{}).value||'';
+  var cat=(document.getElementById('ttx-cat')||{}).value||'';
+  var minV=parseFloat((document.getElementById('ttx-min')||{}).value||'');
+  var maxV=parseFloat((document.getElementById('ttx-max')||{}).value||'');
+
+  txTabFiltered=allTransactions.filter(function(t){
+    if(t.amount===0)return false;
+    if(search&&merchant(t).toLowerCase().indexOf(search.toLowerCase())<0)return false;
+    if(cat&&t.category!==cat)return false;
+    var amt=Math.abs(t.amount)/100;
+    if(!isNaN(minV)&&amt<minV)return false;
+    if(!isNaN(maxV)&&amt>maxV)return false;
+    return true;
+  }).sort(function(a,b){return new Date(b.created)-new Date(a.created);});
+
+  txTabDisplayCount=50;
+  renderTxTabList();
+}
+
+function clearTabFilters(){
+  ['ttx-search','ttx-min','ttx-max'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var sel=document.getElementById('ttx-cat');if(sel)sel.value='';
+  applyTabFilters();
+}
+
+function showMoreTabTx(){txTabDisplayCount+=50;renderTxTabList();}
+
+function renderTxTabList(){
+  var shown=txTabFiltered.slice(0,txTabDisplayCount);
+  var badge=document.getElementById('tx-tab-count');
+  if(badge)badge.textContent=shown.length+(txTabFiltered.length>shown.length?' of '+txTabFiltered.length:'')+' shown';
+  var more=document.getElementById('tx-tab-more');
+  if(more)more.style.display=txTabFiltered.length>shown.length?'block':'none';
+  var el=document.getElementById('tx-tab-list');
+  if(!el)return;
+  el.innerHTML=shown.map(function(t){
+    var m=merchant(t),em=CAT_EMOJI[t.category]||'💳',cr=t.amount>0;
+    var dt=new Date(t.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    return "<div class='tx-item'><div class='tx-icon'>"+em+"</div><div class='tx-details'><div class='tx-merchant'>"+m+"</div><div class='tx-date'>"+dt+"</div></div><div class='tx-amount "+(cr?'credit':'debit')+"'>"+(cr?'+':'-')+fmt(t.amount)+"</div></div>";
+  }).join('')||'<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No transactions found</div>';
+}
+
+// ---- Wealth tab ----
+function renderWealth(){
+  var el=document.getElementById('wealth-content');
+  if(!cachedBal){el.innerHTML='<div class="loading" style="color:var(--text-muted)">Loading...</div>';return;}
+
+  var potTotal=cachedPots.reduce(function(s,p){return s+(p.balance||0);},0);
+  var savTotal=cachedSavings.reduce(function(s,p){return s+(p.balance||0);},0);
+  var manTotal=getManualTotalPence();
+  var net=cachedBal.balance+potTotal+savTotal+manTotal;
+
+  var allPots=cachedPots.concat(cachedSavings);
+  var manual=loadManualAccounts();
+
+  el.innerHTML=
+    '<div class="trend-grid">'
+    +'<div class="trend-stat"><div class="trend-stat-label">Net worth</div><div class="trend-stat-value">'+fmt(net)+'</div><div class="trend-stat-sub">All accounts combined</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-label">Current account</div><div class="trend-stat-value">'+fmt(cachedBal.balance)+'</div><div class="trend-stat-sub">Available balance</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-label">Pots</div><div class="trend-stat-value">'+fmt(potTotal)+'</div><div class="trend-stat-sub">'+cachedPots.length+' pot'+(cachedPots.length!==1?'s':'')+'</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-label">Savings &amp; investments</div><div class="trend-stat-value">'+fmt(savTotal+manTotal)+'</div><div class="trend-stat-sub">'+(manTotal>0?'incl. '+fmt(manTotal)+' manual':'')+'</div></div>'
+    +'</div>'
+    +'<div class="card" style="margin-bottom:1rem;"><div class="card-header"><span class="card-title">Pots breakdown</span></div>'
+    +allPots.map(function(p){
+      var pct=net>0?Math.round(((p.balance||0)/net)*100):0;
+      var inv=(p.style||'').indexOf('investments_')===0,col=inv?'var(--amber)':'var(--green)';
+      return '<div class="pot-item"><div class="pot-left"><div class="pot-dot" style="background:'+col+'"></div><div><div class="pot-name">'+p.name+'</div><div class="pot-type">'+potLabel(p)+' - '+pct+'% of net worth</div></div></div><span style="font-size:14px;font-family:var(--mono);font-weight:500;color:'+col+'">'+fmt(p.balance||0)+'</span></div>';
+    }).join('')
+    +(allPots.length===0?'<div style="color:var(--text-muted);font-size:14px;">No pots loaded</div>':'')
+    +'</div>'
+    +(manual.length?'<div class="card"><div class="card-header"><span class="card-title">Manual accounts</span></div>'
+    +manual.map(function(a){
+      var pct=net>0?Math.round((a.value*100/net)*100):0;
+      return '<div class="pot-item"><div class="pot-left"><div class="pot-dot" style="background:var(--amber)"></div><div><div class="pot-name">'+a.name+'</div><div class="pot-type">Manual entry - '+pct+'% of net worth</div></div></div><span style="font-size:14px;font-family:var(--mono);font-weight:500;color:var(--amber)">'+fmtRaw(a.value)+'</span></div>';
+    }).join('')+'</div>':'');
+}
+
+// Re-render active tab when data updates
+var _origRenderAll=renderAll;
+renderAll=function(){
+  _origRenderAll();
+  if(currentTab==='calendar')renderCalendar();
+  if(currentTab==='trends')renderTrends();
+  if(currentTab==='transactions')renderTxTabList();
+  if(currentTab==='wealth')renderWealth();
+};
+
+// Update version
+// v1.5
+
 initTheme();
 if(loadConfig())showDashboard();
 </script>
