@@ -221,13 +221,17 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
   <div class="config-card">
     <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div></div>
     <h2>Connect your account</h2>
-    <p>Enter your GAS relay URL and Monzo account ID. Your access token should be stored in GAS Script Properties. Get your account ID from <a href="https://developers.monzo.com" target="_blank">developers.monzo.com</a> via List accounts.</p>
+    <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="error-msg" class="error-msg"></div>
     <label>GAS relay URL</label>
     <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
-    <label>Monzo account ID</label>
-    <input type="text" id="account-id" placeholder="acc_...">
-    <button class="btn-primary" onclick="connect()">Connect</button>
+    <button class="btn-primary" onclick="connectOAuth()" style="background:var(--coral);">Connect with Monzo</button>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--navy-border);">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:0.8rem;">Already have a token? Use manual mode:</p>
+      <label>Monzo account ID</label>
+      <input type="text" id="account-id" placeholder="acc_...">
+      <button class="btn-primary" onclick="connect()" style="background:var(--navy-mid);border:1px solid var(--navy-border);color:var(--text-secondary);">Manual connect</button>
+    </div>
   </div>
 </div>
 <div id="dashboard">
@@ -236,7 +240,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.5</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.6</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -468,17 +472,36 @@ function loadConfig(){
 function saveConfig(u,i){localStorage.setItem(STORAGE_KEY,JSON.stringify({gasUrl:u,accountId:i}));}
 function resetConfig(){localStorage.removeItem(STORAGE_KEY);location.reload();}
 
+function connectOAuth(){
+  var url=document.getElementById("gas-url").value.trim();
+  if(!url){showError("Please enter your GAS relay URL first.");return;}
+  GAS_URL=url;
+  localStorage.setItem('monzo_gas_url',url);
+  // Generate random state
+  var state=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+  localStorage.setItem('monzo_oauth_state',state);
+  showError('');
+  // Get auth URL from GAS
+  fetch(url+'?action=auth_url&state='+encodeURIComponent(state))
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.status!=='ok'||!res.data||!res.data.url){
+        showError('Could not get auth URL: '+(res.message||'Check GAS relay'));return;
+      }
+      window.location.href=res.data.url;
+    })
+    .catch(function(e){showError('Error: '+e.message);});
+}
+
 function connect(){
   var url=document.getElementById("gas-url").value.trim();
   var id=document.getElementById("account-id").value.trim();
   if(!url||!id){showError("Please fill in both fields.");return;}
   GAS_URL=url;ACCOUNT_ID=id;showError("");
-  var btn=document.querySelector(".btn-primary");
-  btn.textContent="Connecting...";btn.disabled=true;
   gasCall({action:"ping"}).then(function(res){
     if(res.status!=="ok")throw new Error("Ping failed");
     saveConfig(url,id);showDashboard();
-  }).catch(function(e){showError("Could not connect: "+e.message);btn.textContent="Connect";btn.disabled=false;});
+  }).catch(function(e){showError("Could not connect: "+e.message);});
 }
 function showError(msg){var el=document.getElementById("error-msg");el.style.display=msg?"block":"none";el.textContent=msg;}
 function showDashboard(){
