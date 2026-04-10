@@ -486,7 +486,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.8</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.9</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1568,9 +1568,15 @@ function renderMonthView(){
     cell.className='cal-cell'+(isToday?' today':'')+(isFuture?' future':'');
     var dx=byDay[d]||{spend:[],income:[]};
     var spend=dx.spend.reduce(function(a,t){return a+Math.abs(t.amount);},0);
+    var incomeTotal=dx.income.reduce(function(a,t){return a+t.amount;},0);
     var hasIncome=dx.income.length>0;
+    var netPositive=incomeTotal>spend;
     var intensity=maxSpend>0?spend/maxSpend:0;
-    if(spend>0) cell.style.background='rgba(255,90,95,'+(0.08+intensity*0.55).toFixed(2)+')';
+    if(netPositive&&incomeTotal>0){
+      cell.style.background='rgba(45,212,160,'+(0.1+Math.min((incomeTotal/maxSpend)*0.5,0.5)).toFixed(2)+')';
+    } else if(spend>0){
+      cell.style.background='rgba(255,90,95,'+(0.08+intensity*0.55).toFixed(2)+')';
+    }
 
     // Top merchants as pills
     var mc={};dx.spend.forEach(function(t){var n=merchant(t);mc[n]=(mc[n]||0)+1;});
@@ -3442,6 +3448,15 @@ function quickFilter(type){
   applyFilters();
 }
 
+
+
+function showCatTransactions(cat){
+  switchTab('transactions');
+  setTimeout(function(){
+    var sel=document.getElementById('ttx-cat');
+    if(sel){ sel.value=cat; applyTabFilters(); }
+  }, 100);
+}
 
 initTheme();
 initCompact();
