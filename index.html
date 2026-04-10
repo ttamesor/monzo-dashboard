@@ -44,10 +44,8 @@ input[type="text"]:focus{border-color:var(--coral);}
 .topbar-logo-mark{width:28px;height:28px;background:var(--coral);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:white;flex-shrink:0;}
 .topbar-title{font-size:15px;font-weight:500;}
 .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.month-tabs{display:flex;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:8px;overflow:hidden;}
-.month-tab{padding:6px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all 0.15s;border:none;background:transparent;font-family:var(--font);}
-.month-tab.active{background:var(--coral);color:white;}
-.month-tab:hover:not(.active){color:var(--text-primary);}
+.month-select{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:8px;padding:6px 12px;font-family:var(--font);font-size:13px;color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238BA0B4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.month-select option{background:var(--navy-card);color:var(--text-primary);}
 .pill-btn{background:transparent;border:1px solid var(--navy-border);border-radius:8px;padding:6px 14px;font-family:var(--font);font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
 .hist-btn{background:transparent;border:1px solid var(--purple);border-radius:8px;padding:5px 12px;font-family:var(--font);font-size:12px;color:var(--purple);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
 .hist-btn:hover{background:var(--purple-dim);}
@@ -194,10 +192,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
     </div>
     <div class="topbar-right">
-      <div class="month-tabs">
-        <button class="month-tab active" id="tab-this" onclick="switchMonth('this')">This month</button>
-        <button class="month-tab" id="tab-last" onclick="switchMonth('last')">Last month</button>
-      </div>
+      <select class="month-select" id="month-select" onchange="switchMonth(this.value)"></select>
       <div class="account-pill" id="account-pill"></div>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
       <button class="pill-btn" onclick="openAccountsModal()">Accounts</button>
@@ -347,6 +342,7 @@ function showDashboard(){
   document.getElementById("config-screen").style.display="none";
   document.getElementById("dashboard").style.display="block";
   document.getElementById("account-pill").textContent=ACCOUNT_ID.slice(0,18)+"...";
+  buildMonthSelector();
   loadAll();
 }
 
@@ -471,14 +467,13 @@ function loadAll(){
 
   var now=new Date();
   var startOfThisMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+  var startOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString();
 
   Promise.all([
     gasCall({action:"balance",account_id:ACCOUNT_ID}),
     gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
-    // Fetch this month first (guaranteed recent)
     gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfThisMonth}),
-    // Then fetch the 100 most recent before start of this month
-    gasCall({action:"transactions",account_id:ACCOUNT_ID,before:startOfThisMonth})
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfThisMonth})
   ]).then(function(results){
     cachedBal=results[0].data;
 
@@ -489,15 +484,15 @@ function loadAll(){
     cachedPots=active.filter(function(p){return STYPES.indexOf(p.type)<0&&!p.locked&&(p.style||"").indexOf("investments_")!==0;});
 
     var thisMo=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
-    var prev=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
+    var lastMo=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
 
     var seen={};
     allTransactions=[];
-    thisMo.concat(prev).forEach(function(t){
+    thisMo.concat(lastMo).forEach(function(t){
       if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}
     });
 
-    console.log("Loaded: this month="+thisMo.length+" previous="+prev.length+" total="+allTransactions.length);
+    console.log("Loaded: this month="+thisMo.length+" last month="+lastMo.length+" total="+allTransactions.length);
 
     populateCatFilter();
     renderAll();
@@ -511,36 +506,55 @@ function loadAll(){
 }
 
 // ---- Month ----
-function switchMonth(which){
-  viewMonth=which;
+function buildMonthSelector(){
+  var sel=document.getElementById("month-select");
+  if(!sel)return;
+  var now=new Date();
+  sel.innerHTML="";
+  for(var i=0;i<12;i++){
+    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    var key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    var label=d.toLocaleString("default",{month:"long",year:"numeric"});
+    var opt=document.createElement("option");
+    opt.value=key;opt.textContent=label;
+    if(key===viewMonth)opt.selected=true;
+    sel.appendChild(opt);
+  }
+}
+
+function switchMonth(key){
+  viewMonth=key;
   txDisplayCount=30;
   historyExhausted=false;
   updateHistoryBtn();
-  historyExhausted=false;
-  updateHistoryBtn();
-  document.getElementById("tab-this").classList.toggle("active",which==="this");
-  document.getElementById("tab-last").classList.toggle("active",which==="last");
-  var now=new Date();
-  document.getElementById("month-badge").textContent=which==="this"?now.toLocaleString("default",{month:"long"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"long"});
+  var parts=key.split("-");
+  var d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,1);
+  var badge=document.getElementById("month-badge");
+  if(badge)badge.textContent=d.toLocaleString("default",{month:"long"});
   renderAll();
 }
 
 function getMonthTxns(txns,which){
-  var now=new Date(),y,m;
-  if(which==="this"){y=now.getFullYear();m=now.getMonth();}
-  else{var d=new Date(now.getFullYear(),now.getMonth()-1,1);y=d.getFullYear();m=d.getMonth();}
+  var parts=which.split("-");
+  var y=parseInt(parts[0]),m=parseInt(parts[1])-1;
   return txns.filter(function(t){var dd=new Date(t.created);return dd.getFullYear()===y&&dd.getMonth()===m;});
 }
 
+function getThisMonthKey(){var n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0");}
+function getLastMonthKey(){var n=new Date();var d=new Date(n.getFullYear(),n.getMonth()-1,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+
 function renderAll(){
   var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
-  var thisTx=getMonthTxns(spendTx,"this"),lastTx=getMonthTxns(spendTx,"last");
-  var viewSpend=viewMonth==="this"?thisTx:lastTx;
+  var thisKey=getThisMonthKey(),lastKey=getLastMonthKey();
+  var thisTx=getMonthTxns(spendTx,thisKey),lastTx=getMonthTxns(spendTx,lastKey);
+  var viewSpend=getMonthTxns(spendTx,viewMonth);
+  var cmpKey=viewMonth===thisKey?lastKey:thisKey;
+  var cmpTx=getMonthTxns(spendTx,cmpKey);
   var viewAll=getMonthTxns(allTransactions,viewMonth);
 
   renderStatCards(cachedBal,cachedPots,cachedSavings,viewSpend,thisTx,lastTx);
-  renderInsightStrip(viewSpend,viewMonth==="this"?lastTx:thisTx);
-  renderCatCompare(thisTx,lastTx);
+  renderInsightStrip(viewSpend,cmpTx);
+  renderCatCompare(viewSpend,cmpTx);
   applyFilters();
   renderDailyChart(viewSpend,thisTx,lastTx);
 }
@@ -660,11 +674,11 @@ function renderInsightStrip(viewTx,cmpTx){
 }
 
 // ---- Category compare ----
-function renderCatCompare(thisTx,lastTx){
+function renderCatCompare(viewTx,cmpTx){
   var tc={},lc={};
-  thisTx.forEach(function(t){var c=t.category||"general";tc[c]=(tc[c]||0)+Math.abs(t.amount);});
-  lastTx.forEach(function(t){var c=t.category||"general";lc[c]=(lc[c]||0)+Math.abs(t.amount);});
-  var cur=viewMonth==="this"?tc:lc,cmp=viewMonth==="this"?lc:tc;
+  viewTx.forEach(function(t){var c=t.category||"general";tc[c]=(tc[c]||0)+Math.abs(t.amount);});
+  cmpTx.forEach(function(t){var c=t.category||"general";lc[c]=(lc[c]||0)+Math.abs(t.amount);});
+  var cur=tc,cmp=lc;
   var all=Object.keys(Object.assign({},cur,cmp)).map(function(c){return{cat:c,cur:cur[c]||0,cmp:cmp[c]||0};}).sort(function(a,b){return b.cur-a.cur;}).slice(0,7);
   var mx=Math.max.apply(null,all.map(function(x){return Math.max(x.cur,x.cmp);}));mx=mx||1;
   document.getElementById("cat-compare").innerHTML=all.length?all.map(function(x){
@@ -768,6 +782,8 @@ function renderMerchantChart(txns){
   merchantChartInstance=new Chart(ctx,{type:"bar",data:{labels:sorted.map(function(x){return x.name.length>14?x.name.slice(0,13)+"...":x.name;}),datasets:[{data:sorted.map(function(x){return parseFloat(x.total.toFixed(2));}),backgroundColor:"rgba(155,127,255,0.5)",borderColor:"rgba(155,127,255,0.8)",borderWidth:1,borderRadius:4,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}},y:{ticks:{color:"#8BA0B4",font:{size:10}},grid:{display:false},border:{display:false}}}}});
 }
 
+var now=new Date();
+viewMonth=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
 initTheme();
 if(loadConfig())showDashboard();
 </script>
