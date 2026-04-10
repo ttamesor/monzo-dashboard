@@ -425,13 +425,18 @@ function loadMoreHistory(){
   var oldestTx=getOldestTx();
   if(!oldestTx)return;
 
-  // Target month = month of our oldest tx
+  // Target month = month BEFORE our oldest tx
   var oldestDate=new Date(oldestTx.created);
   var targetYear=oldestDate.getFullYear(),targetMonth=oldestDate.getMonth();
 
-  // If oldest is right at month start (within 1 second), load the previous month
-  var monthStart=new Date(targetYear,targetMonth,1);
-  if(oldestDate-monthStart<1000){
+  // Check if this month is already fully loaded (has tx at/near start of month)
+  var monthStart=new Date(targetYear,targetMonth,1).toISOString();
+  var monthEnd=new Date(targetYear,targetMonth+1,1).toISOString();
+  var inThisMonth=allTransactions.filter(function(t){return t.created>=monthStart&&t.created<monthEnd;});
+  var hasEarlyTx=inThisMonth.some(function(t){return new Date(t.created).getDate()<=2;});
+
+  if(hasEarlyTx){
+    // Month appears complete - load the previous month
     targetMonth--;if(targetMonth<0){targetMonth=11;targetYear--;}
   }
 
@@ -484,6 +489,21 @@ function loadMoreHistory(){
 
   function done(){
     renderAll();
+    // Check if we actually got anything in this month
+    // If not, the month is empty - move to previous month automatically
+    var inMonthNow=allTransactions.filter(function(t){return t.created>=since&&t.created<before;});
+    if(inMonthNow.length===0){
+      // Empty month - try the one before
+      var prevMonth=targetMonth-1,prevYear=targetYear;
+      if(prevMonth<0){prevMonth=11;prevYear--;}
+      var prevSince=new Date(prevYear,prevMonth,1).toISOString();
+      var prevBefore=since;
+      var prevInMonth=allTransactions.filter(function(t){return t.created>=prevSince&&t.created<prevBefore;});
+      if(prevInMonth.length===0){
+        // Nothing there either - exhausted
+        historyExhausted=true;
+      }
+    }
     updateHistoryBtn();
   }
 
@@ -606,12 +626,20 @@ function getMonthTxns(txns,which){
 function getThisMonthKey(){var n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0");}
 function getLastMonthKey(){var n=new Date();var d=new Date(n.getFullYear(),n.getMonth()-1,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 
+function getPrevMonthKey(key){
+  var p=key.split("-");var y=parseInt(p[0]),m=parseInt(p[1])-1;
+  m--;if(m<0){m=11;y--;}
+  return y+"-"+String(m+1).padStart(2,"0");
+}
+
 function renderAll(){
   var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
   var thisKey=getThisMonthKey(),lastKey=getLastMonthKey();
+  // Always use Apr vs Mar for stat card delta
   var thisTx=getMonthTxns(spendTx,thisKey),lastTx=getMonthTxns(spendTx,lastKey);
+  // View month and compare = view month vs previous month
   var viewSpend=getMonthTxns(spendTx,viewMonth);
-  var cmpKey=viewMonth===thisKey?lastKey:thisKey;
+  var cmpKey=getPrevMonthKey(viewMonth);
   var cmpTx=getMonthTxns(spendTx,cmpKey);
   var viewAll=getMonthTxns(allTransactions,viewMonth);
 
@@ -619,7 +647,7 @@ function renderAll(){
   renderInsightStrip(viewSpend,cmpTx);
   renderCatCompare(viewSpend,cmpTx);
   applyFilters();
-  renderDailyChart(viewSpend,thisTx,lastTx);
+  renderDailyChart(viewSpend,viewSpend,cmpTx);
 }
 
 // ---- Filters ----
