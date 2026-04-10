@@ -3,7 +3,7 @@ const params = new URLSearchParams(window.location.search);
 const code = params.get('code');
 const state = params.get('state');
 
-const gasUrl = 'YOUR_GAS_URL';
+const gasUrl = 'https://script.google.com/macros/s/AKfycbx4oCQ-O_vqzhlR7v-Mi0260Ve06Rp47W8vZ2UypARjW1A2VZjc3VLMqHxxuVg_Ma8J/exec';
 
 if (!code || !state) {
   document.body.innerText = 'Missing code/state';
