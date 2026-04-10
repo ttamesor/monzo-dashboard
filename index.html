@@ -533,7 +533,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.3</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.4</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1392,7 +1392,11 @@ function renderStatCards(bal,pots,savings,viewTx,thisTx,lastTx){
   var savTot=savings.reduce(function(s,p){return s+(p.balance||0);},0);
   var manTot=getManualTotalPence();
   var thisSpend=thisTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
-  var lastSpend=lastTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  // Like-for-like: last month up to same day of month
+  var now2=new Date();
+  var dayElapsed=now2.getDate();
+  var lastSameDayTx=lastTx.filter(function(t){return new Date(t.created).getDate()<=dayElapsed;});
+  var lastSpend=lastSameDayTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
   var viewSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
   var now=new Date();
   var vmP=viewMonth.split("-");var vmY=parseInt(vmP[0]),vmM=parseInt(vmP[1])-1;
@@ -3619,7 +3623,11 @@ function renderSimple(){
   var budget=monthBudgets[thisKey]||0;
   var budgetPct=budget>0?Math.round((thisSpend/budget)*100):null;
 
-  var spendVsLast=lastSpend>0?Math.round(((thisSpend-lastSpend)/lastSpend)*100):null;
+  // Compare like-for-like: last month up to same day number
+  var lastMonthSameDay=getMonthTxns(spendTx,lastKey).filter(function(t){
+    return new Date(t.created).getDate()<=dayOfMonth;
+  }).reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var spendVsLast=lastMonthSameDay>0?Math.round(((thisSpend-lastMonthSameDay)/lastMonthSameDay)*100):null;
   var mName=now.toLocaleString('default',{month:'long'});
 
   // Alerts
@@ -3636,7 +3644,7 @@ function renderSimple(){
     var d=new Date(now.getFullYear(),now.getMonth(),s.avgDay);
     if(d<=now) d=new Date(now.getFullYear(),now.getMonth()+1,s.avgDay);
     var daysUntil=Math.round((d-now)/(1000*60*60*24));
-    if(daysUntil<=7) upcoming.push({name:s.name,amount:s.amount,date:d,daysUntil:daysUntil});
+    if(daysUntil<=7) upcoming.push({name:s.name,amount:s.amount,date:d,daysUntil:daysUntil,known:s.daySpread<=3});
   });
   upcoming.sort(function(a,b){return a.daysUntil-b.daysUntil;});
 
@@ -3712,18 +3720,34 @@ function renderSimple(){
 
   // Upcoming bills
   if(upcoming.length){
+    var knownUpcoming=upcoming.filter(function(u){return u.known;});
+    var likelyUpcoming=upcoming.filter(function(u){return !u.known;});
+
+    function renderUpcomingList(list, title, dotColor, tagLabel){
+      if(!list.length) return '';
+      var out='<div style="margin-bottom:0.8rem;">';
+      out+='<div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">'+title+'</div>';
+      list.forEach(function(u){
+        out+='<div class="simple-upcoming">'
+          +'<div style="display:flex;align-items:center;gap:10px;">'
+          +'<div class="simple-status-dot" style="background:'+dotColor+';"></div>'
+          +'<div><div style="font-size:13px;color:var(--text-primary);">'+u.name+'</div>'
+          +'<div style="font-size:11px;color:var(--text-muted);">'+(u.daysUntil===0?'Today':u.daysUntil===1?'Tomorrow':'In '+u.daysUntil+' days')+'</div>'
+          +'</div></div>'
+          +'<div style="text-align:right;">'
+          +'<div style="font-size:14px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(u.amount)+'</div>'
+          +'<div style="font-size:10px;color:var(--text-muted);">'+tagLabel+'</div>'
+          +'</div>'
+          +'</div>';
+      });
+      out+='</div>';
+      return out;
+    }
+
     html+='<div class="card" style="margin-bottom:1.5rem;">';
     html+='<div class="simple-section-title" style="padding:0 0 8px;">Coming up this week</div>';
-    upcoming.forEach(function(u){
-      html+='<div class="simple-upcoming">'
-        +'<div style="display:flex;align-items:center;gap:10px;">'
-        +'<div class="simple-status-dot" style="background:var(--amber);"></div>'
-        +'<div><div style="font-size:13px;color:var(--text-primary);">'+u.name+'</div>'
-        +'<div style="font-size:11px;color:var(--text-muted);">'+(u.daysUntil===0?'Today':u.daysUntil===1?'Tomorrow':'In '+u.daysUntil+' days')+'</div>'
-        +'</div></div>'
-        +'<div style="font-size:14px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(u.amount)+'</div>'
-        +'</div>';
-    });
+    html+=renderUpcomingList(knownUpcoming,'Known payments','var(--coral)','direct debit / regular');
+    html+=renderUpcomingList(likelyUpcoming,'Likely payments','var(--amber)','based on pattern');
     html+='</div>';
   }
 
