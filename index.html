@@ -40,7 +40,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .btn-primary:hover{opacity:0.88;}.btn-primary:active{transform:scale(0.98);}
 .error-msg{background:var(--coral-dim);border:1px solid rgba(255,90,95,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--coral-soft);margin-bottom:1rem;display:none;}
 #dashboard{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--navy-border);background:var(--navy-mid);position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:8px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--navy-border);background:var(--navy-mid);z-index:10;flex-wrap:wrap;gap:8px;flex-shrink:0;}
 .topbar-left{display:flex;align-items:center;gap:12px;}
 .topbar-logo-mark{width:28px;height:28px;background:var(--coral);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:white;flex-shrink:0;}
 .topbar-title{font-size:15px;font-weight:500;}
@@ -53,7 +53,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
-.app-body{display:flex;flex:1;overflow:hidden;min-height:0;}
+.app-body{display:flex;overflow:hidden;min-height:0;flex:1;}
 .sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
 .sidebar-section{font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
@@ -380,7 +380,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 .insight-row-val{font-size:13px;font-family:var(--mono);font-weight:500;}
 
 /* Reauth banner */
-.reauth-banner{display:none;background:var(--amber-dim);border-bottom:1px solid var(--amber);padding:8px 2rem;font-size:13px;color:var(--amber);align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.reauth-banner{display:none;background:var(--amber-dim);border-bottom:1px solid var(--amber);padding:8px 2rem;font-size:13px;color:var(--amber);align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;flex-shrink:0;}
 .reauth-banner.show{display:flex;}
 .reauth-banner a{color:var(--amber);font-weight:500;cursor:pointer;text-decoration:underline;}
 
@@ -460,6 +460,27 @@ body.compact .topbar{padding:0.6rem 2rem;}
 .qf-btn{background:transparent;border:1px solid var(--navy-border);border-radius:20px;padding:4px 12px;font-family:var(--font);font-size:12px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
 .qf-btn:hover{border-color:var(--coral);color:var(--coral);}
 .qf-btn.active{background:var(--coral-dim);border-color:var(--coral);color:var(--coral-soft);}
+
+/* Super Simple Mode */
+.simple-hero{text-align:center;padding:2rem 1rem 1.5rem;border-bottom:1px solid var(--navy-border);margin-bottom:1.5rem;}
+.simple-balance-label{font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+.simple-balance{font-size:52px;font-weight:500;font-family:var(--mono);letter-spacing:-0.03em;line-height:1;}
+.simple-networth{font-size:15px;color:var(--text-secondary);margin-top:8px;}
+.simple-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;}
+.simple-card{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:14px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;}
+.simple-card-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.simple-card-value{font-size:26px;font-weight:500;font-family:var(--mono);}
+.simple-card-sub{font-size:12px;color:var(--text-secondary);margin-top:4px;}
+.simple-card-accent{position:absolute;bottom:0;left:0;right:0;height:3px;}
+.simple-section-title{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px;}
+.simple-tx-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--navy-border);}
+.simple-tx-row:last-child{border-bottom:none;}
+.simple-upcoming{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--navy-border);}
+.simple-upcoming:last-child{border-bottom:none;}
+.simple-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.simple-alert{background:var(--coral-dim);border:1px solid rgba(255,90,95,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--coral-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.simple-alert.good{background:var(--green-dim);border-color:rgba(45,212,160,0.3);color:var(--green);}
+.simple-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1.5rem;}
 </style>
 </head>
 <body>
@@ -486,7 +507,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.0</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.1</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -508,6 +529,9 @@ body.compact .topbar{padding:0.6rem 2rem;}
   </div>
   <div class="app-body">
   <div class="sidebar" id="sidebar">
+    <div class="nav-item" data-tab="simple" onclick="switchTab('simple')" style="font-weight:600;font-size:14px;border-bottom:1px solid var(--navy-border);margin-bottom:0.5rem;padding-bottom:1rem;">
+      <span class="nav-icon">✨</span>Simple View
+    </div>
     <div class="sidebar-section">Overview</div>
     <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
       <span class="nav-icon">📊</span>Dashboard
@@ -546,6 +570,13 @@ body.compact .topbar{padding:0.6rem 2rem;}
     </div>
   </div>
   <div class="tab-content" id="tab-content">
+  <!-- Super Simple tab -->
+  <div class="tab-panel" id="tab-simple">
+    <div class="tab-inner" id="simple-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
   <div class="tab-panel active" id="tab-dashboard">
   <div class="tab-inner">
     <div class="grid-5" id="stat-cards"><div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div></div>
@@ -1473,6 +1504,7 @@ function switchTab(tab){
   if(tab==='transactions')renderTxTab();
   if(tab==='wealth')renderWealth();
   if(tab==='bills')renderBills();
+  if(tab==='simple')renderSimple();
   if(tab==='analytics')renderAnalytics();
   if(tab==='merchants')renderMerchants();
   if(tab==='income')renderIncome();
@@ -2168,6 +2200,7 @@ renderAll=function(){
   if(currentTab==='transactions')renderTxTabList();
   if(currentTab==='wealth')renderWealth();
   if(currentTab==='bills')renderBills();
+  if(currentTab==='simple')renderSimple();
   if(currentTab==='analytics')renderAnalytics();
   if(currentTab==='merchants')renderMerchants();
   if(currentTab==='income')renderIncome();
@@ -3458,6 +3491,154 @@ function showCatTransactions(cat){
     if(sel){ sel.value=cat; applyTabFilters(); }
   }, 100);
 }
+
+
+// ---- Super Simple View ----
+function renderSimple(){
+  var el=document.getElementById('simple-content');
+  if(!el)return;
+
+  var now=new Date();
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var thisKey=getThisMonthKey();
+  var lastKey=getLastMonthKey();
+  var thisMonthTx=getMonthTxns(spendTx,thisKey);
+  var lastMonthTx=getMonthTxns(spendTx,lastKey);
+
+  var thisSpend=thisMonthTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var lastSpend=lastMonthTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var balance=cachedBal?cachedBal.balance:0;
+  var potTotal=(cachedPots||[]).reduce(function(s,p){return s+(p.balance||0);},0);
+  var savTotal=(cachedSavings||[]).reduce(function(s,p){return s+(p.balance||0);},0);
+  var manTotal=getManualTotalPence();
+  var netWorth=balance+potTotal+savTotal+manTotal;
+
+  var daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  var dayOfMonth=now.getDate();
+  var dailyAvg=dayOfMonth>0?thisSpend/dayOfMonth:0;
+  var paceTotal=dayOfMonth>0?(thisSpend/dayOfMonth)*daysInMonth:thisSpend;
+  var budget=monthBudgets[thisKey]||0;
+  var budgetPct=budget>0?Math.round((thisSpend/budget)*100):null;
+
+  var spendVsLast=lastSpend>0?Math.round(((thisSpend-lastSpend)/lastSpend)*100):null;
+  var mName=now.toLocaleString('default',{month:'long'});
+
+  // Alerts
+  var alerts=[];
+  if(budget>0&&thisSpend>budget) alerts.push({type:'bad',msg:'Over budget by '+fmt(thisSpend-budget)});
+  else if(budget>0&&budgetPct>=80) alerts.push({type:'warn',msg:'At '+budgetPct+'% of your '+fmtRaw(budget/100)+' budget'});
+  if(spendVsLast!==null&&spendVsLast>30) alerts.push({type:'bad',msg:'Spending is up '+spendVsLast+'% vs last month'});
+  if(spendVsLast!==null&&spendVsLast<-20) alerts.push({type:'good',msg:'Spending is down '+Math.abs(spendVsLast)+'% vs last month - great!'});
+
+  // Upcoming bills (next 7 days)
+  var subs=detectSubscriptions().filter(function(s){return s.status!=='inactive';});
+  var upcoming=[];
+  subs.forEach(function(s){
+    var d=new Date(now.getFullYear(),now.getMonth(),s.avgDay);
+    if(d<=now) d=new Date(now.getFullYear(),now.getMonth()+1,s.avgDay);
+    var daysUntil=Math.round((d-now)/(1000*60*60*24));
+    if(daysUntil<=7) upcoming.push({name:s.name,amount:s.amount,date:d,daysUntil:daysUntil});
+  });
+  upcoming.sort(function(a,b){return a.daysUntil-b.daysUntil;});
+
+  // Recent transactions (last 5)
+  var recent=allTransactions.filter(function(t){return t.amount!==0;})
+    .sort(function(a,b){return new Date(b.created)-new Date(a.created);}).slice(0,5);
+
+  var html='';
+
+  // Hero - balance
+  html+='<div class="simple-hero">';
+  html+='<div class="simple-balance-label">Current balance</div>';
+  html+='<div class="simple-balance">'+fmt(balance)+'</div>';
+  html+='<div class="simple-networth">Net worth '+fmt(netWorth)+'</div>';
+  html+='</div>';
+
+  // Alerts
+  if(alerts.length){
+    alerts.forEach(function(a){
+      html+='<div class="simple-alert'+(a.type==='good'?' good':'')+'">'
+        +(a.type==='good'?'✅':'⚠️')+' '+a.msg+'</div>';
+    });
+  }
+
+  // 3 key numbers
+  html+='<div class="simple-3col">';
+  html+='<div class="simple-card"><div class="simple-card-accent" style="background:var(--coral);"></div>'
+    +'<div class="simple-card-label">Spent this month</div>'
+    +'<div class="simple-card-value" style="font-size:20px;">'+fmt(thisSpend)+'</div>'
+    +'<div class="simple-card-sub">'+(spendVsLast!==null?(spendVsLast>0?'▲ '+spendVsLast+'%':'▼ '+Math.abs(spendVsLast)+'%')+' vs last month':'No comparison')+'</div>'
+    +'<div class="simple-card-accent" style="background:var(--coral);"></div></div>';
+
+  html+='<div class="simple-card"><div class="simple-card-accent" style="background:var(--amber);"></div>'
+    +'<div class="simple-card-label">Daily average</div>'
+    +'<div class="simple-card-value" style="font-size:20px;">'+fmt(dailyAvg)+'</div>'
+    +'<div class="simple-card-sub">On pace for '+fmt(paceTotal)+'</div></div>';
+
+  if(budget>0){
+    var bCol=budgetPct>=100?'var(--coral)':budgetPct>=80?'var(--amber)':'var(--green)';
+    html+='<div class="simple-card"><div class="simple-card-accent" style="background:'+bCol+';"></div>'
+      +'<div class="simple-card-label">Budget</div>'
+      +'<div class="simple-card-value" style="font-size:20px;color:'+bCol+';">'+budgetPct+'%</div>'
+      +'<div class="simple-card-sub">'+fmt(thisSpend)+' of '+fmtRaw(budget/100)+'</div></div>';
+  } else {
+    html+='<div class="simple-card" style="cursor:pointer;" onclick="openBudgetModal()">'
+      +'<div class="simple-card-label">Budget</div>'
+      +'<div class="simple-card-value" style="font-size:16px;color:var(--text-muted);">Not set</div>'
+      +'<div class="simple-card-sub" style="color:var(--coral-soft);">Tap to set one</div></div>';
+  }
+  html+='</div>';
+
+  // Savings & pots
+  html+='<div class="simple-grid" style="margin-bottom:1.5rem;">';
+  html+='<div class="simple-card"><div class="simple-card-accent" style="background:var(--green);"></div>'
+    +'<div class="simple-card-label">Pots</div>'
+    +'<div class="simple-card-value">'+fmt(potTotal)+'</div>'
+    +'<div class="simple-card-sub">'+(cachedPots||[]).length+' pot'+((cachedPots||[]).length!==1?'s':'')+'</div></div>';
+  html+='<div class="simple-card"><div class="simple-card-accent" style="background:var(--purple);"></div>'
+    +'<div class="simple-card-label">Savings & investments</div>'
+    +'<div class="simple-card-value">'+fmt(savTotal+manTotal)+'</div>'
+    +'<div class="simple-card-sub">'+(manTotal>0?'incl. manual accounts':'savings pots only')+'</div></div>';
+  html+='</div>';
+
+  // Upcoming bills
+  if(upcoming.length){
+    html+='<div class="card" style="margin-bottom:1.5rem;">';
+    html+='<div class="simple-section-title" style="padding:0 0 8px;">Coming up this week</div>';
+    upcoming.forEach(function(u){
+      html+='<div class="simple-upcoming">'
+        +'<div style="display:flex;align-items:center;gap:10px;">'
+        +'<div class="simple-status-dot" style="background:var(--amber);"></div>'
+        +'<div><div style="font-size:13px;color:var(--text-primary);">'+u.name+'</div>'
+        +'<div style="font-size:11px;color:var(--text-muted);">'+(u.daysUntil===0?'Today':u.daysUntil===1?'Tomorrow':'In '+u.daysUntil+' days')+'</div>'
+        +'</div></div>'
+        +'<div style="font-size:14px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(u.amount)+'</div>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
+
+  // Recent transactions
+  html+='<div class="card">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+  html+='<div class="simple-section-title" style="margin:0;">Recent transactions</div>';
+  html+='<button class="pill-btn" style="font-size:11px;padding:4px 10px;" onclick="switchTab(\'transactions\')">See all</button>';
+  html+='</div>';
+  recent.forEach(function(t){
+    var cr=t.amount>0;
+    var dt=new Date(t.created).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    html+='<div class="simple-tx-row">'
+      +'<div class="tx-icon">'+(CAT_EMOJI[getCategory(t)]||'💳')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="tx-merchant">'+merchant(t)+'</div>'
+      +'<div class="tx-date">'+dt+'</div></div>'
+      +'<div class="tx-amount '+(cr?'credit':'debit')+'">'+(cr?'+':'')+fmt(t.amount)+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+
+  el.innerHTML=html;
+}
+
 
 initTheme();
 initCompact();
