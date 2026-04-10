@@ -499,10 +499,40 @@ function loadAll(){
     renderPotsPanel(cachedPots,cachedSavings);
     updateHistoryBtn();
 
+    // If last month hit 100, paginate it fully in the background
+    if(lastMo.length===100){
+      loadRestOfLastMonth(startOfLastMonth,startOfThisMonth,seen);
+    }
+
   }).catch(function(e){
     document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1;color:var(--coral-soft);'>Error: "+e.message+"</div>";
     console.error(e);
   });
+}
+
+function loadRestOfLastMonth(since,before,seen){
+  // Find oldest last-month tx to paginate from
+  var lastMoTxns=allTransactions.filter(function(t){
+    var d=new Date(t.created);var s=new Date(since);var b=new Date(before);
+    return d>=s&&d<b;
+  });
+  if(!lastMoTxns.length)return;
+  var oldest=lastMoTxns.reduce(function(a,b){return new Date(a.created)<new Date(b.created)?a:b;});
+  gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:oldest.created})
+    .then(function(res){
+      if(res.status!=="ok"||!res.data||!res.data.transactions)return;
+      var batch=res.data.transactions;
+      var newOnes=batch.filter(function(t){return t.amount!==0&&!seen[t.id];});
+      if(newOnes.length>0){
+        newOnes.forEach(function(t){seen[t.id]=true;});
+        allTransactions=newOnes.concat(allTransactions);
+        populateCatFilter();
+        renderAll();
+        console.log("Last month extended by "+newOnes.length+", total now "+allTransactions.length);
+        if(batch.length===100){loadRestOfLastMonth(since,oldest.created,seen);}
+      }
+    })
+    .catch(function(){});
 }
 
 // ---- Month ----
@@ -639,10 +669,14 @@ function renderStatCards(bal,pots,savings,viewTx,thisTx,lastTx){
   var thisSpend=thisTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
   var lastSpend=lastTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
   var viewSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
-  var now=new Date(),dE=viewMonth==="this"?now.getDate():new Date(now.getFullYear(),now.getMonth(),0).getDate();
+  var now=new Date();
+  var vmP=viewMonth.split("-");var vmY=parseInt(vmP[0]),vmM=parseInt(vmP[1])-1;
+  var isVM=(vmY===now.getFullYear()&&vmM===now.getMonth());
+  var dE=isVM?now.getDate():new Date(vmY,vmM+1,0).getDate();
   var avg=dE>0?viewSpend/dE:0;
   var dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  var proj=viewMonth==="this"&&dE>0?(viewSpend/dE)*dim:null;
+  var dim2=new Date(vmY,vmM+1,0).getDate();
+  var proj=isVM&&dE>0?(viewSpend/dE)*dim2:null;
   var net=bal.balance+potTot+savTot+manTot;
   document.getElementById("stat-cards").innerHTML=
     "<div class='card stat-card'><div class='stat-accent' style='background:var(--coral)'></div><div class='stat-label'>Balance</div><div class='stat-value'>"+fmt(bal.balance)+"</div><div class='stat-sub'>Net worth: "+fmt(net)+"</div></div>"
@@ -722,9 +756,11 @@ function renderPotsPanel(pots,savings){
 
 // ---- Charts ----
 function renderDailyChart(txns,thisTxns,lastTxns){
-  var now=new Date(),year,month,dim;
-  if(viewMonth==="this"){year=now.getFullYear();month=now.getMonth();dim=now.getDate();}
-  else{var lm=new Date(now.getFullYear(),now.getMonth()-1,1);year=lm.getFullYear();month=lm.getMonth();dim=new Date(year,month+1,0).getDate();}
+  var now=new Date();
+  var vmParts=viewMonth.split("-");
+  var year=parseInt(vmParts[0]),month=parseInt(vmParts[1])-1;
+  var isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
+  var dim=isCurrentMonth?now.getDate():new Date(year,month+1,0).getDate();
   var labels=[],data=[];
   for(var i=1;i<=dim;i++){labels.push(i);data.push(0);}
   txns.forEach(function(t){
@@ -732,7 +768,7 @@ function renderDailyChart(txns,thisTxns,lastTxns){
     if(d.getFullYear()===year&&d.getMonth()===month){var day=d.getDate();if(day>=1&&day<=dim)data[day-1]+=Math.abs(t.amount)/100;}
   });
   if(dailyChartInstance)dailyChartInstance.destroy();
-  var ti=viewMonth==="this"?now.getDate()-1:-1;
+  var ti=isCurrentMonth?now.getDate()-1:-1;
   var ctx=document.getElementById("daily-chart").getContext("2d");
   dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
 
@@ -743,7 +779,7 @@ function renderDailyChart(txns,thisTxns,lastTxns){
     if(nonZero.length>=2){
       var best=nonZero.slice().sort(function(a,b){return a.v-b.v;})[0];
       var worst=nonZero.slice().sort(function(a,b){return b.v-a.v;})[0];
-      var mName=viewMonth==="this"?now.toLocaleString("default",{month:"short"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"short"});
+      var mName=new Date(year,month,1).toLocaleString("default",{month:"short"});
       bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>£"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
         +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>£"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
     } else {bwEl.innerHTML="";}
