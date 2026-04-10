@@ -23,7 +23,8 @@ body.light{
   --purple-dim:rgba(155,127,255,0.15);--coral-dim:rgba(255,90,95,0.1);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font);background:var(--navy);color:var(--text-primary);min-height:100vh;}
+html{height:100%;}
+body{font-family:var(--font);background:var(--navy);color:var(--text-primary);min-height:100vh;overflow:hidden;height:100vh;}
 #config-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
 .config-card{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:16px;padding:2.5rem;width:100%;max-width:440px;}
 .logo-row{display:flex;align-items:center;gap:10px;margin-bottom:2rem;}
@@ -59,7 +60,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
-.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;height:100%;}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
 .tab-panel{display:none;width:100%;}
 .tab-panel.active{display:block;}
 .tab-inner{padding:1.5rem 2rem 4rem;max-width:1400px;margin:0 auto;}
@@ -480,7 +481,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.6</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.7</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
