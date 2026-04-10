@@ -49,8 +49,9 @@
     showError('GAS relay URL not found. Please return to the dashboard and reconnect.');return;
   }
 
-  var redirectUri=window.location.origin+window.location.pathname;
+  var redirectUri='https://ttamesor.github.io/monzo-dashboard/callback.html';
 
+  console.log('Exchanging code, redirect_uri:', redirectUri);
   fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
     .then(function(r){return r.json();})
     .then(function(res){
