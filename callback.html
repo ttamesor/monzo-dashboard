@@ -64,57 +64,44 @@ window.addEventListener('DOMContentLoaded', function(){
 
   var exchangeResult = null;
 
-  // Step 1: fire exchange (triggers SCA notification to phone)
+  // Step 1: just show instructions - do NOT exchange yet
   document.getElementById('btn-send').addEventListener('click', function(){
     var btn = document.getElementById('btn-send');
     btn.disabled = true;
-    btn.textContent = 'Request sent...';
-    setTitle('Check your Monzo app');
-    setMsg('An approval request has been sent to your Monzo app. Approve it, then click below.');
+    btn.textContent = 'Waiting for app approval...';
+    setTitle('Approve in the Monzo app');
+    setMsg('Open your Monzo app and approve the login request. Once approved, click the button below.');
     showBtn('btn-done', true);
-
-    // Fire exchange now - GAS/Monzo will hold pending SCA
-    fetch(gasUrl + '?action=exchange&code=' + encodeURIComponent(code) + '&redirect_uri=' + encodeURIComponent(redirectUri))
-      .then(function(r){ return r.json(); })
-      .then(function(res){ exchangeResult = res; })
-      .catch(function(e){ exchangeResult = { status: 'error', message: e.message }; });
   });
 
-  // Step 2: user approved in app
+  // Step 2: user has approved - NOW exchange the code
   document.getElementById('btn-done').addEventListener('click', function(){
     showBtn('btn-send', false);
     showBtn('btn-done', false);
     showSpinner(true);
     setTitle('Connecting...');
-    setMsg('Completing connection.');
+    setMsg('Exchanging authorisation code.');
 
-    function finish(res){
-      if(!res || res.status !== 'ok'){
-        showErr('Failed: ' + ((res && res.message) || 'Unknown error')); return;
-      }
-      if(res.data && res.data.account_id){
-        localStorage.setItem('monzo_dash_v3', JSON.stringify({
-          gasUrl: gasUrl,
-          accountId: res.data.account_id
-        }));
-      }
-      setTitle('Connected!');
-      setMsg('Redirecting...');
-      showSpinner(false);
-      setTimeout(function(){
-        window.location.href = 'https://ttamesor.github.io/monzo-dashboard/';
-      }, 1000);
-    }
-
-    if(exchangeResult){
-      finish(exchangeResult);
-    } else {
-      // Exchange hasn't returned yet - retry once
-      fetch(gasUrl + '?action=exchange&code=' + encodeURIComponent(code) + '&redirect_uri=' + encodeURIComponent(redirectUri))
-        .then(function(r){ return r.json(); })
-        .then(finish)
-        .catch(function(e){ showErr('Connection error: ' + e.message); });
-    }
+    fetch(gasUrl + '?action=exchange&code=' + encodeURIComponent(code) + '&redirect_uri=' + encodeURIComponent(redirectUri))
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(!res || res.status !== 'ok'){
+          showErr('Failed: ' + ((res && res.message) || 'Unknown error')); return;
+        }
+        if(res.data && res.data.account_id){
+          localStorage.setItem('monzo_dash_v3', JSON.stringify({
+            gasUrl: gasUrl,
+            accountId: res.data.account_id
+          }));
+        }
+        setTitle('Connected!');
+        setMsg('Redirecting...');
+        showSpinner(false);
+        setTimeout(function(){
+          window.location.href = 'https://ttamesor.github.io/monzo-dashboard/';
+        }, 1000);
+      })
+      .catch(function(e){ showErr('Connection error: ' + e.message); });
   });
 });
 </script>
