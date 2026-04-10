@@ -189,7 +189,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.1</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.2</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -441,11 +441,11 @@ function bgFetchStep(){
   // 5-day window ending at cursor
   var endDate=new Date(bgCursor);
   var startDate=new Date(endDate);
-  startDate.setDate(startDate.getDate()-5);
+  startDate.setDate(startDate.getDate()-14);
   var since=startDate.toISOString();
   var before=bgCursor;
 
-  setProgress("Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+"...");
+  setProgress("Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" - "+endDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+"...");
 
   gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:before})
     .then(function(res){
@@ -467,10 +467,10 @@ function bgFetchStep(){
       if(new Date(bgCursor)<limit){
         stopBgFetch();return;
       }
-      setTimeout(bgFetchStep,1500);
+      setTimeout(bgFetchStep,400);
     })
     .catch(function(){
-      setTimeout(bgFetchStep,5000);
+      setTimeout(bgFetchStep,2000);
     });
 }
 
