@@ -1,24 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connecting...</title>
+</head>
+<body>
+  <p>Connecting to Monzo...</p>
+
 <script>
-const params = new URLSearchParams(window.location.search);
-const code = params.get('code');
-const state = params.get('state');
+(function(){
+  function getParam(name){
+    return new URLSearchParams(window.location.search).get(name);
+  }
 
-const gasUrl = 'https://script.google.com/macros/s/AKfycbx4oCQ-O_vqzhlR7v-Mi0260Ve06Rp47W8vZ2UypARjW1A2VZjc3VLMqHxxuVg_Ma8J/exec';
+  var code = getParam('code');
+  var state = getParam('state');
+  var gas = localStorage.getItem('monzo_gas_url');
 
-if (!code || !state) {
-  document.body.innerText = 'Missing code/state';
-} else {
-  fetch(`${gasUrl}?action=exchange&code=${code}&state=${state}`)
-    .then(r => r.json())
-    .then(res => {
-      if (res.status !== 'ok') {
-        document.body.innerText = 'Auth failed';
+  if(!code || !state || !gas){
+    document.body.innerHTML = 'Missing OAuth parameters';
+    return;
+  }
+
+  fetch(gas + '?action=exchange&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state))
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.status !== 'ok'){
+        document.body.innerHTML = 'Token exchange failed';
         return;
       }
 
+      // Save state so dashboard can use it
       localStorage.setItem('monzo_state', state);
 
-      window.location.href = '/monzo-dashboard/';
+      // Redirect back to main dashboard
+      window.location.href = 'index.html';
+    })
+    .catch(function(){
+      document.body.innerHTML = 'Error connecting to backend';
     });
-}
+})();
 </script>
+</body>
+</html>
