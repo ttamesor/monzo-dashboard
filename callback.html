@@ -24,10 +24,10 @@
   fetch(gas + '?action=exchange&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state))
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if(res.status !== 'ok'){
-        document.body.innerHTML = 'Token exchange failed';
-        return;
-      }
+     if(res.status !== 'ok'){
+  document.body.innerHTML = 'Token exchange failed: ' + JSON.stringify(res);
+  return;
+}
 
       // Save state so dashboard can use it
       localStorage.setItem('monzo_state', state);
