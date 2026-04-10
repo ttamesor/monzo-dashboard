@@ -60,8 +60,9 @@ input[type="text"]:focus{border-color:var(--coral);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
 .tab-content{flex:1;overflow-y:auto;overflow-x:hidden;}
-.tab-panel{display:none;padding:1.5rem 2rem;max-width:1300px;}
+.tab-panel{display:none;width:100%;}
 .tab-panel.active{display:block;}
+.tab-inner{padding:1.5rem 2rem;max-width:1400px;margin:0 auto;}
 .main{padding:0;}
 .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.2rem;}
 .grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.2rem;}
@@ -272,6 +273,26 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 @media(max-width:1100px){.grid-2-1{grid-template-columns:1fr 1fr;}}
 @media(max-width:700px){.grid-2-1{grid-template-columns:1fr;}}
 
+/* Subscriptions */
+.sub-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--navy-border);}
+.sub-item:last-child{border-bottom:none;}
+.sub-left{display:flex;align-items:center;gap:12px;}
+.sub-icon{width:36px;height:36px;border-radius:9px;background:var(--navy-mid);border:1px solid var(--navy-border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.sub-name{font-size:14px;color:var(--text-primary);font-weight:500;}
+.sub-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.sub-right{text-align:right;}
+.sub-monthly{font-size:15px;font-weight:500;font-family:var(--mono);color:var(--text-primary);}
+.sub-annual{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.sub-day{font-size:11px;color:var(--text-secondary);margin-top:1px;}
+.sub-status{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;margin-left:6px;}
+.sub-active{background:var(--green-dim);color:var(--green);}
+.sub-recent{background:var(--amber-dim);color:var(--amber);}
+.sub-inactive{background:rgba(255,255,255,0.06);color:var(--text-muted);}
+.sub-total-bar{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1.2rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+.sub-total-item{text-align:center;}
+.sub-total-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+.sub-total-value{font-size:20px;font-weight:500;font-family:var(--mono);}
+
 /* Budget / pace */
 .budget-bar-wrap{margin-bottom:1.2rem;}
 .budget-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:5px;}
@@ -367,13 +388,16 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <span class="nav-icon">🏦</span>Wealth
     </div>
     <div class="sidebar-section" style="margin-top:auto;padding-top:1rem;">Insights</div>
+    <div class="nav-item" data-tab="subscriptions" onclick="switchTab('subscriptions')">
+      <span class="nav-icon">🔄</span>Subscriptions
+    </div>
     <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">
       <span class="nav-icon">🔍</span>Patterns<span class="nav-badge" id="fritter-badge"></span>
     </div>
   </div>
   <div class="tab-content" id="tab-content">
   <div class="tab-panel active" id="tab-dashboard">
-  <div class="main" style="max-width:1300px;">
+  <div class="tab-inner">
     <div class="grid-5" id="stat-cards"><div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div></div>
     <div id="budget-pace-strip" style="margin-bottom:1.2rem;"></div>
     <div class="insight-strip" id="insight-strip">
@@ -461,7 +485,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 
   <!-- Calendar tab -->
   <div class="tab-panel" id="tab-calendar">
-    <div style="padding:1.5rem 2rem;">
+    <div class="tab-inner">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
         <h2 style="font-size:18px;font-weight:500;" id="cal-month-title">Calendar</h2>
         <div style="display:flex;gap:8px;align-items:center;">
@@ -500,14 +524,14 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 
   <!-- Trends tab -->
   <div class="tab-panel" id="tab-trends">
-    <div style="max-width:1000px;padding:1.5rem 2rem;" id="trends-content">
+    <div class="tab-inner" id="trends-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
 
   <!-- Transactions tab -->
   <div class="tab-panel" id="tab-transactions">
-    <div style="max-width:1100px;padding:1.5rem 2rem;">
+    <div class="tab-inner">
       <div class="card">
         <div class="card-header">
           <span class="card-title">All transactions</span>
@@ -528,14 +552,21 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 
   <!-- Wealth tab -->
   <div class="tab-panel" id="tab-wealth">
-    <div style="max-width:900px;padding:1.5rem 2rem;" id="wealth-content">
+    <div class="tab-inner" id="wealth-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Subscriptions tab -->
+  <div class="tab-panel" id="tab-subscriptions">
+    <div class="tab-inner" id="subscriptions-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
 
   <!-- Patterns tab -->
   <div class="tab-panel" id="tab-patterns">
-    <div style="max-width:1000px;padding:1.5rem 2rem;" id="patterns-content">
+    <div class="tab-inner" id="patterns-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
@@ -1197,6 +1228,7 @@ function switchTab(tab){
   if(tab==='trends')renderTrends();
   if(tab==='transactions')renderTxTab();
   if(tab==='wealth')renderWealth();
+  if(tab==='subscriptions')renderSubscriptions();
   if(tab==='patterns')renderPatterns();
 }
 
@@ -1401,23 +1433,35 @@ function renderWeekView(){
       gridBodyHtml+='<div style="'+rowStyle+'"></div>';
     }
 
-    // Transaction blocks
+    // Transaction blocks - detect overlaps and assign columns
     var minHour=hours[0],maxHour=hours[hours.length-1]+1;
+    // Assign columns to avoid overlap (simple greedy)
+    var placed=[];
     dayTx.forEach(function(t){
       var td=new Date(t.created);
       var h=td.getHours(),min=td.getMinutes();
       var frac=(h+min/60-minHour)/(maxHour-minHour);
       if(frac<0)frac=0;if(frac>1)frac=0.98;
       var top=Math.round(frac*totalHours*hourH);
+      var blockH=36;
+      // Find a column where this block doesn't overlap
+      var col=0;
+      while(placed.some(function(p){return p.col===col&&Math.abs(p.top-top)<blockH;})){col++;}
+      placed.push({top:top,col:col});
+      var totalCols=Math.max.apply(null,placed.map(function(p){return p.col;}))+1;
       var cr=t.amount>0;
       var m=merchant(t);
       var amtStr=(cr?'+':'-')+fmt(t.amount);
       var timeStr=(h<10?'0':'')+h+':'+(min<10?'0':'')+min;
-      gridBodyHtml+='<div class="week-tx-block '+(cr?'credit':'debit')+'" style="top:'+top+'px;" '
+      var colW=100/Math.max(totalCols,1);
+      var left=col*colW+'%';
+      var width=colW+'%';
+      gridBodyHtml+='<div class="week-tx-block '+(cr?'credit':'debit')+'" '
+        +'style="top:'+top+'px;left:'+left+';width:'+width+';right:auto;" '
         +'onclick="openDayPanel('+d.getFullYear()+','+d.getMonth()+','+d.getDate()+')" '
         +'title="'+m+' '+amtStr+' at '+timeStr+'">'
         +'<div class="week-tx-name">'+m+'</div>'
-        +'<div class="week-tx-amt">'+amtStr+' <span style="opacity:0.6;">'+timeStr+'</span></div>'
+        +'<div class="week-tx-amt">'+amtStr+'<br><span style="opacity:0.6;font-size:9px;">'+timeStr+'</span></div>'
         +'</div>';
     });
 
@@ -1868,6 +1912,7 @@ renderAll=function(){
   if(currentTab==='trends')renderTrends();
   if(currentTab==='transactions')renderTxTabList();
   if(currentTab==='wealth')renderWealth();
+  if(currentTab==='subscriptions')renderSubscriptions();
   if(currentTab==='patterns')renderPatterns();
 };
 
@@ -2136,6 +2181,151 @@ function renderPatterns(){
   // Update badge
   var badge=document.getElementById('fritter-badge');
   if(badge)badge.textContent=smallFrequent.length>0?String(smallFrequent.length):'';
+}
+
+
+// ---- Subscriptions detection ----
+function detectSubscriptions(){
+  // Find payments that occur on the same (or close) day each month with consistent amounts
+  var debits=allTransactions.filter(function(t){return t.amount<0&&t.amount!==0;});
+
+  // Group by merchant
+  var byMerchant={};
+  debits.forEach(function(t){
+    var n=merchant(t);
+    if(n==='Pot transfer')return;
+    if(!byMerchant[n])byMerchant[n]=[];
+    byMerchant[n].push(t);
+  });
+
+  var subs=[];
+  Object.entries(byMerchant).forEach(function(e){
+    var name=e[0],txns=e[1];
+    if(txns.length<2)return;
+
+    // Group by month
+    var byMonth={};
+    txns.forEach(function(t){
+      var key=t.created.slice(0,7);
+      if(!byMonth[key])byMonth[key]=[];
+      byMonth[key].push(t);
+    });
+    var months=Object.keys(byMonth).sort();
+    if(months.length<2)return;
+
+    // Check amount consistency - most common amount
+    var amtCounts={};
+    txns.forEach(function(t){
+      var a=Math.abs(t.amount);
+      amtCounts[a]=(amtCounts[a]||0)+1;
+    });
+    var dominantAmt=parseInt(Object.keys(amtCounts).sort(function(a,b){return amtCounts[b]-amtCounts[a];})[0]);
+    var matchingTxns=txns.filter(function(t){return Math.abs(Math.abs(t.amount)-dominantAmt)<=50;});
+    if(matchingTxns.length<2)return;
+
+    // Check day-of-month consistency
+    var days=matchingTxns.map(function(t){return new Date(t.created).getDate();});
+    var avgDay=Math.round(days.reduce(function(s,d){return s+d;},0)/days.length);
+    var daySpread=Math.max.apply(null,days)-Math.min.apply(null,days);
+
+    // Score: lower spread = more subscription-like, more months = more confident
+    var monthsActive=Object.keys(byMonth).filter(function(m){
+      return byMonth[m].some(function(t){return Math.abs(Math.abs(t.amount)-dominantAmt)<=50;});
+    }).length;
+    if(monthsActive<2)return;
+
+    // Last payment date
+    var lastTx=matchingTxns.sort(function(a,b){return new Date(b.created)-new Date(a.created);})[0];
+    var lastDate=new Date(lastTx.created);
+    var now=new Date();
+    var daysSince=Math.floor((now-lastDate)/(1000*60*60*24));
+    var status=daysSince<35?'active':daysSince<70?'recent':'inactive';
+
+    // Estimated next payment
+    var nextDate=new Date(lastDate);
+    nextDate.setMonth(nextDate.getMonth()+1);
+
+    subs.push({
+      name:name,
+      amount:dominantAmt,
+      avgDay:avgDay,
+      daySpread:daySpread,
+      months:monthsActive,
+      lastDate:lastDate,
+      nextDate:nextDate,
+      status:status,
+      daysSince:daysSince,
+      category:lastTx.category||'general'
+    });
+  });
+
+  // Sort by amount descending, filter out very low confidence
+  return subs
+    .filter(function(s){return s.months>=2;})
+    .sort(function(a,b){return b.amount-a.amount;});
+}
+
+function renderSubscriptions(){
+  var el=document.getElementById('subscriptions-content');
+  if(!el)return;
+
+  var subs=detectSubscriptions();
+
+  if(!subs.length){
+    el.innerHTML='<div style="color:var(--text-muted);padding:2rem;font-size:14px;">Load at least 2 months of history to detect subscriptions.</div>';
+    return;
+  }
+
+  var active=subs.filter(function(s){return s.status==='active';});
+  var recent=subs.filter(function(s){return s.status==='recent';});
+  var inactive=subs.filter(function(s){return s.status==='inactive';});
+
+  var monthlyTotal=active.reduce(function(s,x){return s+x.amount;},0);
+  var annualTotal=monthlyTotal*12;
+  var txTotal=active.length;
+
+  var html='<div style="margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;">'
+    +'<h2 style="font-size:18px;font-weight:500;">Subscriptions & regular payments</h2>'
+    +'</div>';
+
+  // Summary bar
+  html+='<div class="sub-total-bar">'
+    +'<div class="sub-total-item"><div class="sub-total-label">Monthly burden</div><div class="sub-total-value" style="color:var(--coral-soft);">'+fmt(monthlyTotal)+'</div></div>'
+    +'<div class="sub-total-item"><div class="sub-total-label">Annual cost</div><div class="sub-total-value">'+fmt(annualTotal)+'</div></div>'
+    +'<div class="sub-total-item"><div class="sub-total-label">Active subscriptions</div><div class="sub-total-value">'+txTotal+'</div></div>'
+    +'</div>';
+
+  function renderSubList(list, title, badge){
+    if(!list.length)return'';
+    var out='<div class="card" style="margin-bottom:1rem;">';
+    out+='<div class="card-header"><span class="card-title">'+title+'</span>'+badge+'</div>';
+    out+=list.map(function(s){
+      var statusHtml='<span class="sub-status sub-'+s.status+'">'
+        +(s.status==='active'?'Active':s.status==='recent'?'No recent payment':'Inactive')+'</span>';
+      var nextStr=s.status==='active'?'Next ~'+s.nextDate.toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'Last: '+s.lastDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      var confidence=s.daySpread<=3?'Same day each month':s.daySpread<=7?'Within a week':'Variable date';
+      return '<div class="sub-item">'
+        +'<div class="sub-left">'
+        +'<div class="sub-icon">'+(CAT_EMOJI[s.category]||'💳')+'</div>'
+        +'<div>'
+        +'<div class="sub-name">'+s.name+statusHtml+'</div>'
+        +'<div class="sub-meta">'+confidence+' - seen '+s.months+' months</div>'
+        +'<div class="sub-day">'+nextStr+'</div>'
+        +'</div></div>'
+        +'<div class="sub-right">'
+        +'<div class="sub-monthly">'+fmt(s.amount)+'/mo</div>'
+        +'<div class="sub-annual">'+fmt(s.amount*12)+'/yr</div>'
+        +'</div></div>';
+    }).join('');
+    out+='</div>';
+    return out;
+  }
+
+  html+=renderSubList(active,'Active subscriptions','<span class="badge badge-coral">'+active.length+'</span>');
+  html+=renderSubList(recent,'No recent payment - check these','<span class="badge" style="background:var(--amber-dim);color:var(--amber);">'+recent.length+'</span>');
+  html+=renderSubList(inactive,'Possibly cancelled','<span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted);">'+inactive.length+'</span>');
+
+  el.innerHTML=html;
 }
 
 initTheme();
