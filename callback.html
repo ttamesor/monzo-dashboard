@@ -41,11 +41,29 @@
   var gasUrl=localStorage.getItem('monzo_gas_url');
   if(!gasUrl){showError('GAS relay URL not found. Please return to the dashboard.');return;}
 
-  // Exchange immediately - by the time we're here, user has approved in app
   var redirectUri='https://ttamesor.github.io/monzo-dashboard/callback.html';
-  fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
-    .then(function(r){return r.json();})
-    .then(function(res){
+
+  // Step 1: send exchange to trigger SCA notification in app
+  document.getElementById('btn-send').onclick=function(){
+    document.getElementById('btn-send').disabled=true;
+    document.getElementById('btn-send').textContent='Request sent - check your Monzo app';
+    document.getElementById('btn-approve').style.display='block';
+    document.getElementById('title').textContent='Approve in the Monzo app';
+    document.getElementById('msg').textContent='Open the Monzo app and approve the login request. Then click the button below.';
+    // Fire the exchange now - Monzo will hold it pending SCA
+    window._exchangePromise=fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
+      .then(function(r){return r.json();});
+  };
+
+  // Step 2: user has approved in app - complete the connection
+  document.getElementById('btn-approve').onclick=function(){
+    document.getElementById('btn-approve').style.display='none';
+    document.getElementById('btn-send').style.display='none';
+    document.getElementById('spinner').style.display='block';
+    document.getElementById('title').textContent='Connecting...';
+    document.getElementById('msg').textContent='Completing connection...';
+
+    var finish=function(res){
       if(res.status!=='ok'){
         showError('Token exchange failed: '+(res.message||'Unknown error'));return;
       }
@@ -61,8 +79,20 @@
       setTimeout(function(){
         window.location.href=window.location.origin+window.location.pathname.replace('callback.html','');
       },1200);
-    })
-    .catch(function(e){showError('Connection error: '+e.message);});
+    };
+
+    if(window._exchangePromise){
+      window._exchangePromise
+        .then(finish)
+        .catch(function(e){showError('Connection error: '+e.message);});
+    } else {
+      // Exchange wasn't fired yet - fire it now
+      fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
+        .then(function(r){return r.json();})
+        .then(finish)
+        .catch(function(e){showError('Connection error: '+e.message);});
+    }
+  };
 
   function showError(msg){
     document.getElementById('spinner').style.display='none';
