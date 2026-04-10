@@ -20,9 +20,9 @@
 <body>
 <div class="box">
   <div class="logo">M</div>
-  <h2 id="title">Authorise in Monzo app</h2>
-  <p id="msg">Click below after approving the request in your Monzo app.</p>
-  <button class="btn" id="btn">I have approved - connect</button>
+  <h2 id="title">Connect to Monzo</h2>
+  <p id="msg">Click below to send an authorisation request to your Monzo app.</p>
+  <button class="btn" id="btn">Send to Monzo app</button>
   <div class="spinner" id="spinner" style="display:none;"></div>
   <div class="err" id="err"></div>
 </div>
@@ -38,34 +38,63 @@ window.addEventListener('DOMContentLoaded', function(){
     return;
   }
 
-  document.getElementById('btn').addEventListener('click', function(){
-    document.getElementById('btn').style.display = 'none';
-    document.getElementById('spinner').style.display = 'block';
-    document.getElementById('title').textContent = 'Connecting...';
-    document.getElementById('msg').textContent = 'Exchanging authorisation code.';
+  var step = 1;
 
-    fetch(gasUrl + '?action=exchange&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state||''))
-      .then(function(r){ return r.json(); })
-      .then(function(res){
-        if(res.status !== 'ok'){
-          showErr('Failed: ' + (res.message || JSON.stringify(res)));
+  document.getElementById('btn').addEventListener('click', function(){
+    if(step === 1){
+      // Step 1: fire exchange to trigger Monzo app notification
+      step = 2;
+      document.getElementById('btn').disabled = true;
+      document.getElementById('btn').textContent = 'Sending to Monzo app...';
+      document.getElementById('title').textContent = 'Check your Monzo app';
+      document.getElementById('msg').textContent = 'A notification has been sent to your Monzo app. Approve it, then click the button below.';
+
+      fetch(gasUrl + '?action=exchange&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state||''))
+        .then(function(r){ return r.json(); })
+        .then(function(res){ window._exchangeRes = res; })
+        .catch(function(e){ window._exchangeErr = e.message; });
+
+      setTimeout(function(){
+        document.getElementById('btn').disabled = false;
+        document.getElementById('btn').textContent = 'I have approved in Monzo - connect';
+      }, 3000);
+
+    } else {
+      // Step 2: user approved, complete connection
+      document.getElementById('btn').style.display = 'none';
+      document.getElementById('spinner').style.display = 'block';
+
+      function finish(res){
+        if(!res || res.status !== 'ok'){
+          showErr('Failed: ' + ((res && res.message) || 'Unknown error'));
           return;
         }
         var accountId = res.data && res.data.account_id;
-        var savedState = res.data && res.data.state || state;
+        var savedState = (res.data && res.data.state) || state;
         localStorage.setItem('monzo_dash_v3', JSON.stringify({
-          gasUrl: gasUrl,
-          accountId: accountId || '',
-          state: savedState
+          gasUrl: gasUrl, accountId: accountId || '', state: savedState
         }));
         document.getElementById('title').textContent = 'Connected!';
-        document.getElementById('msg').textContent = 'Redirecting to your dashboard...';
+        document.getElementById('msg').textContent = 'Redirecting...';
         document.getElementById('spinner').style.display = 'none';
         setTimeout(function(){
           window.location.href = 'https://ttamesor.github.io/monzo-dashboard/';
-        }, 1000);
-      })
-      .catch(function(e){ showErr('Error: ' + e.message); });
+        }, 800);
+      }
+
+      if(window._exchangeErr){ showErr('Exchange error: ' + window._exchangeErr); return; }
+      if(window._exchangeRes){ finish(window._exchangeRes); }
+      else {
+        // Still waiting - poll briefly
+        var attempts = 0;
+        var poll = setInterval(function(){
+          attempts++;
+          if(window._exchangeRes){ clearInterval(poll); finish(window._exchangeRes); }
+          else if(window._exchangeErr){ clearInterval(poll); showErr(window._exchangeErr); }
+          else if(attempts > 20){ clearInterval(poll); showErr('Timed out. Please try again.'); }
+        }, 500);
+      }
+    }
   });
 
   function showErr(msg){
