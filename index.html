@@ -422,6 +422,32 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 .dow-label{font-size:11px;color:var(--text-muted);}
 .dow-val{font-size:10px;font-family:var(--mono);color:var(--text-secondary);margin-top:2px;}
 
+/* Obfuscate mode */
+body.obfuscate .mono-val,
+body.obfuscate [class*="stat-value"],
+body.obfuscate [class*="trend-stat-value"],
+body.obfuscate [class*="simple-balance"],
+body.obfuscate [class*="simple-card-value"],
+body.obfuscate [class*="wow-val"],
+body.obfuscate [class*="sub-monthly"],
+body.obfuscate [class*="income-amt"],
+body.obfuscate [class*="fritter-amt"],
+body.obfuscate [class*="bill-amount"],
+body.obfuscate [class*="bill-balance"],
+body.obfuscate [class*="merchant-card-spend"],
+body.obfuscate [class*="merchant-stat-val"],
+body.obfuscate [class*="month-bar-val"],
+body.obfuscate [class*="bw-value"],
+body.obfuscate [class*="cal-spend"],
+body.obfuscate [class*="cal-day-total"],
+body.obfuscate [class*="tx-amount"],
+body.obfuscate [class*="compare-this"],
+body.obfuscate [class*="compare-last"],
+body.obfuscate [class*="pot-progress-vals"],
+body.obfuscate [class*="insight-tile-value"],
+body.obfuscate [class*="nw-val"]{filter:blur(6px);user-select:none;transition:filter 0.2s;}
+body.obfuscate .stat-value{filter:blur(8px);}
+
 /* Compact mode */
 body.compact .card{padding:0.8rem 1rem;}
 body.compact .stat-value{font-size:20px;}
@@ -507,7 +533,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.1</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.2</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -515,6 +541,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
     <div class="topbar-right">
       <select class="month-select" id="month-select" onchange="switchMonth(this.value)"></select>
       <div class="account-pill" id="account-pill"></div>
+      <button class="theme-btn" id="obfuscate-btn" onclick="toggleObfuscate()" title="Hide numbers">👁</button>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
       <button class="pill-btn" onclick="openAccountsModal()">Accounts</button>
       <button class="pill-btn" onclick="openSearch()">🔍 Search</button>
@@ -1291,9 +1318,42 @@ function showMoreTx(){
 }
 
 // ---- Formatting ----
-function fmt(p){return"£"+(Math.abs(p)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fmtShort(p){var v=Math.abs(p)/100;return v>=1000?"£"+(v/1000).toFixed(1)+"k":"£"+v.toFixed(0);}
-function fmtRaw(v){return"£"+v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+var OBFUSCATE=false;
+var _obfSeed=Math.floor(Math.random()*9000)+1000;
+function _obfNum(p){
+  // Deterministic fake number based on real magnitude + seed, so same value always shows same fake
+  var real=Math.abs(p)/100;
+  var mag=real<10?10:real<100?100:real<1000?1000:real<10000?10000:100000;
+  var fake=(((Math.abs(p)+_obfSeed)*7919)%mag)+mag*0.1;
+  return fake;
+}
+function fmt(p){
+  if(OBFUSCATE){var f=_obfNum(p);return"£"+f.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+  return"£"+(Math.abs(p)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtShort(p){
+  if(OBFUSCATE){var f=_obfNum(p);return f>=1000?"£"+(f/1000).toFixed(1)+"k":"£"+f.toFixed(0);}
+  var v=Math.abs(p)/100;return v>=1000?"£"+(v/1000).toFixed(1)+"k":"£"+v.toFixed(0);
+}
+function fmtRaw(v){
+  if(OBFUSCATE){var f=_obfNum(v*100);return"£"+f.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+  return"£"+v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function toggleObfuscate(){
+  OBFUSCATE=!OBFUSCATE;
+  _obfSeed=Math.floor(Math.random()*9000)+1000; // new seed each toggle so numbers change
+  var btn=document.getElementById('obfuscate-btn');
+  if(btn) btn.textContent=OBFUSCATE?'🙈':'👁';
+  renderAll();
+  if(currentTab==='simple') renderSimple();
+  if(currentTab==='trends') renderTrends();
+  if(currentTab==='analytics') renderAnalytics();
+  if(currentTab==='wealth') renderWealth();
+  if(currentTab==='income') renderIncome();
+  if(currentTab==='subscriptions') renderSubscriptions();
+  if(currentTab==='bills') renderBills();
+  if(currentTab==='merchants') renderMerchants();
+}
 function delta(a,b,low){
   if(!b)return"";
   var pct=((a-b)/b)*100,up=pct>0,good=low?!up:up;
@@ -2231,6 +2291,28 @@ function renderBudgetStrip(viewTx){
   var expectedSoFar=budget>0?(budget/daysInMonth)*dayOfMonth:0;
   var overBudget=budget>0&&totalSpend>budget;
 
+  // Income-aware projection
+  var remainingDays=daysInMonth-dayOfMonth;
+  var projRemainingSpend=dayOfMonth>0?(totalSpend/dayOfMonth)*remainingDays:0;
+  // Expected income remaining this month
+  var incSources=detectIncomeSources();
+  var expectedIncomeRemaining=0;
+  incSources.forEach(function(s){
+    var d=new Date(vmY,vmM,s.avgDay);
+    if(d>new Date()&&d.getMonth()===vmM) expectedIncomeRemaining+=s.amount;
+  });
+  // Expected bills remaining this month
+  var subs2=detectSubscriptions().filter(function(s){return s.status!=='inactive';});
+  var expectedBillsRemaining=0;
+  subs2.forEach(function(s){
+    var d=new Date(vmY,vmM,s.avgDay);
+    if(d>new Date()&&d.getMonth()===vmM) expectedBillsRemaining+=s.amount;
+  });
+  // Projected end-of-month balance
+  var currentBalance=cachedBal?cachedBal.balance:0;
+  var projBalance=currentBalance-projRemainingSpend-expectedBillsRemaining+expectedIncomeRemaining;
+  var hasProjData=incSources.length>0||subs2.length>0;
+
   var html='<div class="card" style="padding:1rem 1.4rem;margin-bottom:1.2rem;">';
   html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
   html+='<div style="font-size:12px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Monthly pace</div>';
@@ -2238,10 +2320,16 @@ function renderBudgetStrip(viewTx){
   if(budget>0) html+='<span style="font-size:12px;color:var(--text-muted);">Budget: <strong style="color:var(--text-primary);">'+fmtRaw(budget/100)+'</strong></span>';
   html+='<button onclick="openBudgetModal()" style="background:transparent;border:1px solid var(--navy-border);border-radius:6px;padding:3px 10px;font-family:var(--font);font-size:11px;color:var(--text-muted);cursor:pointer;">'+(budget>0?'Edit':'Set budget')+'</button>';
   html+='</div></div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:10px;">';
+  var cols=hasProjData?4:3;
+  html+='<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:1rem;margin-bottom:10px;">';
   html+='<div><div style="font-size:11px;color:var(--text-muted);">Spent</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);">'+fmt(totalSpend)+'</div></div>';
   html+='<div><div style="font-size:11px;color:var(--text-muted);">Daily avg</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);">'+fmt(dayOfMonth>0?totalSpend/dayOfMonth:0)+'</div></div>';
-  html+='<div><div style="font-size:11px;color:var(--text-muted);">On pace for</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);color:'+(budget>0&&paceTotal>budget?'var(--coral-soft)':'var(--green)')+';">'+fmt(paceTotal)+'</div></div>';
+  html+='<div><div style="font-size:11px;color:var(--text-muted);">Spend pace</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);color:'+(budget>0&&paceTotal>budget?'var(--coral-soft)':'var(--text-primary)')+';">'+fmt(paceTotal)+'</div></div>';
+  if(hasProjData){
+    html+='<div><div style="font-size:11px;color:var(--text-muted);">Proj. balance</div>'
+      +'<div style="font-size:18px;font-weight:500;font-family:var(--mono);color:'+(projBalance<0?'var(--coral-soft)':'var(--green)')+';">'+fmt(projBalance)+'</div>'
+      +'<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">incl. bills+income</div></div>';
+  }
   html+='</div>';
   if(budget>0){
     var fillPct=Math.min(Math.round((totalSpend/budget)*100),100);
@@ -3570,10 +3658,20 @@ function renderSimple(){
     +'<div class="simple-card-sub">'+(spendVsLast!==null?(spendVsLast>0?'▲ '+spendVsLast+'%':'▼ '+Math.abs(spendVsLast)+'%')+' vs last month':'No comparison')+'</div>'
     +'<div class="simple-card-accent" style="background:var(--coral);"></div></div>';
 
+  // Projected balance for simple view
+  var remDays2=daysInMonth-dayOfMonth;
+  var projRemSpend2=dayOfMonth>0?(thisSpend/dayOfMonth)*remDays2:0;
+  var incomeSrcs2=detectIncomeSources();
+  var expIncome2=0;incomeSrcs2.forEach(function(s){var d=new Date(now.getFullYear(),now.getMonth(),s.avgDay);if(d>now&&d.getMonth()===now.getMonth())expIncome2+=s.amount;});
+  var subs3=detectSubscriptions().filter(function(s){return s.status!=='inactive';});
+  var expBills2=0;subs3.forEach(function(s){var d=new Date(now.getFullYear(),now.getMonth(),s.avgDay);if(d>now&&d.getMonth()===now.getMonth())expBills2+=s.amount;});
+  var projBal2=balance-projRemSpend2-expBills2+expIncome2;
+  var hasProjData2=incomeSrcs2.length>0||subs3.length>0;
+
   html+='<div class="simple-card"><div class="simple-card-accent" style="background:var(--amber);"></div>'
     +'<div class="simple-card-label">Daily average</div>'
     +'<div class="simple-card-value" style="font-size:20px;">'+fmt(dailyAvg)+'</div>'
-    +'<div class="simple-card-sub">On pace for '+fmt(paceTotal)+'</div></div>';
+    +'<div class="simple-card-sub">'+(hasProjData2?'Proj. month-end: <strong style="color:'+(projBal2<0?'var(--coral-soft)':'var(--green)')+';">'+fmt(projBal2)+'</strong>':'On pace for '+fmt(paceTotal))+'</div></div>';
 
   if(budget>0){
     var bCol=budgetPct>=100?'var(--coral)':budgetPct>=80?'var(--amber)':'var(--green)';
