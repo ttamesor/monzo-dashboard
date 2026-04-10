@@ -39,8 +39,8 @@ input[type="text"]:focus{border-color:var(--coral);}
 .btn-primary{width:100%;background:var(--coral);border:none;border-radius:8px;padding:12px;font-family:var(--font);font-size:15px;font-weight:500;color:white;cursor:pointer;transition:opacity 0.2s,transform 0.1s;}
 .btn-primary:hover{opacity:0.88;}.btn-primary:active{transform:scale(0.98);}
 .error-msg{background:var(--coral-dim);border:1px solid rgba(255,90,95,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--coral-soft);margin-bottom:1rem;display:none;}
-#dashboard{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--navy-border);background:var(--navy-mid);z-index:10;flex-wrap:wrap;gap:8px;flex-shrink:0;}
+#dashboard{display:none;position:fixed;inset:0;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--navy-border);background:var(--navy-mid);z-index:10;flex-wrap:wrap;gap:8px;}
 .topbar-left{display:flex;align-items:center;gap:12px;}
 .topbar-logo-mark{width:28px;height:28px;background:var(--coral);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:white;flex-shrink:0;}
 .topbar-title{font-size:15px;font-weight:500;}
@@ -53,14 +53,14 @@ input[type="text"]:focus{border-color:var(--coral);}
 .hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
-.app-body{display:flex;overflow:hidden;min-height:0;flex:1;}
-.sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
+.app-body{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;margin-top:var(--topbar-h,54px);}
+.sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;height:100%;}
 .sidebar-section{font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
-.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
+.tab-content{flex:1;overflow-y:scroll;overflow-x:hidden;height:100%;}
 .tab-panel{display:none;width:100%;}
 .tab-panel.active{display:block;}
 .tab-inner{padding:1.5rem 2rem 4rem;max-width:1400px;margin:0 auto;}
@@ -380,7 +380,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 .insight-row-val{font-size:13px;font-family:var(--mono);font-weight:500;}
 
 /* Reauth banner */
-.reauth-banner{display:none;background:var(--amber-dim);border-bottom:1px solid var(--amber);padding:8px 2rem;font-size:13px;color:var(--amber);align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;flex-shrink:0;}
+.reauth-banner{display:none;background:var(--amber-dim);border-bottom:1px solid var(--amber);padding:8px 2rem;font-size:13px;color:var(--amber);align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:relative;z-index:9;}
 .reauth-banner.show{display:flex;}
 .reauth-banner a{color:var(--amber);font-weight:500;cursor:pointer;text-decoration:underline;}
 
@@ -533,7 +533,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.2</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.3</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -918,6 +918,7 @@ function showError(msg){var el=document.getElementById("error-msg");el.style.dis
 function showDashboard(){
   document.getElementById("config-screen").style.display="none";
   document.getElementById("dashboard").style.display="flex";
+  setTimeout(adjustAppBodyTop, 50);
   document.getElementById("account-pill").textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"No account";
   buildMonthSelector();
   if(!ACCOUNT_ID){
@@ -994,7 +995,17 @@ function gasCall(params){
 
 function showReauthBanner(){
   var b=document.getElementById('reauth-banner');
-  if(b) b.classList.add('show');
+  if(b){
+    b.classList.add('show');
+    adjustAppBodyTop();
+  }
+}
+function adjustAppBodyTop(){
+  var topbar=document.querySelector('.topbar');
+  var banner=document.getElementById('reauth-banner');
+  var h=(topbar?topbar.offsetHeight:54)+(banner&&banner.classList.contains('show')?banner.offsetHeight:0);
+  var ab=document.querySelector('.app-body');
+  if(ab) ab.style.marginTop=h+'px';
 }
 
 function doReauth(){
