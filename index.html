@@ -333,7 +333,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.9</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.0</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -840,9 +840,6 @@ function loadAll(){
     });
 
     console.log("Loaded: this month="+thisMo.length+" last month="+lastMo.length+" total="+allTransactions.length);
-    console.log("State used:", MONZO_STATE);
-    console.log("Account ID:", ACCOUNT_ID);
-    console.log("Raw this month result:", JSON.stringify(results[2]).slice(0,200));
 
     populateCatFilter();
     renderAll();
@@ -1876,6 +1873,270 @@ renderAll=function(){
 
 // Update version
 // v1.5
+
+
+// ---- Budget / pace strip ----
+var monthBudgets=JSON.parse(localStorage.getItem('monzo_budgets_v1')||'{}');
+function saveBudgets(){localStorage.setItem('monzo_budgets_v1',JSON.stringify(monthBudgets));}
+
+function renderBudgetStrip(viewTx){
+  var el=document.getElementById('budget-pace-strip');
+  if(!el)return;
+  var totalSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var vp=viewMonth.split('-');
+  var vmY=parseInt(vp[0]),vmM=parseInt(vp[1])-1;
+  var now=new Date();
+  var isCurrentMonth=vmY===now.getFullYear()&&vmM===now.getMonth();
+  var daysInMonth=new Date(vmY,vmM+1,0).getDate();
+  var dayOfMonth=isCurrentMonth?now.getDate():daysInMonth;
+  var budget=monthBudgets[viewMonth]||0;
+  var paceTotal=dayOfMonth>0?(totalSpend/dayOfMonth)*daysInMonth:totalSpend;
+  var expectedSoFar=budget>0?(budget/daysInMonth)*dayOfMonth:0;
+  var overBudget=budget>0&&totalSpend>budget;
+
+  var html='<div class="card" style="padding:1rem 1.4rem;margin-bottom:1.2rem;">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+  html+='<div style="font-size:12px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Monthly pace</div>';
+  html+='<div style="display:flex;align-items:center;gap:8px;">';
+  if(budget>0) html+='<span style="font-size:12px;color:var(--text-muted);">Budget: <strong style="color:var(--text-primary);">'+fmtRaw(budget/100)+'</strong></span>';
+  html+='<button onclick="openBudgetModal()" style="background:transparent;border:1px solid var(--navy-border);border-radius:6px;padding:3px 10px;font-family:var(--font);font-size:11px;color:var(--text-muted);cursor:pointer;">'+(budget>0?'Edit':'Set budget')+'</button>';
+  html+='</div></div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:10px;">';
+  html+='<div><div style="font-size:11px;color:var(--text-muted);">Spent</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);">'+fmt(totalSpend)+'</div></div>';
+  html+='<div><div style="font-size:11px;color:var(--text-muted);">Daily avg</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);">'+fmt(dayOfMonth>0?totalSpend/dayOfMonth:0)+'</div></div>';
+  html+='<div><div style="font-size:11px;color:var(--text-muted);">On pace for</div><div style="font-size:18px;font-weight:500;font-family:var(--mono);color:'+(budget>0&&paceTotal>budget?'var(--coral-soft)':'var(--green)')+';">'+fmt(paceTotal)+'</div></div>';
+  html+='</div>';
+  if(budget>0){
+    var fillPct=Math.min(Math.round((totalSpend/budget)*100),100);
+    var expectedPct=Math.min(Math.round((expectedSoFar/budget)*100),100);
+    html+='<div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;position:relative;overflow:hidden;">';
+    html+='<div style="height:100%;width:'+fillPct+'%;border-radius:4px;background:'+(overBudget?'var(--coral)':'var(--green)')+';transition:width 0.6s;"></div>';
+    html+='</div>';
+    html+='<div style="position:relative;height:0;">';
+    html+='<div style="position:absolute;top:-11px;left:'+expectedPct+'%;width:2px;height:14px;background:rgba(255,255,255,0.3);border-radius:1px;transform:translateX(-50%);"></div>';
+    html+='</div>';
+    html+='<div style="display:flex;justify-content:space-between;margin-top:8px;">';
+    html+='<span style="font-size:11px;color:'+(overBudget?'var(--coral-soft)':'var(--green)')+';">'+(overBudget?'Over by '+fmt(totalSpend-budget):'Under budget by '+fmt(budget-totalSpend))+'</span>';
+    html+='<span style="font-size:11px;color:var(--text-muted);">Day '+dayOfMonth+' of '+daysInMonth+'</span>';
+    html+='</div>';
+  } else {
+    var dayPct=Math.round((dayOfMonth/daysInMonth)*100);
+    html+='<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;position:relative;overflow:hidden;">';
+    html+='<div style="height:100%;width:'+dayPct+'%;border-radius:3px;background:var(--coral);opacity:0.4;transition:width 0.6s;"></div>';
+    html+='</div>';
+    html+='<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Day '+dayOfMonth+' of '+daysInMonth+'. <span style="cursor:pointer;color:var(--coral-soft);" onclick="openBudgetModal()">Set a budget</span> to track against a target.</div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function openBudgetModal(){
+  var current=monthBudgets[viewMonth]?(monthBudgets[viewMonth]/100).toFixed(2):'';
+  var vp=viewMonth.split('-');
+  var mName=new Date(parseInt(vp[0]),parseInt(vp[1])-1,1).toLocaleString('default',{month:'long',year:'numeric'});
+  var modal=document.querySelector('.modal');
+  if(!modal)return;
+  modal.innerHTML='<h3>Set budget for '+mName+'</h3>'
+    +'<p class="modal-sub">Set a monthly spending target. The pace bar will show how you are tracking against it.</p>'
+    +'<label>Monthly budget (£)</label>'
+    +'<input type="text" id="budget-input" placeholder="e.g. 2000.00" value="'+current+'">'
+    +'<div class="modal-footer" style="margin-top:1rem;">'
+    +(current?'<button class="btn-secondary" onclick="clearBudget()">Clear</button>':'')
+    +'<button class="btn-secondary" onclick="closeAccountsModal()">Cancel</button>'
+    +'<button class="btn-save" onclick="saveBudget()">Save</button>'
+    +'</div>';
+  document.getElementById('accounts-modal').classList.add('open');
+  setTimeout(function(){var el=document.getElementById('budget-input');if(el)el.focus();},100);
+}
+function saveBudget(){
+  var val=parseFloat((document.getElementById('budget-input').value||'').replace(/[^0-9.]/g,''));
+  if(!isNaN(val)&&val>0){monthBudgets[viewMonth]=Math.round(val*100);saveBudgets();}
+  closeAccountsModal();renderAll();
+}
+function clearBudget(){delete monthBudgets[viewMonth];saveBudgets();closeAccountsModal();renderAll();}
+
+// ---- Week on week strip ----
+function renderWowStrip(viewTx){
+  var el=document.getElementById('wow-strip');
+  if(!el)return;
+  var now=new Date();
+  function weekOf(d){var wd=new Date(d);var dow=wd.getDay();wd.setDate(wd.getDate()-((dow+6)%7));wd.setHours(0,0,0,0);return wd;}
+  var weeks=[];
+  for(var i=3;i>=0;i--){
+    var ws=new Date(now);ws.setDate(now.getDate()-i*7);ws=weekOf(ws);
+    var we=new Date(ws);we.setDate(ws.getDate()+6);we.setHours(23,59,59,999);
+    var wTx=allTransactions.filter(function(t){var d=new Date(t.created);return d>=ws&&d<=we&&t.amount<0&&t.include_in_spending!==false;});
+    weeks.push({start:ws,spend:wTx.reduce(function(s,t){return s+Math.abs(t.amount);},0),count:wTx.length});
+  }
+  var html='';
+  weeks.forEach(function(w,i){
+    var prev=weeks[i-1];
+    var delta=prev&&prev.spend>0?Math.round(((w.spend-prev.spend)/prev.spend)*100):null;
+    var isThis=i===weeks.length-1;
+    html+='<div class="wow-card">'
+      +'<div class="wow-label">'+(isThis?'This week':i===weeks.length-2?'Last week':w.start.toLocaleDateString('en-GB',{day:'numeric',month:'short'}))+'</div>'
+      +'<div class="wow-val">'+fmt(w.spend)+'</div>'
+      +'<div class="wow-delta" style="color:'+(delta===null?'var(--text-muted)':delta>0?'var(--coral-soft)':'var(--green)')+';">'
+      +(delta===null?w.count+' tx':(delta>0?'▲ +':'▼ ')+Math.abs(delta)+'% vs prev')+'</div>'
+      +'</div>';
+  });
+  el.innerHTML=html;
+}
+
+// ---- Spending streaks ----
+function calcStreaks(spendTx){
+  var cats={};
+  spendTx.forEach(function(t){
+    var c=t.category||'general';
+    var d=new Date(t.created).toDateString();
+    if(!cats[c])cats[c]={};
+    cats[c][d]=(cats[c][d]||0)+Math.abs(t.amount);
+  });
+  var streaks=[];
+  Object.entries(cats).forEach(function(e){
+    var c=e[0],days=Object.keys(e[1]).sort(function(a,b){return new Date(a)-new Date(b);});
+    if(days.length<3)return;
+    var maxStreak=1,cur=1;
+    for(var i=1;i<days.length;i++){
+      var diff=(new Date(days[i])-new Date(days[i-1]))/(1000*60*60*24);
+      if(diff<=1.5)cur++;else cur=1;
+      if(cur>maxStreak)maxStreak=cur;
+    }
+    if(maxStreak>=3){
+      var total=Object.values(e[1]).reduce(function(s,v){return s+v;},0);
+      streaks.push({cat:c,streak:maxStreak,days:days,total:total});
+    }
+  });
+  return streaks.sort(function(a,b){return b.streak-a.streak;}).slice(0,6);
+}
+
+// ---- Patterns tab ----
+function renderPatterns(){
+  var el=document.getElementById('patterns-content');
+  if(!el)return;
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var viewTx=getMonthTxns(spendTx,viewMonth);
+  if(!spendTx.length){el.innerHTML='<div style="color:var(--text-muted);padding:2rem;">Load more history to see patterns.</div>';return;}
+
+  var html='';
+
+  // WoW
+  html+='<div class="section-title">Week on week</div>';
+  html+='<div class="wow-grid" id="patterns-wow" style="margin-bottom:1.5rem;"></div>';
+
+  // Streaks
+  var streaks=calcStreaks(spendTx);
+  html+='<div class="section-title">Spending streaks</div>';
+  html+='<div class="card" style="margin-bottom:1rem;">';
+  html+='<div class="card-header"><span class="card-title">Categories with frequent consecutive spend</span></div>';
+  if(streaks.length){
+    var now2=new Date();
+    html+=streaks.map(function(s){
+      var last7=[];
+      for(var i=6;i>=0;i--){var d=new Date(now2);d.setDate(d.getDate()-i);last7.push(d.toDateString());}
+      var dots=last7.map(function(d){return '<div class="streak-dot '+(s.days.indexOf(d)>=0?'on':'off')+'"></div>';}).join('');
+      return '<div class="streak-item">'
+        +'<div><div style="font-size:13px;color:var(--text-primary);">'+(CAT_EMOJI[s.cat]||'💳')+' '+s.cat.replace(/_/g,' ')+'</div>'
+        +'<div class="streak-dots">'+dots+'</div>'
+        +'<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">'+s.streak+'-day streak</div></div>'
+        +'<div style="text-align:right;"><div style="font-size:13px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(s.total)+'</div></div>'
+        +'</div>';
+    }).join('');
+  } else {
+    html+='<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No strong streaks detected yet.</div>';
+  }
+  html+='</div>';
+
+  // Spend composition
+  var fritterData=analyseSpend(viewTx);
+  var totalSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0)||1;
+  var recurringSpend=fritterData.filter(function(x){return x.type==='recurring';}).reduce(function(s,x){return s+x.total;},0);
+  var impulseSpend=fritterData.filter(function(x){return x.type==='impulse';}).reduce(function(s,x){return s+x.total;},0);
+  var discretionarySpend=fritterData.filter(function(x){return x.type==='discretionary';}).reduce(function(s,x){return s+x.total;},0);
+  html+='<div class="section-title">Spend composition this month</div>';
+  html+='<div class="trend-grid" style="margin-bottom:1rem;">';
+  html+='<div class="trend-stat"><div class="trend-stat-label">Recurring</div><div class="trend-stat-value">'+fmt(recurringSpend)+'</div><div class="trend-stat-sub">'+Math.round(recurringSpend/totalSpend*100)+'% of spend</div></div>';
+  html+='<div class="trend-stat"><div class="trend-stat-label">High frequency</div><div class="trend-stat-value" style="color:var(--amber);">'+fmt(impulseSpend)+'</div><div class="trend-stat-sub">'+Math.round(impulseSpend/totalSpend*100)+'% - watch this</div></div>';
+  html+='<div class="trend-stat"><div class="trend-stat-label">One-off</div><div class="trend-stat-value">'+fmt(discretionarySpend)+'</div><div class="trend-stat-sub">'+Math.round(discretionarySpend/totalSpend*100)+'% of spend</div></div>';
+  html+='<div class="trend-stat"><div class="trend-stat-label">Transactions</div><div class="trend-stat-value">'+viewTx.length+'</div><div class="trend-stat-sub">this month</div></div>';
+  html+='</div>';
+
+  // Small but frequent
+  var smallFrequent=fritterData.filter(function(x){return x.count>=4&&x.avg<1000;}).slice(0,8);
+  html+='<div class="section-title">Small but frequent</div>';
+  html+='<div class="card" style="margin-bottom:1rem;">';
+  html+='<div class="card-header"><span class="card-title">4+ transactions, low avg value</span><span class="badge badge-coral">'+smallFrequent.length+' merchants</span></div>';
+  if(smallFrequent.length){
+    html+=smallFrequent.map(function(x){
+      var bars=Math.min(x.count,12);
+      var barHtml='<div style="display:flex;gap:2px;margin-top:3px;">'
+        +Array.from({length:bars},function(){return '<div style="width:5px;height:10px;border-radius:2px;background:var(--coral);opacity:0.5;"></div>';}).join('')
+        +(x.count>12?'<span style="font-size:9px;color:var(--text-muted);margin-left:3px;align-self:center;">+'+( x.count-12)+'</span>':'')
+        +'</div>';
+      return '<div class="fritter-item">'
+        +'<div class="fritter-left"><div class="fritter-icon">'+(CAT_EMOJI[x.cat]||'💳')+'</div>'
+        +'<div><div class="fritter-name">'+x.name+'</div>'+barHtml
+        +'<div class="fritter-sub">'+x.count+'x this month, avg '+fmt(x.avg)+' each</div></div></div>'
+        +'<div class="fritter-right"><div class="fritter-amt">'+fmt(x.total)+'</div></div></div>';
+    }).join('');
+  } else {
+    html+='<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No frequent small-spend patterns detected.</div>';
+  }
+  html+='</div>';
+
+  // Heatmap
+  var heatmap=buildHeatmap(viewTx);
+  var allVals=[];Object.values(heatmap).forEach(function(row){row.forEach(function(v){if(v>0)allVals.push(v);});});
+  var maxHeat=Math.max.apply(null,allVals.concat([1]));
+  html+='<div class="section-title">When do you spend?</div>';
+  html+='<div class="card">';
+  html+='<div class="card-header"><span class="card-title">Time of day heatmap</span></div>';
+  html+='<div style="overflow-x:auto;">';
+  html+='<div style="display:flex;gap:3px;margin-bottom:4px;margin-left:34px;">';
+  for(var hh=0;hh<24;hh+=4) html+='<div style="width:92px;font-size:9px;color:var(--text-muted);">'+(hh<10?'0':'')+hh+':00</div>';
+  html+='</div>';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(day){
+    html+='<div style="display:flex;align-items:center;gap:3px;margin-bottom:3px;">';
+    html+='<div style="width:28px;font-size:10px;color:var(--text-muted);text-align:right;padding-right:4px;">'+day+'</div>';
+    heatmap[day].forEach(function(v){
+      var intensity=v>0?0.12+0.88*(v/maxHeat):0;
+      var bg=v>0?'rgba(255,90,95,'+intensity.toFixed(2)+')':'rgba(255,255,255,0.04)';
+      html+='<div style="width:22px;height:22px;border-radius:3px;background:'+bg+';"></div>';
+    });
+    html+='</div>';
+  });
+  html+='</div></div>';
+
+  el.innerHTML=html;
+
+  // Render WoW
+  var wowEl=document.getElementById('patterns-wow');
+  if(wowEl){
+    var now3=new Date();
+    function weekOf3(d){var wd=new Date(d);wd.setDate(wd.getDate()-((wd.getDay()+6)%7));wd.setHours(0,0,0,0);return wd;}
+    var ww=[];
+    for(var ii=3;ii>=0;ii--){
+      var ws3=weekOf3(new Date(now3.getTime()-ii*7*24*60*60*1000));
+      var we3=new Date(ws3);we3.setDate(ws3.getDate()+6);we3.setHours(23,59,59,999);
+      var wTx3=spendTx.filter(function(t){var d=new Date(t.created);return d>=ws3&&d<=we3;});
+      ww.push({start:ws3,spend:wTx3.reduce(function(s,t){return s+Math.abs(t.amount);},0),count:wTx3.length});
+    }
+    var wowHtml='';
+    ww.forEach(function(w,i){
+      var prev=ww[i-1];
+      var delta=prev&&prev.spend>0?Math.round(((w.spend-prev.spend)/prev.spend)*100):null;
+      wowHtml+='<div class="wow-card"><div class="wow-label">'+(i===3?'This week':i===2?'Last week':w.start.toLocaleDateString('en-GB',{day:'numeric',month:'short'}))+'</div>'
+        +'<div class="wow-val">'+fmt(w.spend)+'</div>'
+        +'<div class="wow-delta" style="color:'+(delta===null?'var(--text-muted)':delta>0?'var(--coral-soft)':'var(--green)')+';">'
+        +(delta===null?w.count+' tx':(delta>0?'▲ +':'▼ ')+Math.abs(delta)+'% vs prev')+'</div></div>';
+    });
+    wowEl.innerHTML=wowHtml;
+  }
+
+  // Update badge
+  var badge=document.getElementById('fritter-badge');
+  if(badge)badge.textContent=smallFrequent.length>0?String(smallFrequent.length):'';
+}
 
 initTheme();
 if(loadConfig())showDashboard();
