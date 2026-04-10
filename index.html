@@ -475,20 +475,20 @@ function resetConfig(){localStorage.removeItem(STORAGE_KEY);location.reload();}
 function connectOAuth(){
   var url=document.getElementById("gas-url").value.trim();
   if(!url){showError("Please enter your GAS relay URL first.");return;}
+
   GAS_URL=url;
   localStorage.setItem('monzo_gas_url',url);
-  // Generate random state
-  var state=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
-  localStorage.setItem('monzo_oauth_state',state);
-  showError('');
-  // Get auth URL from GAS
-  fetch(url+'?action=auth_url&state='+encodeURIComponent(state))
+showError('Redirecting to Monzo...');
+  fetch(url+'?action=auth_url')
     .then(function(r){return r.json();})
     .then(function(res){
-      if(res.status!=='ok'||!res.data||!res.data.url){
-        showError('Could not get auth URL: '+(res.message||'Check GAS relay'));return;
-      }
-      window.location.href=res.data.url;
+    if(res.status!=='ok' || !res.data || !res.data.url){
+  showError('Could not get auth URL');
+  return;
+}
+
+localStorage.setItem('monzo_state', res.data.state);
+window.location.href = res.data.url;
     })
     .catch(function(e){showError('Error: '+e.message);});
 }
@@ -499,7 +499,7 @@ function connect(){
   if(!url||!id){showError("Please fill in both fields.");return;}
   GAS_URL=url;ACCOUNT_ID=id;showError("");
   gasCall({action:"ping"}).then(function(res){
-    if(res.status!=="ok")throw new Error("Ping failed");
+    if(res.status!=="ok")throw new Error(res.message||"Ping failed");
     saveConfig(url,id);showDashboard();
   }).catch(function(e){showError("Could not connect: "+e.message);});
 }
@@ -546,8 +546,24 @@ function saveManualAccounts(){
 
 // ---- API ----
 function gasCall(params){
-  var qs=Object.keys(params).map(function(k){return k+"="+encodeURIComponent(params[k]);}).join("&");
-  return fetch(GAS_URL+"?"+qs).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
+  var state = localStorage.getItem('monzo_state');
+  if(state) params.state = state;
+
+  var qs=Object.keys(params)
+    .map(function(k){return k+"="+encodeURIComponent(params[k]);})
+    .join("&");
+
+ return fetch(GAS_URL+"?"+qs)
+  .then(function(r){
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    return r.json();
+  })
+  .then(function(res){
+    if(res.status && res.status !== "ok"){
+      throw new Error(res.message || "API error");
+    }
+    return res;
+  });
 }
 
 // ---- Progress pill ----
@@ -561,7 +577,7 @@ function setProgress(text){
 
 // ---- Load more history ----
 var historyExhausted=false;
-var bgFetching=false,bgCursor=null;
+var bgFetching=false,bgCursor=null,bgLimit=null;
 
 function getOldestTx(){
   var oldest=null,oldestTx=null;
@@ -1317,7 +1333,33 @@ renderAll=function(){
 // v1.5
 
 initTheme();
-if(loadConfig())showDashboard();
+
+// OAuth-first logic
+var state = localStorage.getItem('monzo_state');
+var gas = localStorage.getItem('monzo_gas_url');
+
+if(state && gas){
+  GAS_URL = gas;
+
+  gasCall({action:'accounts'})
+    .then(function(res){
+      if(res.status === "ok" && res.data && res.data.accounts && res.data.accounts.length){
+        ACCOUNT_ID = res.data.accounts[0].id;
+
+        saveConfig(gas, ACCOUNT_ID);
+        showDashboard();
+      }
+    })
+    .catch(function(){
+      // fallback to saved config
+      if(loadConfig())showDashboard();
+    });
+
+} else if(loadConfig()){
+  showDashboard();
+}
+
+
 </script>
 </body>
 </html>
