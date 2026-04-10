@@ -189,7 +189,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.3</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v1.4</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -424,11 +424,12 @@ function updateHistoryBtn(){
 // Load one full calendar month worth of transactions before what we have
 // ---- Silent background loader ----
 // Fetches 5-day windows silently from today backwards
-function startBgFetch(fromCursor){
+function startBgFetch(){
   if(bgFetching)return;
   bgFetching=true;
-  // If resuming (load more), use where we left off; otherwise start from today
-  bgCursor=fromCursor||new Date().toISOString();
+  // Start from oldest tx we have, or today if none
+  var oldest=getOldestTx();
+  bgCursor=oldest?oldest.created:new Date().toISOString();
   // Default limit: 6 months back from today
   if(!bgLimit){var d=new Date();d.setMonth(d.getMonth()-6);bgLimit=d;}
   bgFetchStep();
@@ -471,23 +472,25 @@ function bgFetchStep(){
       }
       setTimeout(bgFetchStep,400);
     })
-    .catch(function(){
-      setTimeout(bgFetchStep,2000);
+    .catch(function(e){
+      console.error("bgFetch error:",e);
+      setTimeout(bgFetchStep,3000);
     });
 }
 
 function loadMoreHistory(){
   var btn=document.getElementById("load-history-btn");
   if(!btn)return;
-  // Extend limit by another 6 months from where we currently are
-  var currentLimit=bgLimit||new Date();
-  var newLimit=new Date(currentLimit);
-  newLimit.setMonth(newLimit.getMonth()-6);
-  bgLimit=newLimit;
+  // Extend limit by another 6 months from current limit
+  var currentLimit=new Date(bgLimit||new Date());
+  currentLimit.setMonth(currentLimit.getMonth()-6);
+  bgLimit=currentLimit;
   historyExhausted=true;
   updateHistoryBtn();
-  // Resume from where bg fetch left off (bgCursor)
-  if(!bgFetching)startBgFetch(bgCursor);
+  if(bgFetching){return;} // already running, just extended the limit
+  // Resume from bgCursor (where we stopped)
+  bgFetching=true;
+  bgFetchStep();
 }
 
 // ---- Initial load ----
