@@ -446,16 +446,15 @@ function loadMoreHistory(){
   var knownIds={};
   allTransactions.forEach(function(t){knownIds[t.id]=true;});
 
-  // Start cursor at the oldest tx we have in this month,
-  // or at monthEnd if we have none yet
+  // Find newest tx we have in this month - fetch forward from there
   var inMonth=allTransactions.filter(function(t){return t.created>=since&&t.created<before;});
   var cursor=inMonth.length
-    ? inMonth.reduce(function(a,b){return a.created<b.created?a:b;}).created
-    : before;
+    ? inMonth.reduce(function(a,b){return a.created>b.created?a:b;}).created
+    : since;
 
   function fetchPage(){
-    // Fetch [since .. cursor) - gets tx BEFORE our current oldest in this month
-    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:cursor})
+    // Fetch since cursor up to end of month
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:cursor,before:before})
       .then(function(res){
         if(res.status!=="ok"||!res.data||!res.data.transactions){done();return;}
         var batch=res.data.transactions;
@@ -464,14 +463,14 @@ function loadMoreHistory(){
         var newOnes=batch.filter(function(t){return t.amount!==0&&!knownIds[t.id];});
         newOnes.forEach(function(t){knownIds[t.id]=true;});
         if(newOnes.length){
-          allTransactions=newOnes.concat(allTransactions);
+          allTransactions=allTransactions.concat(newOnes);
           populateCatFilter();
         }
 
-        // New cursor = oldest tx in this batch
-        var oldestInBatch=batch.reduce(function(a,b){return a.created<b.created?a:b;});
-        if(batch.length===100&&oldestInBatch.created<cursor){
-          cursor=oldestInBatch.created;
+        // New cursor = newest tx in this batch
+        var newestInBatch=batch.reduce(function(a,b){return a.created>b.created?a:b;});
+        if(batch.length===100&&newestInBatch.created>cursor){
+          cursor=newestInBatch.created;
           fetchPage();
         } else {
           done();
@@ -545,25 +544,25 @@ function loadAll(){
 }
 
 function loadRestOfLastMonth(since,before,seen){
-  // Find oldest last-month tx to paginate from
-  var lastMoTxns=allTransactions.filter(function(t){
-    var d=new Date(t.created);var s=new Date(since);var b=new Date(before);
-    return d>=s&&d<b;
+  // Find the newest tx we have in this month window - fetch forward from there
+  var inMonth=allTransactions.filter(function(t){
+    return t.created>=since&&t.created<before;
   });
-  if(!lastMoTxns.length)return;
-  var oldest=lastMoTxns.reduce(function(a,b){return new Date(a.created)<new Date(b.created)?a:b;});
-  gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:oldest.created})
+  if(!inMonth.length)return;
+  var newest=inMonth.reduce(function(a,b){return a.created>b.created?a:b;});
+  // Fetch transactions after our newest, still within this month
+  gasCall({action:"transactions",account_id:ACCOUNT_ID,since:newest.created,before:before})
     .then(function(res){
       if(res.status!=="ok"||!res.data||!res.data.transactions)return;
       var batch=res.data.transactions;
       var newOnes=batch.filter(function(t){return t.amount!==0&&!seen[t.id];});
       if(newOnes.length>0){
         newOnes.forEach(function(t){seen[t.id]=true;});
-        allTransactions=newOnes.concat(allTransactions);
+        allTransactions=allTransactions.concat(newOnes);
         populateCatFilter();
         renderAll();
         console.log("Last month extended by "+newOnes.length+", total now "+allTransactions.length);
-        if(batch.length===100){loadRestOfLastMonth(since,oldest.created,seen);}
+        if(batch.length===100){loadRestOfLastMonth(since,before,seen);}
       }
     })
     .catch(function(){});
