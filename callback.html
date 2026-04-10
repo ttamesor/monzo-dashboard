@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monzo Dashboard - Connecting...</title>
+<style>
+  body{font-family:"DM Sans",sans-serif;background:#0D1B2A;color:#F0F4FF;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+  .box{background:#1C2D42;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:2.5rem;max-width:400px;width:100%;text-align:center;}
+  .logo{width:44px;height:44px;background:#FF5A5F;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:white;margin:0 auto 1.5rem;}
+  h2{font-size:18px;font-weight:500;margin-bottom:0.5rem;}
+  p{font-size:14px;color:#8BA0B4;line-height:1.6;}
+  .spinner{width:28px;height:28px;border:2px solid rgba(255,255,255,0.1);border-top-color:#FF5A5F;border-radius:50%;animation:spin 0.7s linear infinite;margin:1.5rem auto 0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .error{color:#FF8A8E;font-size:14px;margin-top:1rem;}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">M</div>
+  <h2 id="title">Connecting to Monzo...</h2>
+  <p id="msg">Exchanging authorisation code. Please wait.</p>
+  <div class="spinner" id="spinner"></div>
+  <div class="error" id="error" style="display:none;"></div>
+</div>
+<script>
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var code=params.get('code');
+  var state=params.get('state');
+  var error=params.get('error');
+
+  if(error){
+    showError('Monzo returned an error: '+error);return;
+  }
+  if(!code){
+    showError('No authorisation code received.');return;
+  }
+
+  // Verify state matches what we stored
+  var savedState=localStorage.getItem('monzo_oauth_state');
+  if(state&&savedState&&state!==savedState){
+    showError('State mismatch - possible CSRF. Please try again.');return;
+  }
+
+  // Get GAS URL from localStorage
+  var gasUrl=localStorage.getItem('monzo_gas_url');
+  if(!gasUrl){
+    showError('GAS relay URL not found. Please return to the dashboard and reconnect.');return;
+  }
+
+  var redirectUri=window.location.origin+window.location.pathname;
+
+  fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.status!=='ok'){
+        showError('Token exchange failed: '+(res.message||'Unknown error'));return;
+      }
+      // Store account_id returned from exchange
+      if(res.data&&res.data.account_id){
+        localStorage.setItem('monzo_dash_v3',JSON.stringify({
+          gasUrl:gasUrl,
+          accountId:res.data.account_id
+        }));
+      }
+      document.getElementById('title').textContent='Connected!';
+      document.getElementById('msg').textContent='Redirecting to your dashboard...';
+      document.getElementById('spinner').style.display='none';
+      setTimeout(function(){
+        window.location.href=window.location.origin+window.location.pathname.replace('callback.html','');
+      },1200);
+    })
+    .catch(function(e){
+      showError('Connection error: '+e.message);
+    });
+
+  function showError(msg){
+    document.getElementById('spinner').style.display='none';
+    document.getElementById('title').textContent='Connection failed';
+    document.getElementById('msg').textContent='';
+    var el=document.getElementById('error');
+    el.style.display='block';el.textContent=msg;
+  }
+})();
+</script>
+</body>
+</html>
