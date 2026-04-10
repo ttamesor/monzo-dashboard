@@ -726,6 +726,9 @@ function loadAll(){
     });
 
     console.log("Loaded: this month="+thisMo.length+" last month="+lastMo.length+" total="+allTransactions.length);
+    console.log("State used:", MONZO_STATE);
+    console.log("Account ID:", ACCOUNT_ID);
+    console.log("Raw this month result:", JSON.stringify(results[2]).slice(0,200));
 
     populateCatFilter();
     renderAll();
