@@ -379,6 +379,11 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 .insight-row-text strong{color:var(--text-primary);font-weight:500;}
 .insight-row-val{font-size:13px;font-family:var(--mono);font-weight:500;}
 
+/* Reauth banner */
+.reauth-banner{display:none;background:var(--amber-dim);border-bottom:1px solid var(--amber);padding:8px 2rem;font-size:13px;color:var(--amber);align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.reauth-banner.show{display:flex;}
+.reauth-banner a{color:var(--amber);font-weight:500;cursor:pointer;text-decoration:underline;}
+
 /* Search overlay */
 .search-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding-top:80px;}
 .search-overlay.open{display:flex;}
@@ -481,7 +486,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.7</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.8</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -496,6 +501,10 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <button class="pill-btn" id="compact-btn" onclick="toggleCompact()">Compact</button>
       <button class="pill-btn" onclick="resetConfig()">Disconnect</button>
     </div>
+  </div>
+  <div class="reauth-banner" id="reauth-banner">
+    <span>⚠️ Monzo requires re-authentication - older transactions may not load. <a onclick="doReauth()">Re-authenticate now</a> to restore full access.</span>
+    <button onclick="document.getElementById('reauth-banner').classList.remove('show')" style="background:transparent;border:none;color:var(--amber);cursor:pointer;font-size:16px;padding:0 4px;">&#215;</button>
   </div>
   <div class="app-body">
   <div class="sidebar" id="sidebar">
@@ -913,7 +922,32 @@ function gasCall(params){
   var qs=Object.keys(params).map(function(k){return k+"="+encodeURIComponent(params[k]);}).join("&");
   return fetch(GAS_URL+"?"+qs)
     .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
-    .then(function(res){if(res.status==="error")throw new Error(res.message||"API error");return res;});
+    .then(function(res){
+      if(res.status==="error"){
+        // Check for Monzo verification_required
+        if(res.message&&res.message.indexOf("verification_required")>=0){
+          showReauthBanner();
+        }
+        throw new Error(res.message||"API error");
+      }
+      return res;
+    });
+}
+
+function showReauthBanner(){
+  var b=document.getElementById('reauth-banner');
+  if(b) b.classList.add('show');
+}
+
+function doReauth(){
+  // Kick off OAuth flow - keep existing config but force re-auth
+  localStorage.setItem('monzo_gas_url', GAS_URL);
+  fetch(GAS_URL+'?action=auth_url')
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.status==='ok'&&res.data&&res.data.url) window.location.href=res.data.url;
+    })
+    .catch(function(){alert('Could not reach GAS relay. Check your connection.');});
 }
 
 // ---- Progress pill ----
@@ -1002,7 +1036,11 @@ function bgFetchStep(){
       setTimeout(bgFetchStep,400);
     })
     .catch(function(e){
-      console.error("bgFetch error:",e);
+      if(e.message&&e.message.indexOf("verification_required")>=0){
+        showReauthBanner();
+        stopBgFetch();
+        return;
+      }
       setTimeout(bgFetchStep,3000);
     });
 }
