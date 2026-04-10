@@ -21,7 +21,6 @@
   <h2 id="title">Connecting to Monzo...</h2>
   <p id="msg">Exchanging authorisation code. Please wait.</p>
   <div class="spinner" id="spinner"></div>
-  <button id="approve-btn" style="display:none;margin-top:1.5rem;width:100%;background:#FF5A5F;border:none;border-radius:8px;padding:13px;font-family:inherit;font-size:15px;font-weight:500;color:white;cursor:pointer;">I have approved in the Monzo app</button>
   <div class="error" id="error" style="display:none;"></div>
 </div>
 <script>
@@ -42,44 +41,31 @@
   var gasUrl=localStorage.getItem('monzo_gas_url');
   if(!gasUrl){showError('GAS relay URL not found. Please return to the dashboard.');return;}
 
-  // Show "approve in app" prompt - don't exchange yet
-  document.getElementById('spinner').style.display='none';
-  document.getElementById('title').textContent='Check your Monzo app';
-  document.getElementById('msg').textContent='Monzo has sent a notification to your phone. Open the Monzo app and approve the login request, then come back here and click the button below.';
-  document.getElementById('approve-btn').style.display='block';
-
-  document.getElementById('approve-btn').onclick=function(){
-    document.getElementById('approve-btn').style.display='none';
-    document.getElementById('spinner').style.display='block';
-    document.getElementById('title').textContent='Connecting...';
-    document.getElementById('msg').textContent='Exchanging authorisation code.';
-
-    var redirectUri='https://ttamesor.github.io/monzo-dashboard/callback.html';
-    fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
-      .then(function(r){return r.json();})
-      .then(function(res){
-        if(res.status!=='ok'){
-          showError('Token exchange failed: '+(res.message||'Unknown error'));return;
-        }
-        if(res.data&&res.data.account_id){
-          localStorage.setItem('monzo_dash_v3',JSON.stringify({
-            gasUrl:gasUrl,
-            accountId:res.data.account_id
-          }));
-        }
-        document.getElementById('title').textContent='Connected!';
-        document.getElementById('msg').textContent='Redirecting to your dashboard...';
-        document.getElementById('spinner').style.display='none';
-        setTimeout(function(){
-          window.location.href=window.location.origin+window.location.pathname.replace('callback.html','');
-        },1200);
-      })
-      .catch(function(e){showError('Connection error: '+e.message);});
-  };
+  // Exchange immediately - by the time we're here, user has approved in app
+  var redirectUri='https://ttamesor.github.io/monzo-dashboard/callback.html';
+  fetch(gasUrl+'?action=exchange&code='+encodeURIComponent(code)+'&redirect_uri='+encodeURIComponent(redirectUri))
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.status!=='ok'){
+        showError('Token exchange failed: '+(res.message||'Unknown error'));return;
+      }
+      if(res.data&&res.data.account_id){
+        localStorage.setItem('monzo_dash_v3',JSON.stringify({
+          gasUrl:gasUrl,
+          accountId:res.data.account_id
+        }));
+      }
+      document.getElementById('title').textContent='Connected!';
+      document.getElementById('msg').textContent='Redirecting to your dashboard...';
+      document.getElementById('spinner').style.display='none';
+      setTimeout(function(){
+        window.location.href=window.location.origin+window.location.pathname.replace('callback.html','');
+      },1200);
+    })
+    .catch(function(e){showError('Connection error: '+e.message);});
 
   function showError(msg){
     document.getElementById('spinner').style.display='none';
-    document.getElementById('approve-btn').style.display='none';
     document.getElementById('title').textContent='Connection failed';
     document.getElementById('msg').textContent='';
     var el=document.getElementById('error');
