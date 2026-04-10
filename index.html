@@ -273,6 +273,33 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 @media(max-width:1100px){.grid-2-1{grid-template-columns:1fr 1fr;}}
 @media(max-width:700px){.grid-2-1{grid-template-columns:1fr;}}
 
+/* Income */
+.income-summary-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem;}
+.income-stat{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.2rem 1.4rem;}
+.income-stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+.income-stat-value{font-size:22px;font-weight:500;font-family:var(--mono);color:var(--green);}
+.income-stat-sub{font-size:12px;color:var(--text-secondary);margin-top:3px;}
+.income-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--navy-border);}
+.income-item:last-child{border-bottom:none;}
+.income-left{display:flex;align-items:center;gap:12px;}
+.income-icon{width:36px;height:36px;border-radius:9px;background:var(--green-dim);border:1px solid rgba(45,212,160,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.income-name{font-size:14px;color:var(--text-primary);font-weight:500;}
+.income-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.income-next{font-size:11px;color:var(--green);margin-top:1px;}
+.income-right{text-align:right;}
+.income-amt{font-size:15px;font-weight:500;font-family:var(--mono);color:var(--green);}
+.income-annual{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.income-type-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;margin-left:6px;}
+.tag-salary{background:var(--green-dim);color:var(--green);}
+.tag-roommate{background:var(--purple-dim);color:var(--purple);}
+.tag-other-in{background:rgba(255,255,255,0.06);color:var(--text-muted);}
+.cashflow-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.cashflow-date{font-size:11px;color:var(--text-muted);width:50px;flex-shrink:0;}
+.cashflow-bar-wrap{flex:1;height:20px;background:rgba(255,255,255,0.04);border-radius:4px;position:relative;overflow:hidden;}
+.cashflow-bar-in{position:absolute;top:0;left:0;height:100%;background:var(--green);opacity:0.5;border-radius:4px;}
+.cashflow-bar-out{position:absolute;top:0;left:0;height:100%;background:var(--coral);opacity:0.5;border-radius:4px;}
+.cashflow-label{font-size:11px;width:70px;text-align:right;flex-shrink:0;font-family:var(--mono);}
+
 /* Subscriptions */
 .sub-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--navy-border);}
 .sub-item:last-child{border-bottom:none;}
@@ -388,8 +415,11 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <span class="nav-icon">🏦</span>Wealth
     </div>
     <div class="sidebar-section" style="margin-top:auto;padding-top:1rem;">Insights</div>
+    <div class="nav-item" data-tab="income" onclick="switchTab('income')">
+      <span class="nav-icon">💰</span>Income
+    </div>
     <div class="nav-item" data-tab="subscriptions" onclick="switchTab('subscriptions')">
-      <span class="nav-icon">🔄</span>Subscriptions
+      <span class="nav-icon">🔄</span>Typical Expenses
     </div>
     <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">
       <span class="nav-icon">🔍</span>Patterns<span class="nav-badge" id="fritter-badge"></span>
@@ -553,6 +583,13 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
   <!-- Wealth tab -->
   <div class="tab-panel" id="tab-wealth">
     <div class="tab-inner" id="wealth-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Income tab -->
+  <div class="tab-panel" id="tab-income">
+    <div class="tab-inner" id="income-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
@@ -1228,6 +1265,7 @@ function switchTab(tab){
   if(tab==='trends')renderTrends();
   if(tab==='transactions')renderTxTab();
   if(tab==='wealth')renderWealth();
+  if(tab==='income')renderIncome();
   if(tab==='subscriptions')renderSubscriptions();
   if(tab==='patterns')renderPatterns();
 }
@@ -1912,6 +1950,7 @@ renderAll=function(){
   if(currentTab==='trends')renderTrends();
   if(currentTab==='transactions')renderTxTabList();
   if(currentTab==='wealth')renderWealth();
+  if(currentTab==='income')renderIncome();
   if(currentTab==='subscriptions')renderSubscriptions();
   if(currentTab==='patterns')renderPatterns();
 };
@@ -2321,11 +2360,221 @@ function renderSubscriptions(){
     return out;
   }
 
-  html+=renderSubList(active,'Active subscriptions','<span class="badge badge-coral">'+active.length+'</span>');
+  html+=renderSubList(active,'Regular payments','<span class="badge badge-coral">'+active.length+'</span>');
   html+=renderSubList(recent,'No recent payment - check these','<span class="badge" style="background:var(--amber-dim);color:var(--amber);">'+recent.length+'</span>');
   html+=renderSubList(inactive,'Possibly cancelled','<span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted);">'+inactive.length+'</span>');
 
   el.innerHTML=html;
+}
+
+
+// ---- Income detection and management ----
+var incomeLabels = JSON.parse(localStorage.getItem('monzo_income_labels_v1')||'{}');
+function saveIncomeLabels2(){ localStorage.setItem('monzo_income_labels_v1', JSON.stringify(incomeLabels)); }
+
+function detectIncomeSources(){
+  var credits = allTransactions.filter(function(t){ return t.amount>0; });
+
+  var byMerchant={};
+  credits.forEach(function(t){
+    var n=merchant(t);
+    if(!byMerchant[n])byMerchant[n]=[];
+    byMerchant[n].push(t);
+  });
+
+  var sources=[];
+  Object.entries(byMerchant).forEach(function(e){
+    var name=e[0], txns=e[1];
+    if(txns.length<2)return;
+
+    var byMonth={};
+    txns.forEach(function(t){ var k=t.created.slice(0,7); if(!byMonth[k])byMonth[k]=[]; byMonth[k].push(t); });
+    var months=Object.keys(byMonth).length;
+    if(months<2)return;
+
+    // Most common amount
+    var amtCounts={};
+    txns.forEach(function(t){ var a=Math.abs(t.amount); amtCounts[a]=(amtCounts[a]||0)+1; });
+    var dominantAmt=parseInt(Object.keys(amtCounts).sort(function(a,b){return amtCounts[b]-amtCounts[a];})[0]);
+    var matchingTxns=txns.filter(function(t){return Math.abs(t.amount-dominantAmt)<=500;});
+    if(matchingTxns.length<2)return;
+
+    var days=matchingTxns.map(function(t){return new Date(t.created).getDate();});
+    var avgDay=Math.round(days.reduce(function(s,d){return s+d;},0)/days.length);
+    var lastTx=matchingTxns.sort(function(a,b){return new Date(b.created)-new Date(a.created);})[0];
+    var lastDate=new Date(lastTx.created);
+    var now=new Date();
+    var daysSince=Math.floor((now-lastDate)/(1000*60*60*24));
+
+    // Next expected date
+    var nextDate=new Date(lastDate);
+    nextDate.setMonth(nextDate.getMonth()+1);
+
+    // Guess type from name or labels
+    var label=incomeLabels[name]||guessIncomeType(name, dominantAmt);
+
+    sources.push({
+      name:name,
+      amount:dominantAmt,
+      avgDay:avgDay,
+      months:months,
+      lastDate:lastDate,
+      nextDate:nextDate,
+      daysSince:daysSince,
+      label:label,
+      txns:matchingTxns
+    });
+  });
+
+  return sources.sort(function(a,b){return b.amount-a.amount;});
+}
+
+function guessIncomeType(name, amount){
+  var n=name.toLowerCase();
+  if(n.indexOf('salary')>=0||n.indexOf('wage')>=0||n.indexOf('payroll')>=0||n.indexOf('employer')>=0||n.indexOf('pay ')>=0) return 'salary';
+  if(n.indexOf('rent')>=0||n.indexOf('lodger')>=0||n.indexOf('tenant')>=0||n.indexOf('room')>=0) return 'roommate';
+  if(incomeLabels[name]) return incomeLabels[name];
+  if(amount>=100000) return 'salary'; // likely salary if > £1000
+  return 'other';
+}
+
+function renderIncome(){
+  var el=document.getElementById('income-content');
+  if(!el)return;
+
+  var sources=detectIncomeSources();
+
+  if(!sources.length){
+    el.innerHTML='<div style="color:var(--text-muted);padding:2rem;font-size:14px;">Load at least 2 months of history to detect income sources.</div>';
+    return;
+  }
+
+  var totalMonthly=sources.reduce(function(s,x){return s+x.amount;},0);
+  var now=new Date();
+
+  // Cashflow: expected income vs spend by day of month (avg over loaded months)
+  var spendByDay=new Array(31).fill(0),incomeByDay=new Array(31).fill(0);
+  var monthCount={};
+  allTransactions.forEach(function(t){
+    var k=t.created.slice(0,7);
+    monthCount[k]=true;
+    var d=new Date(t.created).getDate()-1;
+    if(t.amount<0&&t.include_in_spending!==false) spendByDay[d]+=Math.abs(t.amount);
+    else if(t.amount>0) incomeByDay[d]+=t.amount;
+  });
+  var nMonths=Math.max(Object.keys(monthCount).length,1);
+  spendByDay=spendByDay.map(function(v){return v/nMonths;});
+  incomeByDay=incomeByDay.map(function(v){return v/nMonths;});
+  var maxFlow=Math.max.apply(null,spendByDay.concat(incomeByDay).concat([1]));
+
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">'
+    +'<h2 style="font-size:18px;font-weight:500;">Expected Incoming Payments</h2>'
+    +'<button class="pill-btn" onclick="openIncomeLabelModal()">Label sources</button>'
+    +'</div>';
+
+  // Summary
+  html+='<div class="income-summary-bar">'
+    +'<div class="income-stat"><div class="income-stat-label">Monthly income</div><div class="income-stat-value">'+fmt(totalMonthly)+'</div><div class="income-stat-sub">'+sources.length+' sources</div></div>'
+    +'<div class="income-stat"><div class="income-stat-label">Annual income</div><div class="income-stat-value">'+fmt(totalMonthly*12)+'</div><div class="income-stat-sub">estimated</div></div>'
+    +'<div class="income-stat"><div class="income-stat-label">Next expected</div>';
+  var upcoming=sources.filter(function(s){return s.nextDate>now;}).sort(function(a,b){return a.nextDate-b.nextDate;})[0];
+  if(upcoming){
+    html+='<div class="income-stat-value" style="font-size:16px;">'+upcoming.nextDate.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+'</div>'
+      +'<div class="income-stat-sub">'+upcoming.name+'</div>';
+  } else {
+    html+='<div class="income-stat-value" style="font-size:14px;color:var(--text-muted);">None soon</div>';
+  }
+  html+='</div></div>';
+
+  // Income sources list
+  var typeOrder={salary:0,roommate:1,other:2};
+  sources.sort(function(a,b){return (typeOrder[a.label]||2)-(typeOrder[b.label]||2)||b.amount-a.amount;});
+
+  html+='<div class="card" style="margin-bottom:1.2rem;">';
+  html+='<div class="card-header"><span class="card-title">Detected income sources</span><span class="badge" style="background:var(--green-dim);color:var(--green);">'+sources.length+'</span></div>';
+  html+=sources.map(function(s){
+    var icon=s.label==='salary'?'💰':s.label==='roommate'?'🏠':'💳';
+    var tagClass='tag-'+(s.label==='salary'?'salary':s.label==='roommate'?'roommate':'other-in');
+    var tagLabel=s.label==='salary'?'Salary':s.label==='roommate'?'Roommate/lodger':'Other income';
+    var daysToNext=Math.floor((s.nextDate-now)/(1000*60*60*24));
+    var nextStr=daysToNext<=0?'Expected now':daysToNext===1?'Tomorrow':'In '+daysToNext+' days ('+s.nextDate.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+')';
+    var consistency=s.months>=6?'Very consistent':s.months>=3?'Consistent':'Detected';
+    return '<div class="income-item">'
+      +'<div class="income-left">'
+      +'<div class="income-icon">'+icon+'</div>'
+      +'<div>'
+      +'<div class="income-name">'+s.name+'<span class="income-type-tag '+tagClass+'">'+tagLabel+'</span></div>'
+      +'<div class="income-meta">'+consistency+' - around day '+s.avgDay+' each month - '+s.months+' months seen</div>'
+      +'<div class="income-next">'+nextStr+'</div>'
+      +'</div></div>'
+      +'<div class="income-right">'
+      +'<div class="income-amt">+'+fmt(s.amount)+'</div>'
+      +'<div class="income-annual">'+fmt(s.amount*12)+'/yr</div>'
+      +'</div></div>';
+  }).join('');
+  html+='</div>';
+
+  // Cashflow calendar - avg daily in vs out
+  html+='<div class="card">';
+  html+='<div class="card-header"><span class="card-title">Average daily cashflow</span><span style="font-size:11px;color:var(--text-muted);">avg across loaded months</span></div>';
+  html+='<div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;">';
+  html+='<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);opacity:0.6;display:inline-block;"></span>Income</span>';
+  html+='<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--coral);opacity:0.6;display:inline-block;"></span>Spend</span>';
+  html+='</div>';
+  for(var d=0;d<31;d++){
+    var inW=Math.round((incomeByDay[d]/maxFlow)*120);
+    var outW=Math.round((spendByDay[d]/maxFlow)*120);
+    if(inW===0&&outW===0)continue;
+    html+='<div class="cashflow-row">';
+    html+='<div class="cashflow-date">'+(d+1)+'</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:2px;flex:1;">';
+    if(incomeByDay[d]>0) html+='<div style="height:8px;width:'+inW+'px;background:var(--green);opacity:0.5;border-radius:2px;"></div>';
+    if(spendByDay[d]>0) html+='<div style="height:8px;width:'+outW+'px;background:var(--coral);opacity:0.4;border-radius:2px;"></div>';
+    html+='</div>';
+    html+='<div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);text-align:right;width:80px;">';
+    if(incomeByDay[d]>0) html+='<span style="color:var(--green);">+'+fmt(incomeByDay[d])+'</span>';
+    if(spendByDay[d]>0) html+=(incomeByDay[d]>0?' ':'')+'<span style="color:var(--coral-soft);">-'+fmt(spendByDay[d])+'</span>';
+    html+='</div></div>';
+  }
+  html+='</div>';
+
+  el.innerHTML=html;
+}
+
+function openIncomeLabelModal(){
+  var sources=detectIncomeSources();
+  var modal=document.querySelector('.modal');
+  if(!modal)return;
+  var html='<h3>Label income sources</h3>'
+    +'<p class="modal-sub">Mark each source so it appears correctly in your dashboard.</p>'
+    +'<div id="income-label-rows">';
+  sources.forEach(function(s){
+    var current=incomeLabels[s.name]||guessIncomeType(s.name,s.amount);
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--navy-border);">'
+      +'<div><div style="font-size:13px;color:var(--text-primary);">'+s.name+'</div>'
+      +'<div style="font-size:11px;color:var(--text-muted);">avg '+fmt(s.amount)+' - '+s.months+' months</div></div>'
+      +'<select data-name="'+s.name+'" style="background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:6px;padding:5px 8px;font-family:var(--font);font-size:12px;color:var(--text-primary);">'
+      +'<option value="other"'+(current==='other'?' selected':'')+'>Other income</option>'
+      +'<option value="salary"'+(current==='salary'?' selected':'')+'>Salary / wages</option>'
+      +'<option value="roommate"'+(current==='roommate'?' selected':'')+'>Roommate / lodger</option>'
+      +'</select></div>';
+  });
+  html+='</div>'
+    +'<div class="modal-footer" style="margin-top:1rem;">'
+    +'<button class="btn-secondary" onclick="closeAccountsModal()">Cancel</button>'
+    +'<button class="btn-save" onclick="saveIncomeLabelModal()">Save</button>'
+    +'</div>';
+  modal.innerHTML=html;
+  document.getElementById('accounts-modal').classList.add('open');
+}
+
+function saveIncomeLabelModal(){
+  document.querySelectorAll('#income-label-rows select').forEach(function(sel){
+    incomeLabels[sel.getAttribute('data-name')]=sel.value;
+  });
+  saveIncomeLabels2();
+  closeAccountsModal();
+  renderIncome();
 }
 
 initTheme();
