@@ -53,16 +53,16 @@ input[type="text"]:focus{border-color:var(--coral);}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
 .app-body{display:flex;height:calc(100vh - 53px);overflow:hidden;}
-.sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
+.sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;max-height:100%;}
 .sidebar-section{font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
-.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;}
-.tab-panel{display:none;width:100%;min-height:100%;}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;height:100%;}
+.tab-panel{display:none;width:100%;}
 .tab-panel.active{display:block;}
-.tab-inner{padding:1.5rem 2rem;max-width:1400px;margin:0 auto;padding-bottom:3rem;}
+.tab-inner{padding:1.5rem 2rem 4rem;max-width:1400px;margin:0 auto;}
 .main{padding:0;}
 .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.2rem;}
 .grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.2rem;}
@@ -377,6 +377,51 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 .insight-row-text{flex:1;font-size:13px;color:var(--text-secondary);}
 .insight-row-text strong{color:var(--text-primary);font-weight:500;}
 .insight-row-val{font-size:13px;font-family:var(--mono);font-weight:500;}
+
+/* Search overlay */
+.search-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding-top:80px;}
+.search-overlay.open{display:flex;}
+.search-box{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:14px;width:100%;max-width:600px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.search-input-wrap{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--navy-border);}
+.search-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--font);font-size:15px;color:var(--text-primary);}
+.search-input::placeholder{color:var(--text-muted);}
+.search-results{max-height:460px;overflow-y:auto;}
+.search-section-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;padding:10px 16px 4px;}
+.search-result-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background 0.1s;}
+.search-result-item:hover{background:rgba(255,255,255,0.04);}
+.search-result-icon{width:32px;height:32px;border-radius:8px;background:var(--navy-mid);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.search-result-main{flex:1;min-width:0;}
+.search-result-title{font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.search-result-sub{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.search-result-val{font-size:13px;font-family:var(--mono);font-weight:500;flex-shrink:0;}
+.search-empty{padding:2rem;text-align:center;color:var(--text-muted);font-size:14px;}
+
+/* Chart controls */
+.chart-toggle{display:flex;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:8px;overflow:hidden;}
+.chart-toggle-btn{padding:5px 14px;font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;border:none;background:transparent;font-family:var(--font);}
+.chart-toggle-btn.active{background:var(--coral);color:white;}
+
+/* Anomaly */
+.anomaly-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy-border);}
+.anomaly-item:last-child{border-bottom:none;}
+.anomaly-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;background:var(--amber-dim);color:var(--amber);margin-left:6px;}
+.anomaly-badge.high{background:var(--coral-dim);color:var(--coral-soft);}
+
+/* Day of week */
+.dow-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:0.5rem;}
+.dow-bar-wrap{text-align:center;}
+.dow-bar-outer{height:80px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:4px;}
+.dow-bar-inner{width:100%;border-radius:4px 4px 0 0;background:var(--coral);opacity:0.5;min-height:2px;}
+.dow-bar-inner.peak{opacity:1;}
+.dow-label{font-size:11px;color:var(--text-muted);}
+.dow-val{font-size:10px;font-family:var(--mono);color:var(--text-secondary);margin-top:2px;}
+
+/* Compact mode */
+body.compact .card{padding:0.8rem 1rem;}
+body.compact .stat-value{font-size:20px;}
+body.compact .tx-item{padding:6px 0;}
+body.compact .nav-item{padding:7px 1.2rem;}
+body.compact .topbar{padding:0.6rem 2rem;}
 </style>
 </head>
 <body>
@@ -403,7 +448,7 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.4</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v2.5</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -413,7 +458,9 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
       <div class="account-pill" id="account-pill"></div>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
       <button class="pill-btn" onclick="openAccountsModal()">Accounts</button>
+      <button class="pill-btn" onclick="openSearch()">🔍 Search</button>
       <button class="pill-btn" onclick="loadAll()">Refresh</button>
+      <button class="pill-btn" id="compact-btn" onclick="toggleCompact()">Compact</button>
       <button class="pill-btn" onclick="resetConfig()">Disconnect</button>
     </div>
   </div>
@@ -428,6 +475,9 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
     </div>
     <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">
       <span class="nav-icon">📈</span>Trends
+    </div>
+    <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
+      <span class="nav-icon">📉</span>Analytics
     </div>
     <div class="nav-item" data-tab="merchants" onclick="switchTab('merchants')">
       <span class="nav-icon">🏪</span>Merchants
@@ -619,6 +669,13 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
     </div>
   </div>
 
+  <!-- Analytics tab -->
+  <div class="tab-panel" id="tab-analytics">
+    <div class="tab-inner" id="analytics-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
   <!-- Merchants tab -->
   <div class="tab-panel" id="tab-merchants">
     <div class="tab-inner" id="merchants-content">
@@ -655,8 +712,21 @@ body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
     </div>
   </div>
 </div>
+<!-- Search overlay -->
+<div class="search-overlay" id="search-overlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <span style="font-size:16px;">🔍</span>
+      <input class="search-input" id="search-input" placeholder="Search transactions, merchants, categories..." oninput="runSearch(this.value)">
+      <button class="search-close" onclick="closeSearch()">&#215;</button>
+    </div>
+    <div class="search-results" id="search-results">
+      <div class="search-empty">Start typing to search</div>
+    </div>
+  </div>
+</div>
 <script>
-var STORAGE_KEY="monzo_dash_v3",MANUAL_KEY="monzo_manual_v1",THEME_KEY="monzo_theme";
+var STORAGE_KEY="monzo_dash_v3",MANUAL_KEY="monzo_manual_v1",THEME_KEY="monzo_theme",OVERRIDES_KEY="monzo_cat_overrides_v1",COMPACT_KEY="monzo_compact_v1";
 var GAS_URL="",ACCOUNT_ID="";
 var allTransactions=[],cachedPots=[],cachedSavings=[],cachedBal=null;
 var viewMonth="this",dailyChartInstance=null,compareChartInstance=null,merchantChartInstance=null;
@@ -1300,6 +1370,7 @@ function switchTab(tab){
   if(tab==='trends')renderTrends();
   if(tab==='transactions')renderTxTab();
   if(tab==='wealth')renderWealth();
+  if(tab==='analytics')renderAnalytics();
   if(tab==='merchants')renderMerchants();
   if(tab==='income')renderIncome();
   if(tab==='subscriptions')renderSubscriptions();
@@ -1986,6 +2057,7 @@ renderAll=function(){
   if(currentTab==='trends')renderTrends();
   if(currentTab==='transactions')renderTxTabList();
   if(currentTab==='wealth')renderWealth();
+  if(currentTab==='analytics')renderAnalytics();
   if(currentTab==='merchants')renderMerchants();
   if(currentTab==='income')renderIncome();
   if(currentTab==='subscriptions')renderSubscriptions();
@@ -2714,7 +2786,7 @@ function renderMerchantDetail(name){
     +'<div class="merchant-detail-header">'
     +'<div style="display:flex;align-items:center;gap:10px;">'
     +'<button class="merchant-back" onclick="merchantView=null;renderMerchantGrid();">&#8592; All merchants</button>'
-    +'<div class="merchant-detail-name">'+(CAT_EMOJI[txns[0]&&txns[0].category]||'💳')+' '+name+'</div>'
+    +'<div class="merchant-detail-name">'+(CAT_EMOJI[txns[0]&&getCategory(txns[0])]||'💳')+' '+name+'</div>'
     +'</div>'
     +'<div style="font-size:12px;color:var(--text-muted);">First seen '+firstDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>'
     +'</div>'
@@ -2758,7 +2830,355 @@ function renderMerchantDetail(name){
   el.innerHTML = html;
 }
 
+
+// ---- Category overrides ----
+var catOverrides = JSON.parse(localStorage.getItem(OVERRIDES_KEY)||'{}');
+function saveCatOverrides(){ localStorage.setItem(OVERRIDES_KEY, JSON.stringify(catOverrides)); }
+function getCategory(t){ return catOverrides[t.id] || t.category || 'general'; }
+
+// ---- Compact mode ----
+function initCompact(){
+  if(localStorage.getItem(COMPACT_KEY)==='1') document.body.classList.add('compact');
+}
+function toggleCompact(){
+  var on = document.body.classList.toggle('compact');
+  localStorage.setItem(COMPACT_KEY, on?'1':'0');
+}
+
+// ---- Search ----
+function openSearch(){
+  document.getElementById('search-overlay').classList.add('open');
+  setTimeout(function(){ document.getElementById('search-input').focus(); }, 50);
+}
+function closeSearch(){
+  document.getElementById('search-overlay').classList.remove('open');
+  document.getElementById('search-input').value='';
+  document.getElementById('search-results').innerHTML='<div class="search-empty">Start typing to search</div>';
+}
+
+function runSearch(q){
+  var el = document.getElementById('search-results');
+  q = q.trim();
+  if(!q){ el.innerHTML='<div class="search-empty">Start typing to search</div>'; return; }
+  var ql = q.toLowerCase();
+  var html = '';
+  var count = 0;
+
+  // 1. Merchants matching query
+  var merchantHits = {};
+  allTransactions.forEach(function(t){
+    var n = merchant(t);
+    if(n.toLowerCase().indexOf(ql)>=0 && n!=='Pot transfer'){
+      if(!merchantHits[n]) merchantHits[n]={total:0,count:0};
+      merchantHits[n].total += Math.abs(t.amount);
+      merchantHits[n].count++;
+    }
+  });
+  var mArr = Object.entries(merchantHits).sort(function(a,b){return b[1].total-a[1].total;}).slice(0,4);
+  if(mArr.length){
+    html += '<div class="search-section-label">Merchants</div>';
+    mArr.forEach(function(e){
+      html += '<div class="search-result-item" onclick="switchTab(\'merchants\');openMerchantDetail(\''+encodeURIComponent(e[0])+'\');closeSearch();">'
+        +'<div class="search-result-icon">🏪</div>'
+        +'<div class="search-result-main"><div class="search-result-title">'+e[0]+'</div>'
+        +'<div class="search-result-sub">'+e[1].count+' transactions</div></div>'
+        +'<div class="search-result-val" style="color:var(--coral-soft);">'+fmt(e[1].total)+'</div>'
+        +'</div>';
+      count++;
+    });
+  }
+
+  // 2. Individual transactions matching query
+  var txHits = allTransactions.filter(function(t){
+    var n = merchant(t).toLowerCase();
+    var d = (t.description||'').toLowerCase();
+    var c = (getCategory(t)||'').toLowerCase();
+    return n.indexOf(ql)>=0 || d.indexOf(ql)>=0 || c.indexOf(ql)>=0;
+  }).sort(function(a,b){ return new Date(b.created)-new Date(a.created); }).slice(0,6);
+
+  if(txHits.length){
+    html += '<div class="search-section-label">Transactions</div>';
+    txHits.forEach(function(t){
+      var cr = t.amount>0;
+      var dt = new Date(t.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      html += '<div class="search-result-item" onclick="closeSearch();switchTab(\'transactions\');setTimeout(function(){var el=document.getElementById(\'ttx-search\');if(el){el.value=\''+merchant(t).replace(/'/g,'')+'\';applyTabFilters();}},100);">'
+        +'<div class="search-result-icon">'+(CAT_EMOJI[getCategory(t)]||'💳')+'</div>'
+        +'<div class="search-result-main"><div class="search-result-title">'+merchant(t)+'</div>'
+        +'<div class="search-result-sub">'+dt+'</div></div>'
+        +'<div class="search-result-val" style="color:'+(cr?'var(--green)':'var(--coral-soft)')+';">'+(cr?'+':'-')+fmt(t.amount)+'</div>'
+        +'</div>';
+      count++;
+    });
+  }
+
+  // 3. Categories
+  var cats = ['eating_out','groceries','transport','shopping','entertainment','bills','finances','personal_care','holidays','family','savings'];
+  var catHits = cats.filter(function(c){ return c.replace(/_/g,' ').indexOf(ql)>=0; });
+  if(catHits.length){
+    html += '<div class="search-section-label">Categories</div>';
+    catHits.slice(0,3).forEach(function(c){
+      var total = allTransactions.filter(function(t){return getCategory(t)===c;}).reduce(function(s,t){return s+Math.abs(t.amount);},0);
+      html += '<div class="search-result-item" onclick="closeSearch();switchTab(\'transactions\');setTimeout(function(){var el=document.getElementById(\'ttx-cat\');if(el){el.value=\''+c+'\';applyTabFilters();}},100);">'
+        +'<div class="search-result-icon">'+(CAT_EMOJI[c]||'💳')+'</div>'
+        +'<div class="search-result-main"><div class="search-result-title">'+c.replace(/_/g,' ')+'</div>'
+        +'<div class="search-result-sub">Category</div></div>'
+        +'<div class="search-result-val" style="color:var(--coral-soft);">'+fmt(total)+'</div>'
+        +'</div>';
+      count++;
+    });
+  }
+
+  if(!count){ html = '<div class="search-empty">No results for "'+q+'"</div>'; }
+  el.innerHTML = html;
+}
+
+// ---- Analytics tab ----
+function renderAnalytics(){
+  var el = document.getElementById('analytics-content');
+  if(!el) return;
+  var spendTx = allTransactions.filter(function(t){ return t.amount<0&&t.include_in_spending!==false; });
+  if(!spendTx.length){ el.innerHTML='<div style="color:var(--text-muted);padding:2rem;">Load more history to see analytics.</div>'; return; }
+
+  var html = '<h2 style="font-size:18px;font-weight:500;margin-bottom:1.2rem;">Analytics</h2>';
+
+  // -- Multi-month category chart --
+  // Get last 6 months
+  var now = new Date();
+  var monthKeys = [];
+  for(var i=5;i>=0;i--){
+    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    monthKeys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+  var cats = ['eating_out','groceries','transport','shopping','entertainment','bills','finances','family','personal_care'];
+  var catColors = {'eating_out':'#FF5A5F','groceries':'#2DD4A0','transport':'#9B7FFF','shopping':'#F5A623','entertainment':'#38BDF8','bills':'#FB923C','finances':'#A78BFA','family':'#F472B6','personal_care':'#34D399'};
+
+  // Build data per month per category
+  var monthData = {};
+  monthKeys.forEach(function(k){ monthData[k]={}; cats.forEach(function(c){ monthData[k][c]=0; }); monthData[k].other=0; });
+  spendTx.forEach(function(t){
+    var k=t.created.slice(0,7);
+    if(!monthData[k]) return;
+    var c=getCategory(t);
+    if(monthData[k][c]!==undefined) monthData[k][c]+=Math.abs(t.amount);
+    else monthData[k].other+=Math.abs(t.amount);
+  });
+
+  var maxMonthTotal = Math.max.apply(null, monthKeys.map(function(k){
+    return Object.values(monthData[k]).reduce(function(s,v){return s+v;},0);
+  }))||1;
+
+  html += '<div class="card" style="margin-bottom:1rem;">';
+  html += '<div class="card-header"><span class="card-title">6-month spend by category</span></div>';
+  html += '<div style="display:flex;gap:4px;align-items:flex-end;height:160px;margin-bottom:8px;">';
+  monthKeys.forEach(function(k){
+    var total=Object.values(monthData[k]).reduce(function(s,v){return s+v;},0);
+    var pct=(total/maxMonthTotal)*100;
+    var mLabel=new Date(k+'-01').toLocaleString('default',{month:'short'});
+    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0;">';
+    html += '<div style="width:100%;display:flex;flex-direction:column-reverse;height:'+(pct*1.4).toFixed(0)+'px;border-radius:4px 4px 0 0;overflow:hidden;">';
+    cats.concat(['other']).forEach(function(c){
+      var v=monthData[k][c]||0;
+      if(!v) return;
+      var cp=(v/total)*100;
+      html += '<div style="width:100%;height:'+cp.toFixed(1)+'%;background:'+(catColors[c]||'rgba(255,255,255,0.2)')+';" title="'+c+': '+fmt(v)+'"></div>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">'+mLabel+'</div>';
+    html += '<div style="font-size:10px;font-family:var(--mono);color:var(--text-secondary);">'+fmtShort(total)+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  // Legend
+  html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">';
+  cats.forEach(function(c){
+    if(!catColors[c]) return;
+    html += '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);">'
+      +'<span style="width:8px;height:8px;border-radius:2px;background:'+catColors[c]+';display:inline-block;"></span>'+c.replace(/_/g,' ')+'</div>';
+  });
+  html += '</div></div>';
+
+  // -- Net worth trend --
+  // Estimate monthly net worth from balance + known pots (rough)
+  var nwMonths = monthKeys.map(function(k){
+    var kEnd = new Date(k.slice(0,4), parseInt(k.slice(5,7)), 0); // last day of month
+    // Sum all credits minus debits up to end of that month
+    return {key:k, label:new Date(k+'-01').toLocaleString('default',{month:'short',year:'2-digit'})};
+  });
+
+  if(cachedBal){
+    var currentBalance = cachedBal.balance;
+    // Walk backwards from now
+    var running = currentBalance;
+    var nwPoints = [{key:'now',label:'Now',val:currentBalance}];
+    var sortedTx = allTransactions.slice().sort(function(a,b){return new Date(b.created)-new Date(a.created);});
+    monthKeys.slice().reverse().forEach(function(k){
+      var monthStart = new Date(k+'-01');
+      var monthEnd = new Date(monthStart.getFullYear(),monthStart.getMonth()+1,0,23,59,59);
+      var monthTx = sortedTx.filter(function(t){
+        var d=new Date(t.created);return d>=monthStart&&d<=monthEnd;
+      });
+      // Reverse the transactions to get balance at start of month
+      monthTx.forEach(function(t){ running -= t.amount; });
+      nwPoints.unshift({key:k,label:new Date(k+'-01').toLocaleString('default',{month:'short',year:'2-digit'}),val:running});
+    });
+
+    var maxNW = Math.max.apply(null,nwPoints.map(function(p){return p.val;}))||1;
+    var minNW = Math.min.apply(null,nwPoints.map(function(p){return p.val;}));
+    var range = maxNW-minNW||1;
+
+    html += '<div class="card" style="margin-bottom:1rem;">';
+    html += '<div class="card-header"><span class="card-title">Balance trend (estimated)</span><span style="font-size:11px;color:var(--text-muted);">current account only</span></div>';
+    html += '<div style="position:relative;height:80px;display:flex;align-items:flex-end;gap:4px;padding-bottom:20px;">';
+    nwPoints.forEach(function(p,i){
+      var h = Math.max(4, Math.round(((p.val-minNW)/range)*60));
+      var col = p.val >= (nwPoints[0]?nwPoints[0].val:0) ? 'var(--green)' : 'var(--coral)';
+      html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0;justify-content:flex-end;">'
+        +'<div style="width:100%;height:'+h+'px;background:'+col+';opacity:0.6;border-radius:3px 3px 0 0;" title="'+p.label+': '+fmt(p.val)+'"></div>'
+        +'<div style="font-size:9px;color:var(--text-muted);margin-top:3px;position:absolute;bottom:0;">'+p.label+'</div>'
+        +'</div>';
+    });
+    html += '</div></div>';
+  }
+
+  // -- Anomaly detection --
+  var anomalies = detectAnomalies(spendTx);
+  html += '<div class="card" style="margin-bottom:1rem;">';
+  html += '<div class="card-header"><span class="card-title">Anomaly detection</span><span class="badge badge-coral">'+anomalies.length+' flagged</span></div>';
+  if(anomalies.length){
+    html += anomalies.slice(0,8).map(function(a){
+      var dt = new Date(a.tx.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      var badgeClass = a.ratio>=3?'high':'';
+      return '<div class="anomaly-item">'
+        +'<div class="tx-icon">'+(CAT_EMOJI[getCategory(a.tx)]||'💳')+'</div>'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:13px;color:var(--text-primary);">'+merchant(a.tx)
+        +'<span class="anomaly-badge '+badgeClass+'">'+a.ratio.toFixed(1)+'x usual</span></div>'
+        +'<div style="font-size:11px;color:var(--text-muted);">'+dt+' - usual avg: '+fmt(a.avg)+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;"><div style="font-size:14px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(a.tx.amount)+'</div></div>'
+        +'</div>';
+    }).join('');
+  } else {
+    html += '<div style="color:var(--text-muted);font-size:14px;padding:8px 0;">No unusual transactions detected.</div>';
+  }
+  html += '</div>';
+
+  // -- Day of week --
+  var dowData = calcDayOfWeek(spendTx);
+  var maxDow = Math.max.apply(null, dowData.avgs)||1;
+  var peakIdx = dowData.avgs.indexOf(maxDow);
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  html += '<div class="card" style="margin-bottom:1rem;">';
+  html += '<div class="card-header"><span class="card-title">Spending by day of week</span><span style="font-size:11px;color:var(--text-muted);">avg per day</span></div>';
+  html += '<div class="dow-grid">';
+  days.forEach(function(d,i){
+    var h = Math.max(2, Math.round((dowData.avgs[i]/maxDow)*80));
+    html += '<div class="dow-bar-wrap">'
+      +'<div class="dow-bar-outer"><div class="dow-bar-inner'+(i===peakIdx?' peak':'')+'" style="height:'+h+'px;"></div></div>'
+      +'<div class="dow-label">'+d+'</div>'
+      +'<div class="dow-val">'+fmtShort(dowData.avgs[i])+'</div>'
+      +'</div>';
+  });
+  html += '</div></div>';
+
+  // -- Category override --
+  html += '<div class="card">';
+  html += '<div class="card-header"><span class="card-title">Category overrides</span>'
+    +'<button class="pill-btn" style="font-size:11px;padding:4px 10px;" onclick="openCatOverrideModal()">Manage</button></div>';
+  var overrideCount = Object.keys(catOverrides).length;
+  html += '<div style="font-size:13px;color:var(--text-secondary);">'+(overrideCount?overrideCount+' transaction'+(overrideCount!==1?'s':'')+' recategorised locally. Changes apply across all views.':'No overrides set. Use Manage to recategorise transactions.')+'</div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+function detectAnomalies(spendTx){
+  // Per merchant: find transactions that are >2x the merchant average
+  var byMerchant={};
+  spendTx.forEach(function(t){
+    var n=merchant(t);
+    if(!byMerchant[n]) byMerchant[n]=[];
+    byMerchant[n].push(t);
+  });
+  var anomalies=[];
+  Object.entries(byMerchant).forEach(function(e){
+    var txns=e[1];
+    if(txns.length<3) return; // need baseline
+    var amounts=txns.map(function(t){return Math.abs(t.amount);});
+    var avg=amounts.reduce(function(s,v){return s+v;},0)/amounts.length;
+    var stddev=Math.sqrt(amounts.map(function(v){return Math.pow(v-avg,2);}).reduce(function(s,v){return s+v;},0)/amounts.length);
+    txns.forEach(function(t){
+      var v=Math.abs(t.amount);
+      var ratio=v/avg;
+      if(ratio>=2&&v-avg>2000){ // >2x avg and >£20 difference
+        anomalies.push({tx:t,avg:avg,ratio:ratio,stddev:stddev});
+      }
+    });
+  });
+  return anomalies.sort(function(a,b){return b.ratio-a.ratio;}).slice(0,15);
+}
+
+function calcDayOfWeek(spendTx){
+  var days=[0,0,0,0,0,0,0]; // Mon-Sun totals
+  var counts=[0,0,0,0,0,0,0];
+  spendTx.forEach(function(t){
+    var dow=(new Date(t.created).getDay()+6)%7; // 0=Mon
+    days[dow]+=Math.abs(t.amount);
+    counts[dow]++;
+  });
+  var avgs=days.map(function(v,i){return counts[i]>0?v/counts[i]:0;});
+  return {totals:days,counts:counts,avgs:avgs};
+}
+
+function openCatOverrideModal(){
+  var modal=document.querySelector('.modal');
+  if(!modal) return;
+  var viewTx=getMonthTxns(allTransactions,viewMonth).filter(function(t){return t.amount!==0;})
+    .sort(function(a,b){return new Date(b.created)-new Date(a.created);}).slice(0,50);
+  var allCats=['eating_out','groceries','transport','shopping','entertainment','bills','finances','family','personal_care','holidays','savings','general'];
+
+  var html='<h3>Recategorise transactions</h3>'
+    +'<p class="modal-sub">Changes are stored locally and apply across all views. Showing current month.</p>'
+    +'<div style="max-height:400px;overflow-y:auto;" id="override-rows">';
+  viewTx.forEach(function(t){
+    var current=getCategory(t);
+    var dt=new Date(t.created).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--navy-border);">'
+      +'<div style="flex:1;min-width:0;margin-right:8px;">'
+      +'<div style="font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+merchant(t)+'</div>'
+      +'<div style="font-size:10px;color:var(--text-muted);">'+dt+' - '+fmt(t.amount)+'</div>'
+      +'</div>'
+      +'<select data-txid="'+t.id+'" style="background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:6px;padding:4px 6px;font-family:var(--font);font-size:11px;color:var(--text-primary);flex-shrink:0;">'
+      +allCats.map(function(c){return '<option value="'+c+'"'+(c===current?' selected':'')+'>'+c.replace(/_/g,' ')+'</option>';}).join('')
+      +'</select></div>';
+  });
+  html+='</div>'
+    +'<div class="modal-footer" style="margin-top:1rem;">'
+    +'<button class="btn-secondary" onclick="closeAccountsModal()">Cancel</button>'
+    +'<button class="btn-save" onclick="saveCatOverrides2()">Save</button>'
+    +'</div>';
+  modal.innerHTML=html;
+  document.getElementById('accounts-modal').classList.add('open');
+}
+
+function saveCatOverrides2(){
+  document.querySelectorAll('#override-rows select').forEach(function(sel){
+    var id=sel.getAttribute('data-txid');
+    var val=sel.value;
+    // Find original category
+    var tx=allTransactions.find(function(t){return t.id===id;});
+    if(tx&&val!==tx.category) catOverrides[id]=val;
+    else if(tx&&val===tx.category) delete catOverrides[id];
+  });
+  saveCatOverrides();
+  closeAccountsModal();
+  renderAll();
+  if(currentTab==='analytics') renderAnalytics();
+}
+
+
 initTheme();
+initCompact();
 if(loadConfig())showDashboard();
 </script>
 </body>
