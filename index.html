@@ -455,13 +455,17 @@ function bgFetchStep(){
       if(!bgFetching)return;
       if(res.status==="ok"&&res.data&&res.data.transactions){
         var batch=res.data.transactions;
+        console.log("BG batch: "+batch.length+" tx, range: "+(batch.length?batch[0].created.slice(0,10)+" to "+batch[batch.length-1].created.slice(0,10):"empty"));
         var ids={};allTransactions.forEach(function(t){ids[t.id]=true;});
         var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
+        console.log("BG new unique: "+newOnes.length+", total now: "+(allTransactions.length+newOnes.length));
         if(newOnes.length){
           allTransactions=allTransactions.concat(newOnes).sort(function(a,b){return new Date(b.created)-new Date(a.created);});
           populateCatFilter();
           renderAll();
         }
+      } else {
+        console.log("BG error response:", res.status, res.message);
       }
       bgCursor=since;
       if(new Date(bgCursor)<bgLimit){
