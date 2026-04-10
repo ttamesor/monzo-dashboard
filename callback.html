@@ -69,20 +69,32 @@ window.addEventListener('DOMContentLoaded', function(){
           showErr('Failed: ' + ((res && res.message) || 'Unknown error'));
           return;
         }
-        var accountId = res.data && res.data.account_id;
         var savedState = (res.data && res.data.state) || state;
-        localStorage.setItem('monzo_dash_v3', JSON.stringify({
-          gasUrl: gasUrl, accountId: accountId || '', state: savedState
-        }));
-        document.getElementById('title').textContent = 'Connected!';
-        document.getElementById('msg').textContent = 'Redirecting...';
-        document.getElementById('spinner').style.display = 'none';
-        setTimeout(function(){
-          window.location.href = 'https://ttamesor.github.io/monzo-dashboard/';
-        }, 800);
+        // Now fetch account ID - user has approved so SCA is complete
+        fetch(gasUrl + '?action=accounts&state=' + encodeURIComponent(savedState))
+          .then(function(r){ return r.json(); })
+          .then(function(accRes){
+            var accountId = '';
+            if(accRes.status === 'ok' && accRes.data && accRes.data.accounts && accRes.data.accounts[0]){
+              accountId = accRes.data.accounts[0].id;
+            }
+            localStorage.setItem('monzo_dash_v3', JSON.stringify({
+              gasUrl: gasUrl, accountId: accountId, state: savedState
+            }));
+            document.getElementById('title').textContent = 'Connected!';
+            document.getElementById('msg').textContent = 'Redirecting...';
+            document.getElementById('spinner').style.display = 'none';
+            setTimeout(function(){
+              window.location.href = 'https://ttamesor.github.io/monzo-dashboard/';
+            }, 800);
+          })
+          .catch(function(e){ showErr('Could not fetch account: ' + e.message); });
       }
 
       if(window._exchangeErr){ showErr('Exchange error: ' + window._exchangeErr); return; }
+      document.getElementById('msg').textContent = 'Completing connection, please wait...';
+      // Wait 5s for Monzo SCA to propagate before calling API
+      setTimeout(function(){
       if(window._exchangeRes){ finish(window._exchangeRes); }
       else {
         // Still waiting - poll briefly
@@ -94,6 +106,7 @@ window.addEventListener('DOMContentLoaded', function(){
           else if(attempts > 20){ clearInterval(poll); showErr('Timed out. Please try again.'); }
         }, 500);
       }
+      }, 5000); // end SCA wait
     }
   });
 
