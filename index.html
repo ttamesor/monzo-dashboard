@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FF5A5F'/><text y='.9em' font-size='70' x='15' fill='white'>M</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monzo Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -569,7 +570,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.5</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.6</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -794,8 +795,8 @@ body.compact .topbar{padding:0.6rem 2rem;}
         <h2 style="font-size:18px;font-weight:500;" id="cal-month-title">Calendar</h2>
         <div style="display:flex;gap:8px;align-items:center;">
           <div class="cal-view-toggle">
-            <button class="cal-view-btn active" id="cal-btn-month" onclick="setCalView('month')">Month</button>
-            <button class="cal-view-btn" id="cal-btn-week" onclick="setCalView('week')">Week</button>
+            <button class="cal-view-btn active" id="cal-btn-month" onclick="setCalMode('month')">Month</button>
+            <button class="cal-view-btn" id="cal-btn-week" onclick="setCalMode('week')">Week</button>
           </div>
           <button class="pill-btn" onclick="calPrev()">&#8592;</button>
           <button class="pill-btn" onclick="calNext()">&#8594;</button>
@@ -1463,7 +1464,7 @@ function fixLayout(){
   tabContent.style.overflowX = "hidden";
   tabContent.style.flex = "1";
   tabContent.style.minHeight = "0";
-  tabContent.style.height = "";
+  tabContent.style.height = (remaining) + "px";
   tabContent.style.maxHeight = "";
 }
 
@@ -3559,6 +3560,18 @@ function renderAnalytics(){
   });
   html+='</div></div>';
   el.innerHTML=html;
+}
+
+function calcDayOfWeek(txns){
+  var days=[0,0,0,0,0,0,0];
+  var counts=[0,0,0,0,0,0,0];
+  txns.forEach(function(t){
+    var dow=(new Date(t.created).getDay()+6)%7;
+    days[dow]+=Math.abs(t.amount);
+    counts[dow]++;
+  });
+  var avgs=days.map(function(v,i){return counts[i]>0?v/counts[i]:0;});
+  return{totals:days,counts:counts,avgs:avgs};
 }
 
 function detectAnomalies(spendTx){
