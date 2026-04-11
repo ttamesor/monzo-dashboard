@@ -570,7 +570,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.6</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.7</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -612,7 +612,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v6.4</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v6.7</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1751,6 +1751,7 @@ function switchTab(tab){
   document.querySelectorAll(".tab-panel").forEach(function(el){
     el.classList.toggle("active",el.id==="tab-"+tab);
   });
+  fixLayout();
   var sel=document.getElementById("month-select");
   if(sel) sel.style.display=MONTH_TABS.indexOf(tab)>=0?"":"none";
   fixLayout();
@@ -2999,34 +3000,107 @@ function analyseSpend(txns){
 }
 
 // ---- Calendar ----
+function calPrev(){
+  var parts=(viewMonth||getThisMonthKey()).split('-');
+  var d=new Date(parseInt(parts[0]),parseInt(parts[1])-2,1);
+  viewMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderCalendar();
+}
+function calNext(){
+  var parts=(viewMonth||getThisMonthKey()).split('-');
+  var d=new Date(parseInt(parts[0]),parseInt(parts[1]),1);
+  viewMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderCalendar();
+}
+function setCalMode(mode){
+  var mv=document.getElementById('cal-month-view');
+  var wv=document.getElementById('cal-week-view');
+  var bm=document.getElementById('cal-btn-month');
+  var bw=document.getElementById('cal-btn-week');
+  if(mv) mv.style.display=mode==='month'?'':'none';
+  if(wv) wv.style.display=mode==='week'?'':'none';
+  if(bm){bm.classList.toggle('active',mode==='month');}
+  if(bw){bw.classList.toggle('active',mode==='week');}
+  if(mode==='month') renderCalendar();
+  else renderWeekView();
+}
+function renderWeekView(){
+  var wg=document.getElementById('week-grid');if(!wg)return;
+  var now=new Date();
+  var ws=new Date(now);ws.setDate(now.getDate()-((now.getDay()+6)%7));ws.setHours(0,0,0,0);
+  var days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var html='<div style="grid-column:1;"></div>';
+  for(var d=0;d<7;d++){var dt=new Date(ws);dt.setDate(ws.getDate()+d);html+='<div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:'+(dt.toDateString()===now.toDateString()?'var(--coral)':'var(--text-muted)')+';">'+days[d]+'<br>'+dt.getDate()+'</div>';}
+  for(var h=0;h<24;h++){
+    html+='<div style="padding:2px 4px;font-size:9px;color:var(--text-muted);text-align:right;border-top:1px solid var(--navy-border);">'+(h%3===0?String(h).padStart(2,'0')+':00':'')+'</div>';
+    for(var dd=0;dd<7;dd++){
+      var dt2=new Date(ws);dt2.setDate(ws.getDate()+dd);
+      var dayTx=allTransactions.filter(function(t){var td=new Date(t.created);return td.toDateString()===dt2.toDateString()&&td.getHours()===h&&t.amount<0;});
+      html+='<div style="border-top:1px solid var(--navy-border);border-left:1px solid var(--navy-border);min-height:20px;padding:1px;">';
+      dayTx.forEach(function(t){html+='<div style="font-size:9px;background:rgba(255,90,95,0.3);border-radius:2px;padding:1px 3px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+merchant(t)+'</div>';});
+      html+='</div>';
+    }
+  }
+  wg.innerHTML=html;
+  wg.style.gridTemplateColumns='48px repeat(7,1fr)';
+  wg.style.display='grid';
+}
 function renderCalendar(){
-  var el=document.getElementById('calendar-content');
-  if(!el)return;
-  var mode=el.getAttribute('data-mode')||'month';
   var now=new Date();
   var viewKey=viewMonth||getThisMonthKey();
   var parts=viewKey.split('-');
   var year=parseInt(parts[0]),month=parseInt(parts[1])-1;
-
-  // Build header
   var mLabel=new Date(year,month,1).toLocaleString('default',{month:'long',year:'numeric'});
-  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">';
-  html+='<h2 style="font-size:20px;font-weight:500;">'+mLabel+'</h2>';
-  html+='<div style="display:flex;gap:8px;align-items:center;">';
-  html+='<div class="cal-view-toggle"><button class="chart-toggle-btn'+(mode==='month'?' active':'')+'" onclick="setCalMode(\'month\')">Month</button><button class="chart-toggle-btn'+(mode==='week'?' active':'')+'" onclick="setCalMode(\'week\')">Week</button></div>';
-  html+='<button class="pill-btn" onclick="shiftCalMonth(-1)">&#8592;</button>';
-  html+='<button class="pill-btn" onclick="shiftCalMonth(1)">&#8594;</button>';
-  html+='</div></div>';
+  var titleEl=document.getElementById('cal-month-title');
+  if(titleEl) titleEl.textContent=mLabel;
 
   var allTx=getMonthTxns(allTransactions,viewKey);
-  
-  if(mode==='month'){
-    html+=buildMonthCal(year,month,allTx);
-  } else {
-    html+=buildWeekCal(year,month,allTx);
+  var byDay={};
+  allTx.forEach(function(t){
+    var d=new Date(t.created).getDate();
+    if(!byDay[d])byDay[d]={spend:0,income:0,txns:[]};
+    if(t.amount<0) byDay[d].spend+=Math.abs(t.amount);
+    else byDay[d].income+=t.amount;
+    byDay[d].txns.push(t);
+  });
+
+  var firstDay=(new Date(year,month,1).getDay()+6)%7;
+  var daysInMonth=new Date(year,month+1,0).getDate();
+  var maxSpend=Math.max.apply(null,Object.values(byDay).map(function(d){return d.spend;}))||1;
+  var today=now.getDate();
+  var isCurrentMonth=year===now.getFullYear()&&month===now.getMonth();
+
+  var grid=document.getElementById('cal-grid');
+  if(!grid)return;
+  // Keep header cells, remove day cells
+  var headers=grid.querySelectorAll('.cal-header-cell');
+  grid.innerHTML='';
+  headers.forEach(function(h){grid.appendChild(h);});
+
+  for(var i=0;i<firstDay;i++){
+    var blank=document.createElement('div');
+    blank.className='cal-cell cal-blank';
+    grid.appendChild(blank);
   }
-  el.innerHTML=html;
-  el.setAttribute('data-mode',mode);
+  for(var day=1;day<=daysInMonth;day++){
+    var dx=byDay[day]||{spend:0,income:0,txns:[]};
+    var isToday=isCurrentMonth&&day===today;
+    var netPositive=dx.income>dx.spend&&dx.income>0;
+    var intensity=maxSpend>0?dx.spend/maxSpend:0;
+    var cell=document.createElement('div');
+    cell.className='cal-cell'+(isToday?' cal-today':'');
+    if(netPositive) cell.style.background='rgba(45,212,160,'+(0.1+Math.min(0.5,(dx.income/maxSpend)*0.5)).toFixed(2)+')';
+    else if(dx.spend>0) cell.style.background='rgba(255,90,95,'+(0.08+intensity*0.55).toFixed(2)+')';
+    var inner='<div style="font-size:11px;font-weight:600;color:'+(isToday?'var(--coral)':'var(--text-muted)')+';">'+day+'</div>';
+    if(dx.income>0) inner+='<div style="font-size:10px;color:var(--green);">+'+fmtShort(dx.income)+'</div>';
+    if(dx.spend>0) inner+='<div class="cal-spend">'+fmt(dx.spend)+'</div>';
+    dx.txns.slice(0,2).forEach(function(t){
+      inner+='<div class="cal-tx-pill">'+merchant(t)+'</div>';
+    });
+    cell.innerHTML=inner;
+    (function(d){cell.onclick=function(){openDayPanel(year,month,d);};})(day);
+    grid.appendChild(cell);
+  }
 }
 
 function setCalMode(mode){
