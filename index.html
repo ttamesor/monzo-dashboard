@@ -571,12 +571,15 @@ body.compact .topbar{padding:0.6rem 2rem;}
 .cat-budget-pct{font-size:11px;font-family:var(--mono);flex-shrink:0;width:36px;text-align:right;}
 .cat-budget-edit{background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 4px;}
 .cat-budget-edit:hover{color:var(--coral);}
+
+/* Predictions tab */
+.pred-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin:10px 0 4px;}
 </style>
 </head>
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.0</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.2</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -615,8 +618,8 @@ body.compact .topbar{padding:0.6rem 2rem;}
 
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-logo-mark">M</div>
-      <div>
+      <div class="topbar-logo-mark" onclick="switchTab('simple')" style="cursor:pointer;" title="Go to Simple View">M</div>
+      <div style="cursor:pointer;" onclick="switchTab('simple')">
         <div class="topbar-title">Monzo Dashboard</div>
         <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v6.7</div>
       </div>
@@ -643,8 +646,13 @@ body.compact .topbar{padding:0.6rem 2rem;}
   <div class="sidebar" id="sidebar">
 
     <!-- Simple View - hero item -->
-    <div class="nav-item active" data-tab="simple" onclick="switchTab('simple')">
+    <div class="nav-item active" data-tab="simple" onclick="switchTab('simple')" class="active">
       <span class="nav-icon">✨</span>Simple View
+    </div>
+
+    <!-- Predictions - just below simple -->
+    <div class="nav-item" data-tab="predictions" onclick="switchTab('predictions')">
+      <span class="nav-icon">🎯</span>Predictions
     </div>
 
     <!-- Main tabs -->
@@ -708,22 +716,18 @@ body.compact .topbar{padding:0.6rem 2rem;}
   </div>
   <div class="tab-content" id="tab-content">
   <!-- Super Simple tab -->
-  <div class="tab-panel" id="tab-simple">
+  <div class="tab-panel active" id="tab-simple">
     <div class="tab-inner" id="simple-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
 
-  <div class="tab-panel active" id="tab-dashboard">
+  <div class="tab-panel" id="tab-dashboard">
   <div class="tab-inner">
     <div class="grid-5" id="stat-cards"><div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div></div>
     <div id="budget-pace-strip" style="margin-bottom:1.2rem;"></div>
-    <div class="insight-strip" id="insight-strip">
-      <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
-      <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
-      <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
-      <div class="insight-tile"><div class="insight-tile-label">Loading</div><div class="insight-tile-value">...</div></div>
-    </div>
+    <div id="fv-panel" style="margin-bottom:1.2rem;"></div>
+    <div class="insight-strip" id="insight-strip"></div>
     <div class="grid-3-1">
       <div class="card">
         <div class="card-header">
@@ -808,6 +812,13 @@ body.compact .topbar{padding:0.6rem 2rem;}
   </div>
 </div>
   </div><!-- end tab-dashboard -->
+
+  <!-- Predictions tab -->
+  <div class="tab-panel" id="tab-predictions">
+    <div class="tab-inner" id="predictions-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
 
   <!-- Calendar tab -->
   <div class="tab-panel" id="tab-calendar">
@@ -956,7 +967,7 @@ var viewMonth="this",dailyChartInstance=null,compareChartInstance=null,merchantC
 var txDisplayCount=30,filteredTxns=[];
 var bgLoadActive=false,bgLoadTimer=null;
 
-var CAT_EMOJI={eating_out:"🍽",groceries:"🛒",transport:"🚌",shopping:"🛍",entertainment:"🎬",bills:"📄",general:"💳",personal_care:"💆",holidays:"✈",family:"👪",cash:"💵",charity:"❤",education:"📚",finances:"🏦",transfers:"🔄",savings:"🏦"};
+var CAT_EMOJI={eating_out:"🍴",groceries:"🥕",transport:"🚗",shopping:"🛍",entertainment:"🎭",bills:"📋",general:"💰",personal_care:"💊",holidays:"✈",family:"🏠",cash:"💵",charity:"♥",education:"📖",finances:"🏦",transfers:"↔",savings:"💰",expenses:"📌",mondo:"💰"};
 
 // ---- Theme ----
 function initTheme(){
@@ -1013,6 +1024,7 @@ function showDashboard(){
   if(dash) dash.style.display="flex";
   setTimeout(fixLayout,0); setTimeout(fixLayout,150); setTimeout(fixLayout,400);
   window.addEventListener("resize",fixLayout);
+  switchTab("simple");
 
   var pill=document.getElementById("account-pill");
   if(pill) pill.textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"Connecting...";
@@ -1280,7 +1292,7 @@ function delta(a,b,low){
   if(!b)return"";
   var pct=((a-b)/b)*100,up=pct>0,good=low?!up:up;
   var cls=Math.abs(pct)<1?"neutral":(good?(up?"up-good":"down-good"):(up?"up-bad":"neutral"));
-  return"<div><span class='delta "+cls+"'>"+(up?"\\u25b2":"\\u25bc")+" "+Math.abs(pct).toFixed(1)+"% vs last month</span></div>";
+  return"<div><span class='delta "+cls+"'>"+(up?"▲":"▼")+" "+Math.abs(pct).toFixed(1)+"% vs last month</span></div>";
 }
 function merchant(t){
   if(t.merchant&&t.merchant.name)return t.merchant.name;
@@ -1349,7 +1361,7 @@ function renderCatCompare(thisTx,lastTx){
   var mx=Math.max.apply(null,all.map(function(x){return Math.max(x.cur,x.cmp);}));mx=mx||1;
   document.getElementById("cat-compare").innerHTML=all.length?all.map(function(x){
     var cp=Math.round((x.cur/mx)*100),pp=Math.round((x.cmp/mx)*100),col=x.cur>x.cmp?"var(--coral)":"var(--green)";
-    return "<div class='compare-item'><div class='compare-header'><span class='compare-name'>"+(CAT_EMOJI[x.cat]||"\\ud83d\\udcb3")+" "+x.cat.replace(/_/g," ")+"</span><span class='compare-amounts'><span class='compare-this'>"+fmtShort(x.cur)+"</span>"+(x.cmp>0?"<span class='compare-last'>/ "+fmtShort(x.cmp)+"</span>":"")+"</span></div><div class='bar-track'><div class='bar-last' style='width:"+pp+"%'></div><div class='bar-this' style='width:"+cp+"%;background:"+col+"'></div></div></div>";
+    return "<div class='compare-item'><div class='compare-header'><span class='compare-name'>"+(CAT_EMOJI[x.cat]||"💳")+" "+x.cat.replace(/_/g," ")+"</span><span class='compare-amounts'><span class='compare-this'>"+fmtShort(x.cur)+"</span>"+(x.cmp>0?"<span class='compare-last'>/ "+fmtShort(x.cmp)+"</span>":"")+"</span></div><div class='bar-track'><div class='bar-last' style='width:"+pp+"%'></div><div class='bar-this' style='width:"+cp+"%;background:"+col+"'></div></div></div>";
   }).join(""):"<div style='color:var(--text-muted);font-size:14px;'>No data</div>";
 }
 
@@ -1363,7 +1375,7 @@ function renderTransactions(txns,limit){
   if(lmBtn)lmBtn.style.display=txns.length>shown.length?"block":"none";
 
   document.getElementById("tx-list").innerHTML=shown.length?shown.map(function(t){
-    var m=merchant(t),em=CAT_EMOJI[t.category]||"\\ud83d\\udcb3",cr=t.amount>0;
+    var m=merchant(t),em=CAT_EMOJI[t.category]||"💳",cr=t.amount>0;
     var dt=new Date(t.created).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
     return "<div class='tx-item'><div class='tx-icon'>"+em+"</div><div class='tx-details'><div class='tx-merchant'>"+m+"</div><div class='tx-date'>"+dt+"</div></div><div class='tx-amount "+(cr?"credit":"debit")+"'>"+(cr?"+":"-")+fmt(t.amount)+"</div></div>";
   }).join(""):"<div style='color:var(--text-muted);font-size:14px;padding:8px 0;'>No transactions"+(document.getElementById("tx-search")&&document.getElementById("tx-search").value?" matching filters":"")+" this period</div>";
@@ -1465,7 +1477,7 @@ var activeQuickFilter = null;
 var bgFetching = false, bgCursor = null, bgLimit = null;
 var bgFetchErrors = 0, bgFetchStepCount = 0;
 var historyExhausted = false;
-var currentTab = "dashboard";
+var currentTab = "simple";
 var viewMonth = "this";
 var syncTimeoutHandle = null;
 
@@ -1766,7 +1778,7 @@ function buildMonthSelector(){
 function switchMonth(val){
   viewMonth=val;
   txDisplayCount=30;
-  var MONTH_TABS=["dashboard","calendar","trends","simple"];
+  var MONTH_TABS=["dashboard","calendar","trends","simple","predictions"];
   var sel=document.getElementById("month-select");
   if(sel) sel.style.display=MONTH_TABS.indexOf(currentTab)>=0?"":"none";
   renderAll();
@@ -1809,6 +1821,7 @@ function switchTab(tab){
   if(sel) sel.style.display=MONTH_TABS.indexOf(tab)>=0?"":"none";
   fixLayout();
   if(tab==="simple")renderSimple();
+  if(tab==="predictions")renderPredictions();
   if(tab==="calendar")setTimeout(renderCalendar,50);
   if(tab==="trends")renderTrends();
   if(tab==="analytics")renderAnalytics();
@@ -1855,7 +1868,7 @@ renderAll = function(){
   var viewAll=getMonthTxns(allTransactions,viewMonth);
 
   renderStatCards(cachedBal,cachedPots,cachedSavings,viewSpend,thisTx,lastTx);
-  // Get prev month for comparison
+  renderInsightStrip(viewSpend,viewMonth===getThisMonthKey()?lastTx:thisTx);
   var now2=new Date();
   var prevKey2=new Date(now2.getFullYear(),now2.getMonth()-1,1);
   var prevKeyStr=prevKey2.getFullYear()+"-"+String(prevKey2.getMonth()+1).padStart(2,"0");
@@ -1865,6 +1878,7 @@ renderAll = function(){
   applyFilters();
   if(typeof renderDailyChart==="function") renderDailyChart(viewSpend,thisTx,lastTx,viewMonth);
   if(currentTab==="simple") renderSimple();
+  if(currentTab==="predictions") renderPredictions();
   if(currentTab==="trends") renderTrends();
   if(currentTab==="analytics") renderAnalytics();
   if(currentTab==="wealth") renderWealth();
@@ -2120,7 +2134,7 @@ renderCatCompare = function(thisTx, lastTx){
     if(budget){var bp=Math.min(Math.round((x.cur/budget)*100),100);var bc=bp>=100?"var(--coral)":bp>=80?"var(--amber)":"var(--green)";budgetBar="<div style=\'height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:3px;\'><div style=\'height:100%;width:"+bp+"%;background:"+bc+";border-radius:2px;\'></div></div>";}
     return "<div class=\'compare-item\' style=\'cursor:pointer;\' data-cat=\'"+x.cat+"\'>"+
       "<div class=\'compare-header\'>"+
-      "<span class=\'compare-name\'>"+(CAT_EMOJI[x.cat]||"\u{1F4B3}")+" "+x.cat.replace(/_/g," ")+"</span>"+
+      "<span class=\'compare-name\'>"+(CAT_EMOJI[x.cat]||"💰")+" "+x.cat.replace(/_/g," ")+"</span>"+
       "<span style=\'display:flex;align-items:center;gap:6px;\'>"+
       "<span class=\'compare-this\'>"+fmt(x.cur)+"</span>"+budgetStr+
       (x.cmp>0?"<span class=\'compare-last\'>/ "+fmtShort(x.cmp)+"</span>":"")+
@@ -3793,6 +3807,474 @@ function renderSimple(){
   recent.forEach(function(t){var cr=t.amount>0;var dt=new Date(t.created).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});html+='<div class="simple-tx-row"><div class="tx-icon">'+(CAT_EMOJI[getCategory(t)]||'💳')+'</div><div style="flex:1;min-width:0;"><div class="tx-merchant">'+merchant(t)+'</div><div class="tx-date">'+dt+'</div></div><div class="tx-amount '+(cr?'credit':'debit')+'">'+(cr?'+':'')+fmt(t.amount)+'</div></div>';});
   html+='</div>';
   el.innerHTML=html;
+}
+
+</script>
+<script>
+// ============================================================
+// PREDICTIONS TAB
+// ============================================================
+
+function renderPredictions(){
+  var el = document.getElementById('predictions-content');
+  if(!el) return;
+
+  if(!allTransactions.length || !cachedBal){
+    el.innerHTML = '<div style="color:var(--text-muted);padding:2rem;">Loading data... sync more history for accurate predictions.</div>';
+    return;
+  }
+
+  var now = new Date();
+  var todayNum = now.getDate();
+  var daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  var daysRemaining = daysInMonth - todayNum;
+  var balance = cachedBal.balance; // pence
+
+  // ---- 1. INCOME DETECTION ----
+  var income = detectKnownIncome();
+  var monthlyIncome = income.reduce(function(s,x){ return s + x.amount; }, 0);
+
+  // Income expected still this month
+  var incomeStillDue = income.filter(function(src){
+    return src.avgDay > todayNum;
+  });
+  var incomeStillDueTotal = incomeStillDue.reduce(function(s,x){ return s + x.amount; }, 0);
+
+  // Income already received this month
+  var thisMonthKey = getThisMonthKey();
+  var thisMonthCredits = getMonthTxns(allTransactions, thisMonthKey).filter(function(t){ return t.amount > 0; });
+  var incomeReceivedTotal = thisMonthCredits.reduce(function(s,t){ return s + t.amount; }, 0);
+
+  // ---- 2. FIXED COSTS DETECTION ----
+  var fixedCosts = detectFixedCosts();
+  var fixedThisMonth = fixedCosts.reduce(function(s,x){ return s + x.amount; }, 0);
+
+  // Which fixed costs still due this month?
+  var fixedStillDue = fixedCosts.filter(function(f){
+    return f.avgDay > todayNum;
+  });
+  var fixedStillDueTotal = fixedStillDue.reduce(function(s,x){ return s + x.amount; }, 0);
+
+  // Fixed costs already paid this month
+  var fixedPaidTotal = fixedThisMonth - fixedStillDueTotal;
+
+  // ---- 3. VARIABLE SPENDING ----
+  // Get daily variable spend baseline from last 3 months (excluding fixed cost merchants)
+  var fixedNames = fixedCosts.map(function(f){ return f.name; });
+  var spendTx = allTransactions.filter(function(t){
+    return t.amount < 0 && t.include_in_spending !== false;
+  });
+
+  // This month's variable spend so far
+  var thisMonthSpend = getMonthTxns(spendTx, thisMonthKey);
+  var thisMonthVariable = thisMonthSpend.filter(function(t){
+    return fixedNames.indexOf(merchant(t)) < 0;
+  });
+  var variableSpentSoFar = thisMonthVariable.reduce(function(s,t){ return s + Math.abs(t.amount); }, 0);
+
+  // Historical daily variable rate (last 3 months, excluding current)
+  var dailyVariableRate = calcDailyVariableRate(spendTx, fixedNames);
+
+  // Projected variable for remaining days
+  var projectedVariableRemaining = dailyVariableRate * daysRemaining;
+  var projectedVariableTotal = variableSpentSoFar + projectedVariableRemaining;
+
+  // ---- 4. PROJECTIONS ----
+  var projectedTotalSpend = fixedThisMonth + projectedVariableTotal;
+  var projectedSurplus = monthlyIncome - projectedTotalSpend;
+
+  // Current trajectory: balance + income still due - fixed still due - projected variable remaining
+  var projectedEndBalance = balance + incomeStillDueTotal - fixedStillDueTotal - projectedVariableRemaining;
+
+  // ---- 5. MERCHANT ANOMALIES ----
+  var anomalies = detectMerchantAnomalies(thisMonthSpend);
+
+  // ---- 6. BUILD HTML ----
+  var surplusPositive = projectedSurplus > 0;
+  var surplusColor = projectedSurplus > 10000 ? 'var(--green)' : projectedSurplus > 0 ? 'var(--amber)' : 'var(--coral-soft)';
+
+  var html = '<div style="max-width:800px;">';
+
+  // ---- HERO: End of month surplus ----
+  html += '<div style="background:var(--navy-card);border:1px solid '+(surplusPositive?'rgba(45,212,160,0.3)':'rgba(255,90,95,0.3)')+';border-radius:16px;padding:2rem;margin-bottom:1.5rem;text-align:center;">';
+  html += '<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:8px;">Projected end-of-month surplus</div>';
+  html += '<div style="font-size:52px;font-weight:500;font-family:var(--mono);color:'+surplusColor+';letter-spacing:-0.02em;line-height:1;">'+(projectedSurplus>=0?'+':'')+fmt(projectedSurplus)+'</div>';
+  html += '<div style="font-size:14px;color:var(--text-muted);margin-top:8px;">';
+  if(projectedSurplus > 20000){
+    html += '🟢 On track to transfer <strong style="color:var(--green);">'+fmt(projectedSurplus)+'</strong> to savings';
+  } else if(projectedSurplus > 0){
+    html += '🟡 Slim surplus - keep variable spending in check';
+  } else {
+    html += '🔴 Projected <strong style="color:var(--coral-soft);">'+fmt(Math.abs(projectedSurplus))+'</strong> shortfall - check fixed costs and variable spend below';
+  }
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Day '+todayNum+' of '+daysInMonth+' · '+daysRemaining+' days remaining</div>';
+  html += '</div>';
+
+  // ---- THE MATHS ----
+  html += '<div class="card" style="margin-bottom:1.2rem;">';
+  html += '<div class="card-header"><span class="card-title">How we got there</span></div>';
+
+  // Income row
+  html += '<div class="pred-section-label">Income this month</div>';
+  income.forEach(function(src){
+    var received = thisMonthCredits.some(function(t){
+      return merchant(t).toLowerCase().indexOf(src.name.toLowerCase()) >= 0 ||
+             src.name.toLowerCase().indexOf(merchant(t).toLowerCase()) >= 0;
+    });
+    var stillDue = src.avgDay > todayNum;
+    var statusCol = received ? 'var(--green)' : stillDue ? 'var(--amber)' : 'var(--text-muted)';
+    var statusTxt = received ? 'received' : stillDue ? 'due ~day '+src.avgDay : 'overdue?';
+    html += predRow(src.name, src.amount, true, statusCol, statusTxt, src.count+' months detected');
+  });
+  if(!income.length){
+    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No recurring income detected yet. Load more history.</div>';
+  }
+  html += predDividerRow('Total expected income', monthlyIncome, true, 'var(--green)');
+
+  html += '<div style="height:1px;background:var(--navy-border);margin:12px 0;"></div>';
+
+  // Fixed costs
+  html += '<div class="pred-section-label">Fixed costs this month</div>';
+  fixedCosts.forEach(function(f){
+    var paid = f.avgDay <= todayNum;
+    var statusCol = paid ? 'var(--text-muted)' : 'var(--amber)';
+    var statusTxt = paid ? 'paid ~day '+f.avgDay : 'due ~day '+f.avgDay;
+    html += predRow(f.name, -f.amount, false, statusCol, statusTxt, 'consistent across '+f.months+' months, cv='+f.cv.toFixed(2));
+  });
+  if(!fixedCosts.length){
+    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No fixed costs detected. Load more history.</div>';
+  }
+  html += predDividerRow('Total fixed costs', -fixedThisMonth, false, 'var(--text-secondary)');
+
+  html += '<div style="height:1px;background:var(--navy-border);margin:12px 0;"></div>';
+
+  // Variable
+  html += '<div class="pred-section-label">Variable spending</div>';
+  html += predRow('Spent so far this month', -variableSpentSoFar, false, 'var(--text-secondary)', 'actual', thisMonthVariable.length+' transactions');
+  html += predRow('Remaining '+daysRemaining+' days at '+fmt(dailyVariableRate)+'/day', -projectedVariableRemaining, false, 'var(--amber)', 'projected', '3-month average daily rate');
+  html += predDividerRow('Total variable (projected)', -projectedVariableTotal, false, 'var(--text-secondary)');
+
+  html += '<div style="height:1px;background:var(--navy-border);margin:12px 0;"></div>';
+
+  // Summary row
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">';
+  html += '<div style="font-size:15px;font-weight:600;color:var(--text-primary);">Projected surplus</div>';
+  html += '<div style="font-size:20px;font-weight:600;font-family:var(--mono);color:'+surplusColor+'">'+(projectedSurplus>=0?'+':'')+fmt(projectedSurplus)+'</div>';
+  html += '</div>';
+  html += '</div>'; // end card
+
+  // ---- WHY: surplus/shortfall reasons ----
+  var reasons = buildReasons(projectedSurplus, fixedCosts, income, dailyVariableRate,
+    variableSpentSoFar, todayNum, daysInMonth, thisMonthVariable, anomalies);
+
+  html += '<div class="card" style="margin-bottom:1.2rem;">';
+  html += '<div class="card-header"><span class="card-title">'+(surplusPositive ? '✅ Why you\'re in surplus' : '⚠️ Why you\'re in deficit')+'</span></div>';
+  reasons.forEach(function(r){
+    html += '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy-border);">';
+    html += '<div style="font-size:20px;flex-shrink:0;">'+r.emoji+'</div>';
+    html += '<div style="flex:1;"><div style="font-size:13px;font-weight:500;color:'+(r.good?'var(--green)':'var(--coral-soft)')+';">'+r.title+'</div>';
+    html += '<div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:2px;">'+r.detail+'</div></div>';
+    if(r.impact) html += '<div style="font-size:13px;font-family:var(--mono);font-weight:600;color:'+(r.good?'var(--green)':'var(--coral-soft)')+';flex-shrink:0;padding-top:2px;">'+(r.good?'+':'')+fmt(r.impact)+'</div>';
+    html += '</div>';
+  });
+  if(!reasons.length) html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">Load more history to generate analysis.</div>';
+  html += '</div>';
+
+  // ---- MERCHANT ANOMALIES ----
+  if(anomalies.length){
+    html += '<div class="card" style="margin-bottom:1.2rem;">';
+    html += '<div class="card-header"><span class="card-title">🔍 Unusual transactions this month</span><span class="badge badge-coral">'+anomalies.length+'</span></div>';
+    anomalies.forEach(function(a){
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy-border);">';
+      html += '<div class="tx-icon">'+(CAT_EMOJI[getCategory(a.tx)]||'💰')+'</div>';
+      html += '<div style="flex:1;"><div style="font-size:13px;color:var(--text-primary);">'+merchant(a.tx)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);">This transaction: '+fmt(a.tx.amount)+' — your usual: '+fmt(a.avg)+' ('+a.ratio.toFixed(1)+'× normal)</div></div>';
+      html += '<div style="text-align:right;">';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--amber);">+'+fmt(a.tx.amount-a.avg)+' over</div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    var anomalyImpact = anomalies.reduce(function(s,a){ return s + Math.abs(a.tx.amount) - a.avg; }, 0);
+    html += '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">These unusual transactions total <strong style="color:var(--coral-soft);">'+fmt(anomalyImpact)+'</strong> more than you\'d normally spend at these merchants.</div>';
+    html += '</div>';
+  }
+
+  // ---- FIXED COSTS STILL DUE ----
+  if(fixedStillDue.length){
+    html += '<div class="card" style="margin-bottom:1.2rem;">';
+    html += '<div class="card-header"><span class="card-title">📅 Fixed costs still due</span></div>';
+    fixedStillDue.forEach(function(f){
+      var daysUntil = f.avgDay - todayNum;
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--navy-border);">';
+      html += '<div><div style="font-size:13px;color:var(--text-primary);">'+f.name+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);">Expected around day '+f.avgDay+' ('+daysUntil+' day'+(daysUntil!==1?'s':'')+' away)</div></div>';
+      html += '<div style="font-size:14px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(-f.amount)+'</div>';
+      html += '</div>';
+    });
+    html += '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Total: <strong>'+fmt(-fixedStillDueTotal)+'</strong> coming out before month end.</div>';
+    html += '</div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--text-muted);padding:0.5rem 0 2rem;line-height:1.7;">Projections based on '+allTransactions.length+' transactions. Fixed costs detected with &lt;15% amount variation across 2+ months. Variable rate is your 3-month daily average excluding fixed merchants.</div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+// ---- Helper: single prediction row ----
+function predRow(name, amount, isCredit, statusCol, statusTxt, hint){
+  var col = isCredit ? 'var(--green)' : amount < 0 ? 'var(--coral-soft)' : 'var(--text-primary)';
+  return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03);">'
+    + '<div style="flex:1;min-width:0;">'
+    + '<span style="font-size:13px;color:var(--text-primary);">'+name+'</span>'
+    + (hint ? '<span style="font-size:10px;color:var(--text-muted);margin-left:8px;">'+hint+'</span>' : '')
+    + '</div>'
+    + (statusTxt ? '<span style="font-size:10px;color:'+statusCol+';flex-shrink:0;border:1px solid '+statusCol+';padding:1px 7px;border-radius:10px;">'+statusTxt+'</span>' : '')
+    + '<div style="font-size:13px;font-family:var(--mono);font-weight:500;color:'+col+';min-width:80px;text-align:right;">'
+    + (isCredit ? '+' : (amount<0?'':''))+fmt(amount)
+    + '</div>'
+    + '</div>';
+}
+
+function predDividerRow(label, amount, isCredit, col){
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin-top:2px;">'
+    + '<div style="font-size:12px;font-weight:600;color:'+col+';text-transform:uppercase;letter-spacing:0.05em;">'+label+'</div>'
+    + '<div style="font-size:15px;font-family:var(--mono);font-weight:600;color:'+col+';">'
+    + (isCredit?'+':'') + fmt(amount)
+    + '</div></div>';
+}
+
+// ---- Detect fixed costs ----
+function detectFixedCosts(){
+  var spendTx = allTransactions.filter(function(t){
+    return t.amount < 0 && t.include_in_spending !== false;
+  });
+  var byMerchant = {};
+  spendTx.forEach(function(t){
+    var n = merchant(t);
+    if(n === 'Pot transfer') return;
+    if(!byMerchant[n]) byMerchant[n] = [];
+    byMerchant[n].push(t);
+  });
+
+  var fixed = [];
+  Object.entries(byMerchant).forEach(function(e){
+    var n = e[0], txns = e[1];
+    if(txns.length < 2) return;
+    var months = {};
+    txns.forEach(function(t){ months[t.created.slice(0,7)] = true; });
+    if(Object.keys(months).length < 2) return;
+    var amounts = txns.map(function(t){ return Math.abs(t.amount); });
+    var mean = amounts.reduce(function(s,v){ return s+v; }, 0) / amounts.length;
+    var stddev = Math.sqrt(amounts.map(function(v){ return Math.pow(v-mean,2); }).reduce(function(s,v){ return s+v; }, 0) / amounts.length);
+    var cv = mean > 0 ? stddev/mean : 1;
+    if(cv > 0.15) return; // too variable
+    var dates = txns.map(function(t){ return new Date(t.created).getDate(); });
+    var avgDay = Math.round(dates.reduce(function(s,v){ return s+v; }, 0) / dates.length);
+    fixed.push({
+      name: n,
+      amount: mean,
+      avgDay: avgDay,
+      months: Object.keys(months).length,
+      cv: cv,
+      count: txns.length
+    });
+  });
+  return fixed.sort(function(a,b){ return b.amount - a.amount; });
+}
+
+// ---- Detect known income ----
+function detectKnownIncome(){
+  var creditTx = allTransactions.filter(function(t){ return t.amount > 0; });
+  var byMerchant = {};
+  creditTx.forEach(function(t){
+    var n = merchant(t);
+    if(!byMerchant[n]) byMerchant[n] = [];
+    byMerchant[n].push(t);
+  });
+  var sources = [];
+  Object.entries(byMerchant).forEach(function(e){
+    var txns = e[1];
+    if(txns.length < 2) return;
+    var months = {};
+    txns.forEach(function(t){ months[t.created.slice(0,7)] = true; });
+    if(Object.keys(months).length < 2) return;
+    var amounts = txns.map(function(t){ return t.amount; });
+    var mean = amounts.reduce(function(s,v){ return s+v; }, 0) / amounts.length;
+    var stddev = Math.sqrt(amounts.map(function(v){ return Math.pow(v-mean,2); }).reduce(function(s,v){ return s+v; }, 0) / amounts.length);
+    var cv = mean > 0 ? stddev/mean : 1;
+    if(cv > 0.2) return;
+    var dates = txns.map(function(t){ return new Date(t.created).getDate(); });
+    var avgDay = Math.round(dates.reduce(function(s,v){ return s+v; }, 0) / dates.length);
+    sources.push({ name: e[0], amount: mean, avgDay: avgDay, count: Object.keys(months).length, cv: cv });
+  });
+  return sources.sort(function(a,b){ return b.amount - a.amount; });
+}
+
+// ---- Daily variable rate (last 3 months, excluding fixed merchants) ----
+function calcDailyVariableRate(spendTx, fixedNames){
+  var now = new Date();
+  var cutoff = new Date(now.getFullYear(), now.getMonth(), 1); // start of current month
+  var threeMonthsAgo = new Date(now.getFullYear(), now.getMonth()-3, 1);
+
+  var historical = spendTx.filter(function(t){
+    var d = new Date(t.created);
+    return d >= threeMonthsAgo && d < cutoff && fixedNames.indexOf(merchant(t)) < 0;
+  });
+
+  var totalDays = 90; // approx 3 months
+  var totalSpend = historical.reduce(function(s,t){ return s + Math.abs(t.amount); }, 0);
+  return totalDays > 0 ? totalSpend / totalDays : 0;
+}
+
+// ---- Detect per-merchant anomalies in current month ----
+function detectMerchantAnomalies(thisMonthTx){
+  // Build historical averages per merchant from all past months
+  var now = new Date();
+  var thisMonthKey = getThisMonthKey();
+  var historical = allTransactions.filter(function(t){
+    return t.amount < 0 && t.include_in_spending !== false
+      && t.created.slice(0,7) !== thisMonthKey;
+  });
+  var histByMerchant = {};
+  historical.forEach(function(t){
+    var n = merchant(t);
+    if(!histByMerchant[n]) histByMerchant[n] = [];
+    histByMerchant[n].push(Math.abs(t.amount));
+  });
+
+  var anomalies = [];
+  thisMonthTx.forEach(function(t){
+    var n = merchant(t);
+    var hist = histByMerchant[n];
+    if(!hist || hist.length < 3) return;
+    var avg = hist.reduce(function(s,v){ return s+v; }, 0) / hist.length;
+    var v = Math.abs(t.amount);
+    var ratio = v / avg;
+    if(ratio >= 1.8 && v - avg > 1000){ // 80% higher AND £10+ more
+      anomalies.push({ tx: t, avg: avg, ratio: ratio, name: n });
+    }
+  });
+  return anomalies.sort(function(a,b){ return b.ratio - a.ratio; }).slice(0,5);
+}
+
+// ---- Build reasons for surplus/deficit ----
+function buildReasons(surplus, fixedCosts, income, dailyRate, varSpentSoFar, todayNum, daysInMonth, thisMonthVar, anomalies){
+  var reasons = [];
+  var now = new Date();
+
+  // Income reasons
+  if(income.length > 0){
+    var totalInc = income.reduce(function(s,x){ return s+x.amount; }, 0);
+    reasons.push({
+      emoji: '💰',
+      good: true,
+      title: 'Predictable income of '+fmt(totalInc)+' per month',
+      detail: income.map(function(s){ return s.name+' (~day '+s.avgDay+')'; }).join(', '),
+      impact: totalInc
+    });
+  } else {
+    reasons.push({
+      emoji: '❓',
+      good: false,
+      title: 'No recurring income detected',
+      detail: 'Load more history so the dashboard can find your salary or regular credits.',
+      impact: null
+    });
+  }
+
+  // Fixed costs
+  if(fixedCosts.length > 0){
+    var totalFixed = fixedCosts.reduce(function(s,x){ return s+x.amount; }, 0);
+    reasons.push({
+      emoji: '🔒',
+      good: false,
+      title: 'Fixed costs committed: '+fmt(totalFixed)+'/month',
+      detail: fixedCosts.slice(0,4).map(function(f){ return f.name+' ('+fmt(f.amount)+')'; }).join(', ')+(fixedCosts.length>4?' and '+(fixedCosts.length-4)+' more':''),
+      impact: -totalFixed
+    });
+  }
+
+  // Variable spend rate vs historical
+  var historicalDailyRate = dailyRate;
+  var currentDailyRate = todayNum > 0 ? varSpentSoFar / todayNum : 0;
+  if(historicalDailyRate > 0 && todayNum >= 5){
+    var ratePct = Math.round(((currentDailyRate - historicalDailyRate) / historicalDailyRate) * 100);
+    var daysLeft = daysInMonth - todayNum;
+    var rateImpact = (currentDailyRate - historicalDailyRate) * daysLeft;
+    if(Math.abs(ratePct) >= 10){
+      reasons.push({
+        emoji: ratePct < 0 ? '📉' : '📈',
+        good: ratePct < 0,
+        title: ratePct < 0
+          ? 'Spending '+Math.abs(ratePct)+'% below your usual daily rate'
+          : 'Spending '+ratePct+'% above your usual daily rate',
+        detail: 'You\'re spending '+fmt(currentDailyRate)+'/day so far this month vs your usual '+fmt(historicalDailyRate)+'/day. Over '+daysLeft+' remaining days that\'s a '+(ratePct<0?'saving':'cost')+' of '+fmt(Math.abs(rateImpact))+'.',
+        impact: -rateImpact
+      });
+    } else {
+      reasons.push({
+        emoji: '⚖️',
+        good: true,
+        title: 'Variable spending tracking close to normal',
+        detail: 'Spending '+fmt(currentDailyRate)+'/day vs usual '+fmt(historicalDailyRate)+'/day. Within 10% of baseline.',
+        impact: null
+      });
+    }
+  }
+
+  // Anomalies impact
+  if(anomalies.length > 0){
+    var anomalyTotal = anomalies.reduce(function(s,a){ return s + Math.abs(a.tx.amount) - a.avg; }, 0);
+    reasons.push({
+      emoji: '⚠️',
+      good: false,
+      title: anomalies.length+' unusual transaction'+(anomalies.length>1?'s':'')+' adding '+fmt(anomalyTotal)+' extra this month',
+      detail: anomalies.map(function(a){ return merchant(a.tx)+' at '+fmt(a.tx.amount)+' ('+a.ratio.toFixed(1)+'× usual)'; }).join(', '),
+      impact: -anomalyTotal
+    });
+  }
+
+  // Top variable category this month
+  var catTotals = {};
+  thisMonthVar.forEach(function(t){
+    var c = getCategory(t);
+    catTotals[c] = (catTotals[c]||0) + Math.abs(t.amount);
+  });
+  var topCat = Object.entries(catTotals).sort(function(a,b){ return b[1]-a[1]; })[0];
+  if(topCat && topCat[1] > 5000){
+    reasons.push({
+      emoji: CAT_EMOJI[topCat[0]]||'💰',
+      good: null,
+      title: 'Biggest variable category: '+topCat[0].replace(/_/g,' ')+' at '+fmt(topCat[1]),
+      detail: 'This is your largest discretionary expense this month. Reducing it would have the most impact on your surplus.',
+      impact: null
+    });
+  }
+
+  // Days remaining + buffer
+  if(surplus > 0){
+    var safeToSpendPerDay = surplus / Math.max(1, daysInMonth - todayNum);
+    reasons.push({
+      emoji: '🟢',
+      good: true,
+      title: 'You can spend up to '+fmt(safeToSpendPerDay)+'/day extra and still have a surplus',
+      detail: 'Based on projected income minus projected costs. This assumes your fixed costs and income are correct.',
+      impact: null
+    });
+  } else {
+    var neededCut = Math.abs(surplus) / Math.max(1, daysInMonth - todayNum);
+    reasons.push({
+      emoji: '✂️',
+      good: false,
+      title: 'You need to cut '+fmt(neededCut)+'/day to break even',
+      detail: 'Reduce variable spending by this much daily for the rest of the month to avoid a shortfall.',
+      impact: null
+    });
+  }
+
+  return reasons;
 }
 
 </script>
