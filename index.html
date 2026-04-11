@@ -544,12 +544,32 @@ body.compact .topbar{padding:0.6rem 2rem;}
 .simple-alert{background:var(--coral-dim);border:1px solid rgba(255,90,95,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--coral-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 .simple-alert.good{background:var(--green-dim);border-color:rgba(45,212,160,0.3);color:var(--green);}
 .simple-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1.5rem;}
+
+/* Fixed vs Variable split */
+.fv-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;}
+.fv-card{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.2rem 1.4rem;}
+.fv-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.fv-total{font-size:24px;font-weight:500;font-family:var(--mono);margin-bottom:4px;}
+.fv-sub{font-size:12px;color:var(--text-muted);}
+.fv-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--navy-border);font-size:13px;}
+.fv-item:last-child{border-bottom:none;}
+.fv-item-name{color:var(--text-secondary);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fv-item-val{font-family:var(--mono);font-size:13px;margin-left:8px;flex-shrink:0;}
+.fv-item-change{font-size:11px;font-weight:600;margin-left:6px;flex-shrink:0;}
+
+/* Category budgets */
+.cat-budget-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.cat-budget-bar{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.cat-budget-fill{height:100%;border-radius:3px;transition:width 0.5s;}
+.cat-budget-pct{font-size:11px;font-family:var(--mono);flex-shrink:0;width:36px;text-align:right;}
+.cat-budget-edit{background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 4px;}
+.cat-budget-edit:hover{color:var(--coral);}
 </style>
 </head>
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.1</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.4</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -914,7 +934,7 @@ var viewMonth="this",dailyChartInstance=null,compareChartInstance=null,merchantC
 var txDisplayCount=30,filteredTxns=[];
 var bgLoadActive=false,bgLoadTimer=null;
 
-var CAT_EMOJI={eating_out:"\\ud83c\\udf7d",groceries:"\\ud83d\\uded2",transport:"\\ud83d\\ude8c",shopping:"\\ud83d\\udecd",entertainment:"\\ud83c\\udfac",bills:"\\ud83d\\udcc4",general:"\\ud83d\\udcb3",personal_care:"\\ud83d\\udc86",holidays:"\\u2708\\ufe0f",family:"\\ud83d\\udc6a",cash:"\\ud83d\\udcb5",charity:"\\u2764\\ufe0f",education:"\\ud83d\\udcda",expenses:"\\ud83d\\udcce",finances:"\\ud83c\\udfe6",mondo:"\\ud83d\\udcb3",transfers:"\\ud83d\\udd04",savings:"\\ud83c\\udfe6"};
+var CAT_EMOJI={eating_out:"🍽",groceries:"🛒",transport:"🚌",shopping:"🛍",entertainment:"🎬",bills:"📄",general:"💳",personal_care:"💆",holidays:"✈",family:"👪",cash:"💵",charity:"❤",education:"📚",finances:"🏦",transfers:"🔄",savings:"🏦"};
 
 // ---- Theme ----
 function initTheme(){
@@ -1191,9 +1211,9 @@ function showMoreTx(){
 }
 
 // ---- Formatting ----
-function fmt(p){return"\\u00a3"+(Math.abs(p)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fmtShort(p){var v=Math.abs(p)/100;return v>=1000?"\\u00a3"+(v/1000).toFixed(1)+"k":"\\u00a3"+v.toFixed(0);}
-function fmtRaw(v){return"\\u00a3"+v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt(p){return"£"+(Math.abs(p)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtShort(p){var v=Math.abs(p)/100;return v>=1000?"£"+(v/1000).toFixed(1)+"k":"£"+v.toFixed(0);}
+function fmtRaw(v){return"£"+v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function delta(a,b,low){
   if(!b)return"";
   var pct=((a-b)/b)*100,up=pct>0,good=low?!up:up;
@@ -1318,7 +1338,7 @@ function renderDailyChart(txns,thisTxns,lastTxns){
   if(dailyChartInstance)dailyChartInstance.destroy();
   var ti=viewMonth==="this"?now.getDate()-1:-1;
   var ctx=document.getElementById("daily-chart").getContext("2d");
-  dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"\\u00a3"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"\\u00a3"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+  dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
 
   // Best/worst strip
   var bwEl=document.getElementById("best-worst-strip");
@@ -1328,8 +1348,8 @@ function renderDailyChart(txns,thisTxns,lastTxns){
       var best=nonZero.slice().sort(function(a,b){return a.v-b.v;})[0];
       var worst=nonZero.slice().sort(function(a,b){return b.v-a.v;})[0];
       var mName=viewMonth==="this"?now.toLocaleString("default",{month:"short"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"short"});
-      bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>\\u00a3"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
-        +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>\\u00a3"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
+      bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>£"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
+        +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>£"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
     } else {bwEl.innerHTML="";}
   }
 
@@ -1352,7 +1372,7 @@ function renderCompareChart(thisTxns,lastTxns){
   var labels=Array.from({length:numDays},function(_,i){return i+1;});
   if(compareChartInstance)compareChartInstance.destroy();
   var ctx=document.getElementById("compare-chart").getContext("2d");
-  compareChartInstance=new Chart(ctx,{type:"line",data:{labels:labels,datasets:[{label:"This month",data:thisCum,borderColor:"#FF5A5F",backgroundColor:"rgba(255,90,95,0.08)",borderWidth:2,pointRadius:0,tension:0.3,fill:true},{label:"Last month",data:lastCum,borderColor:"rgba(255,255,255,0.2)",backgroundColor:"transparent",borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+": \\u00a3"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:10},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"\\u00a3"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+  compareChartInstance=new Chart(ctx,{type:"line",data:{labels:labels,datasets:[{label:"This month",data:thisCum,borderColor:"#FF5A5F",backgroundColor:"rgba(255,90,95,0.08)",borderWidth:2,pointRadius:0,tension:0.3,fill:true},{label:"Last month",data:lastCum,borderColor:"rgba(255,255,255,0.2)",backgroundColor:"transparent",borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+": £"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:10},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
 }
 
 function renderMerchantChart(txns){
@@ -1363,7 +1383,7 @@ function renderMerchantChart(txns){
   var sorted=Object.keys(mc).map(function(k){return{name:k,total:mc[k]};}).sort(function(a,b){return b.total-a.total;}).slice(0,6);
   if(merchantChartInstance)merchantChartInstance.destroy();
   var ctx=document.getElementById("merchant-chart").getContext("2d");
-  merchantChartInstance=new Chart(ctx,{type:"bar",data:{labels:sorted.map(function(x){return x.name.length>14?x.name.slice(0,13)+"...":x.name;}),datasets:[{data:sorted.map(function(x){return parseFloat(x.total.toFixed(2));}),backgroundColor:"rgba(155,127,255,0.5)",borderColor:"rgba(155,127,255,0.8)",borderWidth:1,borderRadius:4,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"\\u00a3"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"\\u00a3"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}},y:{ticks:{color:"#8BA0B4",font:{size:10}},grid:{display:false},border:{display:false}}}}});
+  merchantChartInstance=new Chart(ctx,{type:"bar",data:{labels:sorted.map(function(x){return x.name.length>14?x.name.slice(0,13)+"...":x.name;}),datasets:[{data:sorted.map(function(x){return parseFloat(x.total.toFixed(2));}),backgroundColor:"rgba(155,127,255,0.5)",borderColor:"rgba(155,127,255,0.8)",borderWidth:1,borderRadius:4,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}},y:{ticks:{color:"#8BA0B4",font:{size:10}},grid:{display:false},border:{display:false}}}}});
 }
 
 initTheme();
@@ -1779,6 +1799,12 @@ renderAll = function(){
   var viewAll=getMonthTxns(allTransactions,viewMonth);
 
   renderStatCards(cachedBal,cachedPots,cachedSavings,viewSpend,thisTx,lastTx);
+  // Get prev month for comparison
+  var now2=new Date();
+  var prevKey2=new Date(now2.getFullYear(),now2.getMonth()-1,1);
+  var prevKeyStr=prevKey2.getFullYear()+"-"+String(prevKey2.getMonth()+1).padStart(2,"0");
+  var viewSpendPrev=getMonthTxns(spendTx,prevKeyStr);
+  if(typeof renderFVPanel==="function") renderFVPanel(viewSpend, viewSpendPrev);
   renderCatCompare(thisTx,lastTx);
   applyFilters();
   if(typeof renderDailyChart==="function") renderDailyChart(viewSpend,thisTx,lastTx,viewMonth);
@@ -1882,6 +1908,183 @@ function showCatTransactions(cat){
   },100);
 }
 
+
+// ---- Category budgets ----
+var catBudgets = {};
+try { catBudgets = JSON.parse(localStorage.getItem("monzo_cat_budgets_v1")||"{}"); } catch(e){}
+function saveCatBudgets(){ localStorage.setItem("monzo_cat_budgets_v1", JSON.stringify(catBudgets)); }
+
+function openCatBudgetModal(cat, currentVal){
+  var val = prompt("Set monthly budget for " + cat.replace(/_/g," ") + " (£, 0 to clear):", currentVal||"");
+  if(val===null) return;
+  var n = parseFloat(val);
+  if(!isNaN(n) && n > 0){ catBudgets[cat] = Math.round(n*100); }
+  else if(n===0){ delete catBudgets[cat]; }
+  saveCatBudgets();
+  renderAll();
+}
+
+// ---- Fixed vs Variable detection ----
+// Fixed = appears regularly (3+ months), consistent amount (stddev < 20% of mean)
+// Variable = everything else
+function classifyTransactions(spendTx){
+  var byMerchant = {};
+  spendTx.forEach(function(t){
+    var n = merchant(t);
+    if(!byMerchant[n]) byMerchant[n] = [];
+    byMerchant[n].push(t);
+  });
+
+  var fixed = [], variable = [];
+  Object.entries(byMerchant).forEach(function(e){
+    var n = e[0], txns = e[1];
+    // Get months this merchant appears in
+    var months = {};
+    txns.forEach(function(t){ months[t.created.slice(0,7)] = true; });
+    var monthCount = Object.keys(months).length;
+
+    if(monthCount >= 2){
+      // Check amount consistency
+      var amounts = txns.map(function(t){ return Math.abs(t.amount); });
+      var mean = amounts.reduce(function(s,v){return s+v;},0) / amounts.length;
+      var stddev = Math.sqrt(amounts.map(function(v){return Math.pow(v-mean,2);}).reduce(function(s,v){return s+v;},0) / amounts.length);
+      var cv = mean > 0 ? stddev/mean : 1;
+
+      if(cv < 0.15){ // very consistent amount = fixed
+        fixed.push({name:n, amount:mean, monthCount:monthCount});
+      } else {
+        variable = variable.concat(txns);
+      }
+    } else {
+      variable = variable.concat(txns);
+    }
+  });
+
+  return {fixed:fixed, variable:variable};
+}
+
+// ---- Render fixed vs variable panel ----
+function renderFVPanel(spendTx, prevTx){
+  var el = document.getElementById("fv-panel");
+  if(!el) return;
+
+  var classified = classifyTransactions(spendTx);
+  var prevClassified = classifyTransactions(prevTx);
+
+  var fixedTotal = classified.fixed.reduce(function(s,f){return s+f.amount;},0);
+  var varTotal = classified.variable.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+
+  var prevFixedTotal = prevClassified.fixed.reduce(function(s,f){return s+f.amount;},0);
+  var prevVarTotal = prevClassified.variable.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+
+  function pctChange(cur, prev){
+    if(!prev) return null;
+    return Math.round(((cur-prev)/prev)*100);
+  }
+
+  function changeTag(pct, lowerIsBetter){
+    if(pct===null) return "";
+    var good = lowerIsBetter ? pct<0 : pct>0;
+    var col = pct===0?"var(--text-muted)":good?"var(--green)":"var(--coral-soft)";
+    return "<span style='font-size:11px;font-weight:600;color:"+col+";margin-left:6px;'>"+(pct>0?"▲ +":"▼ ")+Math.abs(pct)+"%</span>";
+  }
+
+  var html = "<div class='fv-grid'>";
+
+  // Fixed expenses card
+  html += "<div class='fv-card'>";
+  html += "<div class='fv-label'>🔒 Fixed expenses</div>";
+  html += "<div class='fv-total'>"+fmt(fixedTotal)+changeTag(pctChange(fixedTotal,prevFixedTotal),true)+"</div>";
+  html += "<div class='fv-sub'>"+classified.fixed.length+" regular payments</div>";
+  html += "<div style='margin-top:10px;'>";
+  classified.fixed.sort(function(a,b){return b.amount-a.amount;}).slice(0,6).forEach(function(f){
+    var prevF = prevClassified.fixed.find(function(p){return p.name===f.name;});
+    var pct = prevF ? pctChange(f.amount, prevF.amount) : null;
+    html += "<div class='fv-item'>";
+    html += "<span class='fv-item-name'>"+f.name+"</span>";
+    html += "<span class='fv-item-val'>"+fmt(f.amount)+"</span>";
+    if(pct!==null && Math.abs(pct)>0) html += "<span class='fv-item-change' style='color:"+(pct>0?"var(--coral-soft)":"var(--green)")+"'>"+(pct>0?"+":"")+pct+"%</span>";
+    html += "</div>";
+  });
+  html += "</div></div>";
+
+  // Variable expenses card
+  html += "<div class='fv-card'>";
+  html += "<div class='fv-label'>📊 Variable expenses</div>";
+  html += "<div class='fv-total'>"+fmt(varTotal)+changeTag(pctChange(varTotal,prevVarTotal),true)+"</div>";
+  html += "<div class='fv-sub'>"+classified.variable.length+" transactions</div>";
+
+  // Category breakdown for variable
+  var catTotals = {};
+  classified.variable.forEach(function(t){ var c=getCategory(t); catTotals[c]=(catTotals[c]||0)+Math.abs(t.amount); });
+  var prevCatTotals = {};
+  prevClassified.variable.forEach(function(t){ var c=getCategory(t); prevCatTotals[c]=(prevCatTotals[c]||0)+Math.abs(t.amount); });
+
+  html += "<div style='margin-top:10px;'>";
+  Object.entries(catTotals).sort(function(a,b){return b[1]-a[1];}).slice(0,6).forEach(function(e){
+    var cat=e[0], val=e[1];
+    var prev = prevCatTotals[cat]||0;
+    var pct = prev ? Math.round(((val-prev)/prev)*100) : null;
+    var budget = catBudgets[cat];
+    var budgetPct = budget ? Math.min(Math.round((val/budget)*100),100) : null;
+    var col = pct===null?"var(--text-muted)":pct>0?"var(--coral-soft)":"var(--green)";
+    html += "<div class='fv-item'>";
+    html += "<span class='fv-item-name'>"+(CAT_EMOJI[cat]||"💳")+" "+cat.replace(/_/g," ")+"</span>";
+    html += "<span class='fv-item-val'>"+fmt(val)+"</span>";
+    if(pct!==null) html += "<span class='fv-item-change' style='color:"+col+"'>"+(pct>0?"+":"")+pct+"%</span>";
+    html += "</div>";
+    if(budgetPct!==null){
+      var bCol = budgetPct>=100?"var(--coral)":budgetPct>=80?"var(--amber)":"var(--green)";
+      html += "<div style='height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin:-4px 0 4px;'><div style='height:100%;width:"+budgetPct+"%;background:"+bCol+";border-radius:2px;'></div></div>";
+    }
+  });
+  html += "</div></div></div>";
+
+  el.innerHTML = html;
+}
+
+// ---- Enhanced renderCatCompare with % change and per-cat budgets ----
+var _renderCatCompareOrig = renderCatCompare;
+renderCatCompare = function(thisTx, lastTx){
+  var tc={}, lc={};
+  thisTx.forEach(function(t){var c=getCategory(t);tc[c]=(tc[c]||0)+Math.abs(t.amount);});
+  lastTx.forEach(function(t){var c=getCategory(t);lc[c]=(lc[c]||0)+Math.abs(t.amount);});
+  var cur=viewMonth===getThisMonthKey()?tc:lc, cmp=viewMonth===getThisMonthKey()?lc:tc;
+  var all=Object.keys(Object.assign({},cur,cmp)).map(function(c){return{cat:c,cur:cur[c]||0,cmp:cmp[c]||0};}).sort(function(a,b){return b.cur-a.cur;}).slice(0,8);
+  var mx=Math.max.apply(null,all.map(function(x){return Math.max(x.cur,x.cmp);}))||1;
+  var el=document.getElementById("cat-compare");
+  if(!el)return;
+  el.innerHTML=all.length?all.map(function(x){
+    var cp=Math.round((x.cur/mx)*100),pp=Math.round((x.cmp/mx)*100);
+    var col=x.cur>x.cmp?"var(--coral)":"var(--green)";
+    var pct=x.cmp>0?Math.round(((x.cur-x.cmp)/x.cmp)*100):null;
+    var pctStr=pct===null?"new":(pct>0?"+":"")+pct+"%";
+    var pctCol=pct===null?"var(--text-muted)":pct>0?"var(--coral-soft)":"var(--green)";
+    var budget=catBudgets[x.cat];
+    var budgetStr=budget?"<span style=\'color:var(--text-muted);font-size:11px;margin-left:4px;\'>/ "+fmt(budget)+"</span>":"";
+    var budgetBar="";
+    if(budget){var bp=Math.min(Math.round((x.cur/budget)*100),100);var bc=bp>=100?"var(--coral)":bp>=80?"var(--amber)":"var(--green)";budgetBar="<div style=\'height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:3px;\'><div style=\'height:100%;width:"+bp+"%;background:"+bc+";border-radius:2px;\'></div></div>";}
+    return "<div class=\'compare-item\' style=\'cursor:pointer;\' data-cat=\'"+x.cat+"\'>"+
+      "<div class=\'compare-header\'>"+
+      "<span class=\'compare-name\'>"+(CAT_EMOJI[x.cat]||"\u{1F4B3}")+" "+x.cat.replace(/_/g," ")+"</span>"+
+      "<span style=\'display:flex;align-items:center;gap:6px;\'>"+
+      "<span class=\'compare-this\'>"+fmt(x.cur)+"</span>"+budgetStr+
+      (x.cmp>0?"<span class=\'compare-last\'>/ "+fmtShort(x.cmp)+"</span>":"")+
+      "<span style=\'font-size:11px;font-weight:600;color:"+pctCol+";min-width:36px;text-align:right;\'>"+pctStr+"</span>"+
+      "<button class=\'cat-budget-edit\' data-editcat=\'"+x.cat+"\' title=\'Set budget\'>Set budget</button>"+
+      "</span></div>"+
+      "<div class=\'bar-track\'><div class=\'bar-last\' style=\'width:"+pp+"%\'></div><div class=\'bar-this\' style=\'width:"+cp+"%;background:"+col+"\'></div></div>"+
+      budgetBar+
+      "</div>";
+  }).join(""):"<div style=\'color:var(--text-muted);font-size:14px;\'>No data</div>";
+  el.onclick=function(e){
+    var item=e.target.closest("[data-cat]");
+    if(item) showCatTransactions(item.getAttribute("data-cat"));
+    var btn=e.target.closest("[data-editcat]");
+    if(btn){e.stopPropagation();var c=btn.getAttribute("data-editcat");openCatBudgetModal(c,catBudgets[c]?catBudgets[c]/100:"");}
+  };
+};
+
 initCompact();
 if(loadConfig()) showDashboard();
 
@@ -1889,175 +2092,175 @@ if(loadConfig()) showDashboard();
 <script>
 // Merchant Compare - injected separately to avoid syntax issues
 function renderMerchantCompare(){
-  var el=document.getElementById('merchant-compare-content');
-  if(!el)return;
-  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false&&merchant(t)!=='Pot transfer';});
-  if(!spendTx.length){el.innerHTML='<div style="color:var(--text-muted);padding:2rem;">Load more history to see merchant trends.</div>';return;}
+var el=document.getElementById('merchant-compare-content');
+if(!el)return;
+var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false&&merchant(t)!=='Pot transfer';});
+if(!spendTx.length){el.innerHTML='<div style="color:var(--text-muted);padding:2rem;">Load more history to see merchant trends.</div>';return;}
 
-  // Get last 6 months
-  var now=new Date();
-  var months=[];
-  for(var i=5;i>=0;i--){
-    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    months.push({key:k,label:d.toLocaleString('default',{month:'short',year:'2-digit'})});
-  }
+// Get last 6 months
+var now=new Date();
+var months=[];
+for(var i=5;i>=0;i--){
+var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+months.push({key:k,label:d.toLocaleString('default',{month:'short',year:'2-digit'})});
+}
 
-  // Aggregate by merchant per month
-  var mc={};
-  spendTx.forEach(function(t){
-    var n=merchant(t);
-    var k=t.created.slice(0,7);
-    if(!mc[n])mc[n]={};
-    if(!mc[n][k])mc[n][k]={spend:0,visits:0};
-    mc[n][k].spend+=Math.abs(t.amount);
-    mc[n][k].visits++;
-  });
+// Aggregate by merchant per month
+var mc={};
+spendTx.forEach(function(t){
+var n=merchant(t);
+var k=t.created.slice(0,7);
+if(!mc[n])mc[n]={};
+if(!mc[n][k])mc[n][k]={spend:0,visits:0};
+mc[n][k].spend+=Math.abs(t.amount);
+mc[n][k].visits++;
+});
 
-  // Score merchants by total spend
-  var merchantTotals=Object.entries(mc).map(function(e){
-    var total=Object.values(e[1]).reduce(function(s,v){return s+v.spend;},0);
-    var totalVisits=Object.values(e[1]).reduce(function(s,v){return s+v.visits;},0);
-    var activeMonths=Object.keys(e[1]).length;
-    return{name:e[0],total:total,visits:totalVisits,months:activeMonths,data:e[1]};
-  }).filter(function(m){return m.months>=2;}).sort(function(a,b){return b.total-a.total;}).slice(0,15);
+// Score merchants by total spend
+var merchantTotals=Object.entries(mc).map(function(e){
+var total=Object.values(e[1]).reduce(function(s,v){return s+v.spend;},0);
+var totalVisits=Object.values(e[1]).reduce(function(s,v){return s+v.visits;},0);
+var activeMonths=Object.keys(e[1]).length;
+return{name:e[0],total:total,visits:totalVisits,months:activeMonths,data:e[1]};
+}).filter(function(m){return m.months>=2;}).sort(function(a,b){return b.total-a.total;}).slice(0,15);
 
-  var html='<h2 style="font-size:18px;font-weight:500;margin-bottom:1.2rem;">Merchant Trends</h2>';
+var html='<h2 style="font-size:18px;font-weight:500;margin-bottom:1.2rem;">Merchant Trends</h2>';
 
-  // Week on week for top merchants
-  // Build 5 weeks
-  var weeks=[];
-  for(var wi=4;wi>=0;wi--){
-    var ws=new Date(now);
-    ws.setDate(now.getDate()-((now.getDay()+6)%7)-wi*7);
-    ws.setHours(0,0,0,0);
-    var we=new Date(ws);we.setDate(ws.getDate()+6);we.setHours(23,59,59,999);
-    var wTx=spendTx.filter(function(t){var d=new Date(t.created);return d>=ws&&d<=we;});
-    var byM={};
-    wTx.forEach(function(t){var n=merchant(t);if(!byM[n])byM[n]={spend:0,visits:0};byM[n].spend+=Math.abs(t.amount);byM[n].visits++;});
-    var label=wi===0?'This wk':wi===1?'Last wk':ws.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    weeks.push({start:ws,end:we,byM:byM,label:label,isCurrent:wi===0});
-  }
+// Week on week for top merchants
+// Build 5 weeks
+var weeks=[];
+for(var wi=4;wi>=0;wi--){
+var ws=new Date(now);
+ws.setDate(now.getDate()-((now.getDay()+6)%7)-wi*7);
+ws.setHours(0,0,0,0);
+var we=new Date(ws);we.setDate(ws.getDate()+6);we.setHours(23,59,59,999);
+var wTx=spendTx.filter(function(t){var d=new Date(t.created);return d>=ws&&d<=we;});
+var byM={};
+wTx.forEach(function(t){var n=merchant(t);if(!byM[n])byM[n]={spend:0,visits:0};byM[n].spend+=Math.abs(t.amount);byM[n].visits++;});
+var label=wi===0?'This wk':wi===1?'Last wk':ws.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+weeks.push({start:ws,end:we,byM:byM,label:label,isCurrent:wi===0});
+}
 
-  // All merchants that appeared in any week
-  var allWowNames={};
-  weeks.forEach(function(w){Object.keys(w.byM).forEach(function(n){allWowNames[n]=true;});});
+// All merchants that appeared in any week
+var allWowNames={};
+weeks.forEach(function(w){Object.keys(w.byM).forEach(function(n){allWowNames[n]=true;});});
 
-  // Sort by this week spend desc, then last week
-  var wowMerchants=Object.keys(allWowNames).map(function(n){
-    var vals=weeks.map(function(w){return w.byM[n]||{spend:0,visits:0};});
-    return{name:n,vals:vals,thisWeek:vals[4].spend};
-  }).sort(function(a,b){return b.thisWeek-a.thisWeek||b.vals[3].spend-a.vals[3].spend;}).slice(0,12);
+// Sort by this week spend desc, then last week
+var wowMerchants=Object.keys(allWowNames).map(function(n){
+var vals=weeks.map(function(w){return w.byM[n]||{spend:0,visits:0};});
+return{name:n,vals:vals,thisWeek:vals[4].spend};
+}).sort(function(a,b){return b.thisWeek-a.thisWeek||b.vals[3].spend-a.vals[3].spend;}).slice(0,12);
 
-  html+='<div class="card" style="margin-bottom:1rem;overflow-x:auto;">';
-  html+='<div class="card-header"><span class="card-title">Week on week by merchant</span><span style="font-size:11px;color:var(--text-muted);">last 5 weeks</span></div>';
+html+='<div class="card" style="margin-bottom:1rem;overflow-x:auto;">';
+html+='<div class="card-header"><span class="card-title">Week on week by merchant</span><span style="font-size:11px;color:var(--text-muted);">last 5 weeks</span></div>';
 
-  // Header row
-  var colTemplate='160px repeat(5, 1fr) 60px';
-  html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:4px 0;border-bottom:1px solid var(--navy-border);min-width:600px;">';
-  html+='<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Merchant</div>';
-  weeks.forEach(function(w){
-    html+='<div style="font-size:10px;color:'+(w.isCurrent?'var(--coral-soft)':'var(--text-muted)')+';text-align:right;font-weight:'+(w.isCurrent?'600':'400')+';">'+w.label+'</div>';
-  });
-  html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">Trend</div></div>';
+// Header row
+var colTemplate='160px repeat(5, 1fr) 60px';
+html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:4px 0;border-bottom:1px solid var(--navy-border);min-width:600px;">';
+html+='<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Merchant</div>';
+weeks.forEach(function(w){
+html+='<div style="font-size:10px;color:'+(w.isCurrent?'var(--coral-soft)':'var(--text-muted)')+';text-align:right;font-weight:'+(w.isCurrent?'600':'400')+';">'+w.label+'</div>';
+});
+html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">Trend</div></div>';
 
-  wowMerchants.forEach(function(m){
-    html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03);min-width:600px;">';
-    html+='<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+m.name+'">'+m.name+'</div>';
-    var maxV=Math.max.apply(null,m.vals.map(function(x){return x.spend;}))||1;
-    m.vals.forEach(function(v,vi){
-      var isCur=weeks[vi].isCurrent;
-      var prev=vi>0?m.vals[vi-1].spend:0;
-      var pct=prev>0&&v.spend>0?Math.round(((v.spend-prev)/prev)*100):null;
-      var pctCol=pct===null?'':pct>0?'color:var(--coral-soft)':'color:var(--green)';
-      var intensity=v.spend>0?(0.1+0.5*(v.spend/maxV)).toFixed(2):0;
-      // Green background if spending went DOWN vs prev week, coral if up, neutral if no comparison
-      var cellColor=pct===null?(isCur?'255,90,95':'255,255,255'):pct>0?'255,90,95':'45,212,160';
-      var bg=v.spend>0?'rgba('+cellColor+','+intensity+')':'';
-      html+='<div style="text-align:right;padding:2px 4px;border-radius:3px;'+(bg?'background:'+bg:'')+';">';
-      if(v.spend){
-        html+='<div style="font-size:12px;font-family:var(--mono);color:'+(isCur?'var(--text-primary)':'var(--text-muted)')+';">'+fmt(v.spend)+'</div>';
-        html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+' tx'
-          +(pct!==null?' <span style="'+pctCol+'">'+(pct>0?'+':'')+pct+'%</span>':'')+'</div>';
-      } else {
-        html+='<div style="font-size:12px;color:rgba(255,255,255,0.15);">-</div>';
-      }
-      html+='</div>';
-    });
-    // Overall trend: first vs last non-zero
-    var nonZero=m.vals.filter(function(v){return v.spend>0;});
-    var first=nonZero[0]?nonZero[0].spend:0;
-    var last=nonZero[nonZero.length-1]?nonZero[nonZero.length-1].spend:0;
-    var overallDelta=first>0&&nonZero.length>1?Math.round(((last-first)/first)*100):null;
-    var trendCol=overallDelta===null?'var(--text-muted)':overallDelta>0?'var(--coral-soft)':'var(--green)';
-    html+='<div style="text-align:right;font-size:12px;font-weight:600;color:'+trendCol+';padding-top:4px;">'
-      +(overallDelta===null?(m.vals[4].spend>0?'New':'—'):(overallDelta>0?'▲ +':'▼ ')+Math.abs(overallDelta)+'%')+'</div>';
-    html+='</div>';
-  });
-  html+='</div>';
+wowMerchants.forEach(function(m){
+html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03);min-width:600px;">';
+html+='<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+m.name+'">'+m.name+'</div>';
+var maxV=Math.max.apply(null,m.vals.map(function(x){return x.spend;}))||1;
+m.vals.forEach(function(v,vi){
+var isCur=weeks[vi].isCurrent;
+var prev=vi>0?m.vals[vi-1].spend:0;
+var pct=prev>0&&v.spend>0?Math.round(((v.spend-prev)/prev)*100):null;
+var pctCol=pct===null?'':pct>0?'color:var(--coral-soft)':'color:var(--green)';
+var intensity=v.spend>0?(0.1+0.5*(v.spend/maxV)).toFixed(2):0;
+// Green background if spending went DOWN vs prev week, coral if up, neutral if no comparison
+var cellColor=pct===null?(isCur?'255,90,95':'255,255,255'):pct>0?'255,90,95':'45,212,160';
+var bg=v.spend>0?'rgba('+cellColor+','+intensity+')':'';
+html+='<div style="text-align:right;padding:2px 4px;border-radius:3px;'+(bg?'background:'+bg:'')+';">';
+if(v.spend){
+html+='<div style="font-size:12px;font-family:var(--mono);color:'+(isCur?'var(--text-primary)':'var(--text-muted)')+';">'+fmt(v.spend)+'</div>';
+html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+' tx'
++(pct!==null?' <span style="'+pctCol+'">'+(pct>0?'+':'')+pct+'%</span>':'')+'</div>';
+} else {
+html+='<div style="font-size:12px;color:rgba(255,255,255,0.15);">-</div>';
+}
+html+='</div>';
+});
+// Overall trend: first vs last non-zero
+var nonZero=m.vals.filter(function(v){return v.spend>0;});
+var first=nonZero[0]?nonZero[0].spend:0;
+var last=nonZero[nonZero.length-1]?nonZero[nonZero.length-1].spend:0;
+var overallDelta=first>0&&nonZero.length>1?Math.round(((last-first)/first)*100):null;
+var trendCol=overallDelta===null?'var(--text-muted)':overallDelta>0?'var(--coral-soft)':'var(--green)';
+html+='<div style="text-align:right;font-size:12px;font-weight:600;color:'+trendCol+';padding-top:4px;">'
++(overallDelta===null?(m.vals[4].spend>0?'New':'—'):(overallDelta>0?'▲ +':'▼ ')+Math.abs(overallDelta)+'%')+'</div>';
+html+='</div>';
+});
+html+='</div>';
 
-  // Month on month table
-  html+='<div class="card" style="margin-bottom:1rem;">';
-  html+='<div class="card-header"><span class="card-title">Month by month spend</span><span style="font-size:11px;color:var(--text-muted);">with transaction count</span></div>';
-  html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px;">';
-  html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:130px;">Merchant</th>';
-  months.forEach(function(mo){html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:80px;">'+mo.label+'</th>';});
-  html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:55px;">Trend</th></tr></thead><tbody>';
-  merchantTotals.forEach(function(m){
-    var vals=months.map(function(mo){return m.data[mo.key]||{spend:0,visits:0};});
-    var spendVals=vals.map(function(v){return v.spend;});
-    var maxVal=Math.max.apply(null,spendVals)||1;
-    var nonZero=spendVals.filter(function(v){return v>0;});
-    var first=nonZero[0]||0;
-    var last=nonZero[nonZero.length-1]||0;
-    var trend=first>0&&nonZero.length>1?Math.round(((last-first)/first)*100):null;
-    var trendCol=trend===null?'var(--text-muted)':trend>10?'var(--coral-soft)':trend<-10?'var(--green)':'var(--text-muted)';
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-    html+='<td style="padding:7px 8px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;" title="'+m.name+'">'+m.name+'</td>';
-    vals.forEach(function(v,vi){
-      var intensity=v.spend>0?(0.12+0.6*(v.spend/maxVal)).toFixed(2):0;
-      var prevSpend=vi>0?vals[vi-1].spend:0;
-      var mPct=prevSpend>0&&v.spend>0?Math.round(((v.spend-prevSpend)/prevSpend)*100):null;
-      var cellCol=mPct===null?'255,90,95':mPct>0?'255,90,95':'45,212,160';
-      var bg=v.spend>0?'rgba('+cellCol+','+intensity+')':'transparent';
-      html+='<td style="text-align:right;padding:5px 8px;background:'+bg+';border-radius:3px;">';
-      if(v.spend){
-        html+='<div style="font-family:var(--mono);color:var(--text-primary);">'+fmt(v.spend)+'</div>';
-        html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+' tx'+(mPct!==null?' <span style="color:'+(mPct>0?'var(--coral-soft)':'var(--green)')+';">'+(mPct>0?'+':'')+mPct+'%</span>':'')+'</div>';
-      } else {
-        html+='<div style="color:rgba(255,255,255,0.15);">-</div>';
-      }
-      html+='</td>';
-    });
-    html+='<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+trendCol+'">'+(trend===null?'—':(trend>0?'▲ +':'▼ ')+Math.abs(trend)+'%')+'</td>';
-    html+='</tr>';
-  });
-  html+='</tbody></table></div></div>';
+// Month on month table
+html+='<div class="card" style="margin-bottom:1rem;">';
+html+='<div class="card-header"><span class="card-title">Month by month spend</span><span style="font-size:11px;color:var(--text-muted);">with transaction count</span></div>';
+html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px;">';
+html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:130px;">Merchant</th>';
+months.forEach(function(mo){html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:80px;">'+mo.label+'</th>';});
+html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:55px;">Trend</th></tr></thead><tbody>';
+merchantTotals.forEach(function(m){
+var vals=months.map(function(mo){return m.data[mo.key]||{spend:0,visits:0};});
+var spendVals=vals.map(function(v){return v.spend;});
+var maxVal=Math.max.apply(null,spendVals)||1;
+var nonZero=spendVals.filter(function(v){return v>0;});
+var first=nonZero[0]||0;
+var last=nonZero[nonZero.length-1]||0;
+var trend=first>0&&nonZero.length>1?Math.round(((last-first)/first)*100):null;
+var trendCol=trend===null?'var(--text-muted)':trend>10?'var(--coral-soft)':trend<-10?'var(--green)':'var(--text-muted)';
+html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+html+='<td style="padding:7px 8px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;" title="'+m.name+'">'+m.name+'</td>';
+vals.forEach(function(v,vi){
+var intensity=v.spend>0?(0.12+0.6*(v.spend/maxVal)).toFixed(2):0;
+var prevSpend=vi>0?vals[vi-1].spend:0;
+var mPct=prevSpend>0&&v.spend>0?Math.round(((v.spend-prevSpend)/prevSpend)*100):null;
+var cellCol=mPct===null?'255,90,95':mPct>0?'255,90,95':'45,212,160';
+var bg=v.spend>0?'rgba('+cellCol+','+intensity+')':'transparent';
+html+='<td style="text-align:right;padding:5px 8px;background:'+bg+';border-radius:3px;">';
+if(v.spend){
+html+='<div style="font-family:var(--mono);color:var(--text-primary);">'+fmt(v.spend)+'</div>';
+html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+' tx'+(mPct!==null?' <span style="color:'+(mPct>0?'var(--coral-soft)':'var(--green)')+';">'+(mPct>0?'+':'')+mPct+'%</span>':'')+'</div>';
+} else {
+html+='<div style="color:rgba(255,255,255,0.15);">-</div>';
+}
+html+='</td>';
+});
+html+='<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+trendCol+'">'+(trend===null?'—':(trend>0?'▲ +':'▼ ')+Math.abs(trend)+'%')+'</td>';
+html+='</tr>';
+});
+html+='</tbody></table></div></div>';
 
-  // Visit frequency table
-  html+='<div class="card">';
-  html+='<div class="card-header"><span class="card-title">Visit frequency</span><span style="font-size:11px;color:var(--text-muted);">visits per month</span></div>';
-  html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
-  html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">Merchant</th>';
-  months.forEach(function(m){html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">'+m.label+'</th>';});
-  html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">Avg/mo</th></tr></thead><tbody>';
-  merchantTotals.slice(0,10).forEach(function(m){
-    var visits=months.map(function(mo){return m.data[mo.key]?m.data[mo.key].visits:0;});
-    var maxV=Math.max.apply(null,visits)||1;
-    var avgV=(m.visits/m.months).toFixed(1);
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-    html+='<td style="padding:7px 8px;color:var(--text-primary);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+m.name+'</td>';
-    visits.forEach(function(v){
-      var intensity=v>0?(0.15+0.7*(v/maxV)).toFixed(2):0;
-      var bg=v>0?'rgba(155,127,255,'+intensity+')':'transparent';
-      html+='<td style="text-align:right;padding:7px 8px;font-family:var(--mono);background:'+bg+';border-radius:3px;">'+(v||'-')+'</td>';
-    });
-    html+='<td style="text-align:right;padding:7px 8px;font-family:var(--mono);color:var(--text-secondary);">'+avgV+'</td>';
-    html+='</tr>';
-  });
-  html+='</tbody></table></div></div>';
+// Visit frequency table
+html+='<div class="card">';
+html+='<div class="card-header"><span class="card-title">Visit frequency</span><span style="font-size:11px;color:var(--text-muted);">visits per month</span></div>';
+html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">Merchant</th>';
+months.forEach(function(m){html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">'+m.label+'</th>';});
+html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">Avg/mo</th></tr></thead><tbody>';
+merchantTotals.slice(0,10).forEach(function(m){
+var visits=months.map(function(mo){return m.data[mo.key]?m.data[mo.key].visits:0;});
+var maxV=Math.max.apply(null,visits)||1;
+var avgV=(m.visits/m.months).toFixed(1);
+html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
+html+='<td style="padding:7px 8px;color:var(--text-primary);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+m.name+'</td>';
+visits.forEach(function(v){
+var intensity=v>0?(0.15+0.7*(v/maxV)).toFixed(2):0;
+var bg=v>0?'rgba(155,127,255,'+intensity+')':'transparent';
+html+='<td style="text-align:right;padding:7px 8px;font-family:var(--mono);background:'+bg+';border-radius:3px;">'+(v||'-')+'</td>';
+});
+html+='<td style="text-align:right;padding:7px 8px;font-family:var(--mono);color:var(--text-secondary);">'+avgV+'</td>';
+html+='</tr>';
+});
+html+='</tbody></table></div></div>';
 
-  el.innerHTML=html;
+el.innerHTML=html;
 }
 </script>
 <script>
