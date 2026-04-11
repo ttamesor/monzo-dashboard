@@ -53,7 +53,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
-.app-body{display:flex;overflow:hidden;flex:1;}
+.app-body{display:flex;flex:1;min-height:0;}
 .sidebar{width:200px;min-width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
 .sidebar-section{font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
@@ -397,6 +397,30 @@ body.light .sidebar-section{color:var(--text-secondary);}
 .sync-status{font-size:12px;color:var(--text-muted);text-align:center;font-family:var(--mono);}
 .sync-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--coral);border-radius:50%;animation:spin 0.8s linear infinite;}
 
+/* Roast */
+.roast-confirm{text-align:center;padding:3rem 2rem;}
+.roast-emoji{font-size:64px;margin-bottom:1rem;display:block;}
+.roast-title{font-size:24px;font-weight:600;margin-bottom:0.6rem;}
+.roast-sub{font-size:15px;color:var(--text-secondary);line-height:1.7;margin-bottom:2rem;}
+.roast-btn{background:var(--coral);border:none;border-radius:10px;padding:13px 32px;font-family:var(--font);font-size:16px;font-weight:600;color:white;cursor:pointer;transition:all 0.2s;}
+.roast-btn:hover{opacity:0.88;transform:scale(1.02);}
+.roast-btn-cancel{background:transparent;border:1px solid var(--navy-border);border-radius:10px;padding:12px 24px;font-family:var(--font);font-size:15px;color:var(--text-muted);cursor:pointer;margin-right:10px;}
+.roast-btn-cancel:hover{border-color:var(--coral);color:var(--coral);}
+.roast-loading{text-align:center;padding:3rem 2rem;}
+.roast-result{padding:1rem 0;}
+.roast-result-intro{font-size:16px;color:var(--text-secondary);line-height:1.8;margin-bottom:1.5rem;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.4rem;}
+.roast-result-intro p{margin-bottom:0.8rem;}
+.roast-result-intro p:last-child{margin-bottom:0;}
+.roast-finding{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--navy-border);}
+.roast-finding:last-child{border-bottom:none;}
+.roast-finding-icon{font-size:24px;flex-shrink:0;margin-top:2px;}
+.roast-finding-text{flex:1;}
+.roast-finding-title{font-size:14px;font-weight:600;color:var(--coral-soft);margin-bottom:3px;}
+.roast-finding-body{font-size:13px;color:var(--text-secondary);line-height:1.6;}
+.roast-score{text-align:center;padding:1.5rem;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;margin-bottom:1rem;}
+.roast-score-num{font-size:56px;font-weight:700;font-family:var(--mono);}
+.roast-score-label{font-size:13px;color:var(--text-muted);margin-top:4px;}
+
 /* Search overlay */
 .search-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding-top:80px;}
 .search-overlay.open{display:flex;}
@@ -564,7 +588,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.4</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.5</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -628,6 +652,9 @@ body.compact .topbar{padding:0.6rem 2rem;}
     </div>
     <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">
       <span class="nav-icon">🔍</span>Patterns<span class="nav-badge" id="fritter-badge"></span>
+    </div>
+    <div class="nav-item" data-tab="roast" onclick="switchTab('roast')" style="margin-top:auto;border-top:1px solid var(--navy-border);padding-top:12px;">
+      <span class="nav-icon">🔥</span><span style="color:var(--coral-soft);">Roast Me</span>
     </div>
   </div>
   <div class="tab-content" id="tab-content">
@@ -853,6 +880,12 @@ body.compact .topbar{padding:0.6rem 2rem;}
   <div class="tab-panel" id="tab-patterns">
     <div class="tab-inner" id="patterns-content">
       <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Roast tab -->
+  <div class="tab-panel" id="tab-roast">
+    <div class="tab-inner" id="roast-content" style="max-width:700px;">
     </div>
   </div>
 
@@ -1650,6 +1683,7 @@ function switchTab(tab){
   if(tab==='income')renderIncome();
   if(tab==='subscriptions')renderSubscriptions();
   if(tab==='patterns')renderPatterns();
+  if(tab==='roast')renderRoastConfirm();
 }
 
 // ---- Calendar ----
@@ -3899,19 +3933,19 @@ function fixLayout(){
   var banH = (banner && banner.classList.contains('show')) ? banner.getBoundingClientRect().height : 0;
   var remaining = window.innerHeight - topH - banH;
   if(remaining < 100) return;
-  // Set height on app-body and sidebar - NOT on tab-content
-  // tab-content must be height:auto to allow scrollHeight > clientHeight
+  // app-body fills remaining height - NO overflow:hidden (that blocks tab-content scroll)
   appBody.style.height = remaining + 'px';
-  appBody.style.overflow = 'hidden';
   appBody.style.display = 'flex';
-  // tab-content: full height of parent, overflow scroll
-  tabContent.style.height = remaining + 'px';
-  tabContent.style.maxHeight = remaining + 'px';
-  tabContent.style.overflowY = 'scroll';
+  appBody.style.overflow = '';
+  // sidebar fixed height
+  if(sidebar) { sidebar.style.height = remaining + 'px'; sidebar.style.overflowY = 'auto'; }
+  // tab-content: fill parent and scroll - do NOT set explicit height, let flex handle it
+  tabContent.style.overflowY = 'auto';
   tabContent.style.overflowX = 'hidden';
-  tabContent.style.boxSizing = 'border-box';
-  if(sidebar) sidebar.style.height = remaining + 'px';
-  if(sidebar) sidebar.style.overflowY = 'auto';
+  tabContent.style.flex = '1';
+  tabContent.style.minHeight = '0';
+  tabContent.style.height = '';
+  tabContent.style.maxHeight = '';
 }
 
 initTheme();
@@ -4263,4 +4297,161 @@ function renderMerchantCompare(){
     if(origHide) origHide();
   };
 })();
+</script>
+<script>
+// Roast Me feature
+function renderRoastConfirm(){
+  var el=document.getElementById('roast-content');
+  if(!el)return;
+  el.innerHTML='<div class="roast-confirm">'
+    +'<span class="roast-emoji">🔥</span>'
+    +'<div class="roast-title">Ready to be roasted?</div>'
+    +'<div class="roast-sub">I\'ve seen your transactions.<br>I know what you\'ve been spending on.<br><strong style="color:var(--coral-soft);">I will not be kind.</strong></div>'
+    +'<div>'
+    +'<button class="roast-btn-cancel" onclick="switchTab(\'dashboard\')">Maybe not</button>'
+    +'<button class="roast-btn" onclick="startRoast()">🔥 Roast me</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function startRoast(){
+  var el=document.getElementById('roast-content');
+  el.innerHTML='<div class="roast-loading">'
+    +'<span style="font-size:48px;display:block;margin-bottom:1rem;animation:spin 1s linear infinite;">🔥</span>'
+    +'<div style="font-size:18px;font-weight:500;margin-bottom:0.5rem;">Analysing your spending habits...</div>'
+    +'<div style="font-size:14px;color:var(--text-muted);">Preparing to judge you</div>'
+    +'</div>';
+
+  // Build spending summary for Claude to roast
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var thisKey=getThisMonthKey();
+  var thisMonthTx=getMonthTxns(spendTx,thisKey);
+  var totalSpend=thisMonthTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+
+  // Top merchants
+  var mc={};
+  spendTx.forEach(function(t){
+    var n=merchant(t);if(n==='Pot transfer')return;
+    mc[n]=(mc[n]||0)+Math.abs(t.amount);
+  });
+  var topMerchants=Object.entries(mc).sort(function(a,b){return b[1]-a[1];}).slice(0,10)
+    .map(function(e){return e[0]+': '+fmt(e[1]);}).join(', ');
+
+  // High frequency small spends (frittering)
+  var fritter=analyseSpend(thisMonthTx).filter(function(x){return x.count>=3&&x.avg<2000;}).slice(0,5)
+    .map(function(x){return x.name+' ('+x.count+'x, avg '+fmt(x.avg)+' each = '+fmt(x.total)+')';}).join('; ');
+
+  // Time of day patterns
+  var dow=calcDayOfWeek(spendTx);
+  var days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var peakDay=days[dow.avgs.indexOf(Math.max.apply(null,dow.avgs))];
+
+  // Anomalies
+  var anomalies=detectAnomalies(spendTx).slice(0,3)
+    .map(function(a){return merchant(a.tx)+' ('+a.ratio.toFixed(1)+'x usual at '+fmt(a.tx.amount)+')';}).join('; ');
+
+  // Categories
+  var cats={};
+  spendTx.forEach(function(t){var c=getCategory(t);cats[c]=(cats[c]||0)+Math.abs(t.amount);});
+  var topCats=Object.entries(cats).sort(function(a,b){return b[1]-a[1];}).slice(0,5)
+    .map(function(e){return e[0].replace(/_/g,' ')+': '+fmt(e[1]);}).join(', ');
+
+  var balance=cachedBal?cachedBal.balance:0;
+  var netWorth=(cachedBal?cachedBal.balance:0)
+    +(cachedPots||[]).reduce(function(s,p){return s+(p.balance||0);},0)
+    +(cachedSavings||[]).reduce(function(s,p){return s+(p.balance||0);},0)
+    +getManualTotalPence();
+
+  var prompt='You are a brutally honest but funny financial roast comedian. '
+    +'Analyse this person\'s spending and roast them. Be specific, witty, and cutting but not cruel. '
+    +'Use British English. Reference specific merchants and amounts. Keep it under 300 words.\n\n'
+    +'THEIR FINANCIAL DATA:\n'
+    +'- Current balance: '+fmt(balance)+'\n'
+    +'- Net worth: '+fmt(netWorth)+'\n'
+    +'- This month\'s spend: '+fmt(totalSpend)+'\n'
+    +'- Top spending categories: '+topCats+'\n'
+    +'- Top merchants overall: '+topMerchants+'\n'
+    +'- High frequency small spends (frittering): '+(fritter||'none detected')+'\n'
+    +'- Peak spending day: '+peakDay+'\n'
+    +'- Unusual transactions: '+(anomalies||'none')+'\n\n'
+    +'Format your response as JSON with this exact structure:\n'
+    +'{"score":NUMBER_1_TO_10,"score_label":"label for the score","intro":"2-3 sentence overall roast","findings":[{"icon":"emoji","title":"short finding title","body":"1-2 sentence specific roast about this finding"}]}\n'
+    +'Include 4-6 findings. The score should be their financial responsibility (1=disaster, 10=suspiciously good).';
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user',content:prompt}]
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var text=data.content&&data.content[0]&&data.content[0].text;
+    if(!text){renderRoastError('No response from AI');return;}
+    // Strip JSON fences
+    var clean=text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    var roast;
+    try{roast=JSON.parse(clean);}catch(e){
+      // If not valid JSON, just show raw text
+      renderRoastRaw(text);return;
+    }
+    renderRoastResult(roast);
+  })
+  .catch(function(e){renderRoastError(e.message);});
+}
+
+function renderRoastResult(roast){
+  var el=document.getElementById('roast-content');
+  var scoreColor=roast.score>=7?'var(--green)':roast.score>=4?'var(--amber)':'var(--coral-soft)';
+
+  var html='<div class="roast-result">';
+  html+='<div class="roast-score">';
+  html+='<div class="roast-score-num" style="color:'+scoreColor+';">'+roast.score+'<span style="font-size:24px;color:var(--text-muted);">/10</span></div>';
+  html+='<div class="roast-score-label">'+roast.score_label+'</div>';
+  html+='</div>';
+
+  html+='<div class="roast-result-intro">';
+  (roast.intro||'').split('\n').forEach(function(p){if(p.trim())html+='<p>'+p+'</p>';});
+  html+='</div>';
+
+  html+='<div class="card">';
+  (roast.findings||[]).forEach(function(f){
+    html+='<div class="roast-finding">'
+      +'<div class="roast-finding-icon">'+(f.icon||'💸')+'</div>'
+      +'<div class="roast-finding-text">'
+      +'<div class="roast-finding-title">'+f.title+'</div>'
+      +'<div class="roast-finding-body">'+f.body+'</div>'
+      +'</div></div>';
+  });
+  html+='</div>';
+
+  html+='<div style="text-align:center;margin-top:1.5rem;">';
+  html+='<button class="roast-btn" onclick="startRoast()" style="margin-right:10px;background:var(--navy-card);border:1px solid var(--navy-border);color:var(--text-secondary);">🔄 Roast again</button>';
+  html+='<button class="roast-btn" onclick="renderRoastConfirm()">Done</button>';
+  html+='</div></div>';
+
+  el.innerHTML=html;
+}
+
+function renderRoastRaw(text){
+  var el=document.getElementById('roast-content');
+  el.innerHTML='<div class="roast-result">'
+    +'<div class="roast-result-intro"><p>'+text.replace(/\n/g,'</p><p>')+'</p></div>'
+    +'<div style="text-align:center;margin-top:1rem;">'
+    +'<button class="roast-btn" onclick="renderRoastConfirm()">Done</button>'
+    +'</div></div>';
+}
+
+function renderRoastError(msg){
+  var el=document.getElementById('roast-content');
+  el.innerHTML='<div class="roast-confirm">'
+    +'<span class="roast-emoji">😅</span>'
+    +'<div class="roast-title">Even the AI gave up</div>'
+    +'<div class="roast-sub">'+msg+'<br><br>Load more transaction history and try again.</div>'
+    +'<button class="roast-btn" onclick="renderRoastConfirm()">Back</button>'
+    +'</div>';
+}
 </script>
