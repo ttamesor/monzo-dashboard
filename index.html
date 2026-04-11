@@ -533,7 +533,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.7</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.8</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -3849,44 +3849,68 @@ function renderMerchantCompare(){
   var html='<h2 style="font-size:18px;font-weight:500;margin-bottom:1.2rem;">Merchant Trends</h2>';
 
   // Week on week for top merchants
-  var weekStart=new Date(now);
-  weekStart.setDate(now.getDate()-((now.getDay()+6)%7));weekStart.setHours(0,0,0,0);
-  var lastWeekStart=new Date(weekStart);lastWeekStart.setDate(weekStart.getDate()-7);
-  var lastWeekEnd=new Date(weekStart);lastWeekEnd.setMilliseconds(-1);
+  // Build 5 weeks
+  var weeks=[];
+  for(var wi=4;wi>=0;wi--){
+    var ws=new Date(now);
+    ws.setDate(now.getDate()-((now.getDay()+6)%7)-wi*7);
+    ws.setHours(0,0,0,0);
+    var we=new Date(ws);we.setDate(ws.getDate()+6);we.setHours(23,59,59,999);
+    var wTx=spendTx.filter(function(t){var d=new Date(t.created);return d>=ws&&d<=we;});
+    var byM={};
+    wTx.forEach(function(t){var n=merchant(t);if(!byM[n])byM[n]={spend:0,visits:0};byM[n].spend+=Math.abs(t.amount);byM[n].visits++;});
+    var label=wi===0?'This wk':wi===1?'Last wk':ws.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    weeks.push({start:ws,end:we,byM:byM,label:label,isCurrent:wi===0});
+  }
 
-  var thisWeekTx=spendTx.filter(function(t){return new Date(t.created)>=weekStart;});
-  var lastWeekTx=spendTx.filter(function(t){var d=new Date(t.created);return d>=lastWeekStart&&d<=lastWeekEnd;});
+  // All merchants that appeared in any week
+  var allWowNames={};
+  weeks.forEach(function(w){Object.keys(w.byM).forEach(function(n){allWowNames[n]=true;});});
 
-  var twByM={},lwByM={};
-  thisWeekTx.forEach(function(t){var n=merchant(t);if(!twByM[n])twByM[n]={spend:0,visits:0};twByM[n].spend+=Math.abs(t.amount);twByM[n].visits++;});
-  lastWeekTx.forEach(function(t){var n=merchant(t);if(!lwByM[n])lwByM[n]={spend:0,visits:0};lwByM[n].spend+=Math.abs(t.amount);lwByM[n].visits++;});
+  // Sort by this week spend desc, then last week
+  var wowMerchants=Object.keys(allWowNames).map(function(n){
+    var vals=weeks.map(function(w){return w.byM[n]||{spend:0,visits:0};});
+    return{name:n,vals:vals,thisWeek:vals[4].spend};
+  }).sort(function(a,b){return b.thisWeek-a.thisWeek||b.vals[3].spend-a.vals[3].spend;}).slice(0,12);
 
-  var wowMerchants=Object.keys(Object.assign({},twByM,lwByM)).map(function(n){
-    return{name:n,thisWeek:twByM[n]||{spend:0,visits:0},lastWeek:lwByM[n]||{spend:0,visits:0}};
-  }).filter(function(m){return m.thisWeek.spend>0||m.lastWeek.spend>0;})
-    .sort(function(a,b){return b.thisWeek.spend-a.thisWeek.spend;}).slice(0,8);
+  html+='<div class="card" style="margin-bottom:1rem;overflow-x:auto;">';
+  html+='<div class="card-header"><span class="card-title">Week on week by merchant</span><span style="font-size:11px;color:var(--text-muted);">last 5 weeks</span></div>';
 
-  html+='<div class="card" style="margin-bottom:1rem;">';
-  html+='<div class="card-header"><span class="card-title">Week on week by merchant</span><span style="font-size:11px;color:var(--text-muted);">this vs last week</span></div>';
-  if(wowMerchants.length){
-    html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 70px;gap:4px;padding:4px 0;border-bottom:1px solid var(--navy-border);margin-bottom:4px;">';
-    html+='<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Merchant</div>';
-    html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">This week</div>';
-    html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">Last week</div>';
-    html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">Change</div></div>';
-    wowMerchants.forEach(function(m){
-      var delta=m.lastWeek.spend>0?Math.round(((m.thisWeek.spend-m.lastWeek.spend)/m.lastWeek.spend)*100):null;
-      var col=delta===null?'var(--text-muted)':delta>0?'var(--coral-soft)':'var(--green)';
-      html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 70px;gap:4px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
-      html+='<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+m.name+'<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">'+m.thisWeek.visits+'x</span></div>';
-      html+='<div style="font-size:13px;font-family:var(--mono);color:var(--text-primary);text-align:right;">'+(m.thisWeek.spend?fmt(m.thisWeek.spend):'-')+'</div>';
-      html+='<div style="font-size:13px;font-family:var(--mono);color:var(--text-muted);text-align:right;">'+(m.lastWeek.spend?fmt(m.lastWeek.spend):'-')+'</div>';
-      html+='<div style="font-size:12px;font-weight:500;color:'+col+';text-align:right;">'+(delta===null?'New':delta===0?'—':(delta>0?'▲ +':'▼ ')+Math.abs(delta)+'%')+'</div>';
+  // Header row
+  var colTemplate='160px repeat(5, 1fr) 60px';
+  html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:4px 0;border-bottom:1px solid var(--navy-border);min-width:600px;">';
+  html+='<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Merchant</div>';
+  weeks.forEach(function(w){
+    html+='<div style="font-size:10px;color:'+(w.isCurrent?'var(--coral-soft)':'var(--text-muted)')+';text-align:right;font-weight:'+(w.isCurrent?'600':'400')+';">'+w.label+'</div>';
+  });
+  html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">Trend</div></div>';
+
+  wowMerchants.forEach(function(m){
+    // Week on week % change (latest vs previous non-zero)
+    var prevSpend=m.vals[3].spend||m.vals[2].spend||m.vals[1].spend||0;
+    var delta=prevSpend>0&&m.vals[4].spend>0?Math.round(((m.vals[4].spend-prevSpend)/prevSpend)*100):null;
+    var trendCol=delta===null?'var(--text-muted)':delta>0?'var(--coral-soft)':'var(--green)';
+
+    html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03);min-width:600px;">';
+    html+='<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+m.name+'">'+m.name+'</div>';
+    m.vals.forEach(function(v,vi){
+      var maxV=Math.max.apply(null,m.vals.map(function(x){return x.spend;}))||1;
+      var intensity=v.spend>0?(0.1+0.5*(v.spend/maxV)).toFixed(2):0;
+      var bg=v.spend>0?(weeks[vi].isCurrent?'rgba(255,90,95,'+intensity+')':'rgba(255,255,255,'+intensity+'*0.15)'):'';
+      var isCur=weeks[vi].isCurrent;
+      html+='<div style="text-align:right;padding:2px 4px;border-radius:3px;'+(v.spend>0?'background:'+(isCur?'rgba(255,90,95,'+intensity+')':'rgba(255,255,255,0.05)'):'')+';">';
+      if(v.spend){
+        html+='<div style="font-size:12px;font-family:var(--mono);color:'+(isCur?'var(--text-primary)':'var(--text-muted)')+';">'+fmt(v.spend)+'</div>';
+        html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+'x</div>';
+      } else {
+        html+='<div style="font-size:12px;color:rgba(255,255,255,0.15);">-</div>';
+      }
       html+='</div>';
     });
-  } else {
-    html+='<div style="color:var(--text-muted);font-size:14px;">Not enough data for this week.</div>';
-  }
+    html+='<div style="text-align:right;font-size:12px;font-weight:600;color:'+trendCol+';padding-top:4px;">'
+      +(delta===null?(m.vals[4].spend>0?'New':'—'):(delta>0?'▲ +':'▼ ')+Math.abs(delta)+'%')+'</div>';
+    html+='</div>';
+  });
   html+='</div>';
 
   // Month on month table
