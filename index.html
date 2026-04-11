@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monzo Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root {
   --coral:#FF5A5F;--coral-soft:#FF8A8E;--coral-dim:rgba(255,90,95,0.12);
@@ -549,7 +549,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.0</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.1</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -1681,6 +1681,206 @@ function connectOAuth(){
     }
   }catch(e){}
 })();
+
+
+// ---- Month selector ----
+function buildMonthSelector(){
+  var sel=document.getElementById("month-select");
+  if(!sel)return;
+  var now=new Date();
+  var months=[];
+  for(var i=0;i<13;i++){
+    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    var key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    var label=d.toLocaleString("default",{month:"long",year:"numeric"});
+    months.push({key:key,label:label});
+  }
+  sel.innerHTML=months.map(function(m,i){
+    return "<option value='"+m.key+"'"+(i===0?" selected":"")+">"+m.label+"</option>";
+  }).join("");
+  viewMonth=months[0].key;
+}
+
+function switchMonth(val){
+  viewMonth=val;
+  txDisplayCount=30;
+  var MONTH_TABS=["dashboard","calendar","trends","simple"];
+  var sel=document.getElementById("month-select");
+  if(sel) sel.style.display=MONTH_TABS.indexOf(currentTab)>=0?"":"none";
+  renderAll();
+}
+
+function getThisMonthKey(){
+  var now=new Date();
+  return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+}
+function getLastMonthKey(){
+  var d=new Date();
+  d.setMonth(d.getMonth()-1);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+}
+
+// ---- Tab switching ----
+var MONTH_TABS=["dashboard","calendar","trends","simple"];
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll(".nav-item").forEach(function(el){
+    el.classList.toggle("active",el.getAttribute("data-tab")===tab);
+  });
+  document.querySelectorAll(".tab-panel").forEach(function(el){
+    el.classList.toggle("active",el.id==="tab-"+tab);
+  });
+  var sel=document.getElementById("month-select");
+  if(sel) sel.style.display=MONTH_TABS.indexOf(tab)>=0?"":"none";
+  fixLayout();
+  if(tab==="simple")renderSimple();
+  if(tab==="trends")renderTrends();
+  if(tab==="analytics")renderAnalytics();
+  if(tab==="merchants")renderMerchants();
+  if(tab==="merchant-compare")renderMerchantCompare();
+  if(tab==="transactions")renderTxTab();
+  if(tab==="wealth")renderWealth();
+  if(tab==="bills")renderBills();
+  if(tab==="income")renderIncome();
+  if(tab==="subscriptions")renderSubscriptions();
+  if(tab==="patterns")renderPatterns();
+  if(tab==="nice")renderNice();
+  if(tab==="roast"){
+    if(confirm("Ready to see your financial roast? Click OK to generate based on your latest data."))
+      renderRoast();
+    else switchTab("dashboard");
+  }
+}
+
+// ---- getMonthTxns updated for key-based months ----
+var _getMonthTxnsOrig = getMonthTxns;
+getMonthTxns = function(txns, which){
+  // Support both old "this"/"last" and new "YYYY-MM" format
+  if(which==="this"||which==="last"){
+    return _getMonthTxnsOrig(txns, which);
+  }
+  var parts=which.split("-");
+  var y=parseInt(parts[0]),m=parseInt(parts[1])-1;
+  return txns.filter(function(t){
+    var d=new Date(t.created);
+    return d.getFullYear()===y&&d.getMonth()===m;
+  });
+};
+
+// ---- renderAll updated ----
+renderAll = function(){
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var now=new Date();
+  var thisKey=getThisMonthKey();
+  var lastKey=getLastMonthKey();
+  var thisTx=getMonthTxns(spendTx,thisKey);
+  var lastTx=getMonthTxns(spendTx,lastKey);
+  var viewSpend=getMonthTxns(spendTx,viewMonth);
+  var viewAll=getMonthTxns(allTransactions,viewMonth);
+
+  renderStatCards(cachedBal,cachedPots,cachedSavings,viewSpend,thisTx,lastTx);
+  renderCatCompare(thisTx,lastTx);
+  applyFilters();
+  if(typeof renderDailyChart==="function") renderDailyChart(viewSpend,thisTx,lastTx,viewMonth);
+  if(currentTab==="simple") renderSimple();
+  if(currentTab==="trends") renderTrends();
+  if(currentTab==="analytics") renderAnalytics();
+  if(currentTab==="wealth") renderWealth();
+  if(currentTab==="bills") renderBills();
+  if(currentTab==="income") renderIncome();
+  if(currentTab==="subscriptions") renderSubscriptions();
+  if(currentTab==="nice") renderNice();
+  if(currentTab==="merchants") renderMerchants();
+  if(currentTab==="merchant-compare") renderMerchantCompare();
+};
+
+// ---- Stub missing render functions to avoid errors ----
+function _safeStub(name){
+  if(typeof window[name]==="undefined"){
+    window[name]=function(){
+      var el=document.getElementById(name.replace("render","").toLowerCase()+"-content");
+      if(el) el.innerHTML="<div style='color:var(--text-muted);padding:2rem;'>Loading...</div>";
+    };
+  }
+}
+["renderSimple","renderTrends","renderAnalytics","renderMerchants","renderTxTab",
+ "renderWealth","renderBills","renderIncome","renderSubscriptions","renderPatterns",
+ "renderNice","renderRoast","renderMerchantCompare"].forEach(_safeStub);
+
+// ---- applyFilters for transactions tab ----
+var txTabFiltered=[];
+var txDisplayCount=30;
+function applyTabFilters(){
+  var search=(document.getElementById("ttx-search")||{}).value||"";
+  var cat=(document.getElementById("ttx-cat")||{}).value||"";
+  txTabFiltered=allTransactions.filter(function(t){
+    if(t.amount===0)return false;
+    if(search&&merchant(t).toLowerCase().indexOf(search.toLowerCase())<0)return false;
+    if(cat&&getCategory(t)!==cat)return false;
+    return true;
+  }).sort(function(a,b){return new Date(b.created)-new Date(a.created);});
+  renderTxTabList();
+}
+function renderTxTabList(){
+  var el=document.getElementById("tx-tab-list");
+  if(!el)return;
+  var shown=txTabFiltered.slice(0,txDisplayCount);
+  el.innerHTML=shown.map(function(t){
+    var cr=t.amount>0,em=CAT_EMOJI[getCategory(t)]||"💳";
+    var dt=new Date(t.created).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+    var ovr=catOverrides[t.id]?"<span style='font-size:9px;color:var(--purple);margin-left:4px;'>edited</span>":"";
+    return "<div class='tx-item'><div class='tx-icon'>"+em+"</div><div class='tx-details'><div class='tx-merchant'>"+merchant(t)+ovr+"</div><div class='tx-date'>"+dt+"</div></div><div class='tx-amount "+(cr?"credit":"debit")+"'>"+(cr?"+":"")+fmt(t.amount)+"</div></div>";
+  }).join("")||"<div style='color:var(--text-muted);font-size:14px;padding:8px 0;'>No transactions found</div>";
+}
+function renderTxTab(){
+  applyTabFilters();
+}
+
+// ---- fmtRaw ----
+if(typeof fmtRaw==="undefined"){
+  fmtRaw=function(v){ return "£"+v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2}); };
+}
+
+// ---- Quick filter (stub) ----
+function quickFilter(type){ /* handled by applyFilters */ }
+
+// ---- openSearch ----
+function openSearch(){
+  var el=document.getElementById("search-overlay");
+  if(el){ el.classList.add("open"); setTimeout(function(){document.getElementById("search-input").focus();},50); }
+}
+function closeSearch(){
+  var el=document.getElementById("search-overlay");
+  if(el) el.classList.remove("open");
+}
+function runSearch(q){ /* stub */ }
+
+// ---- Budget modal ----
+function openBudgetModal(){
+  var key=viewMonth;
+  var current=monthBudgets[key]?monthBudgets[key]/100:"";
+  var val=prompt("Set monthly budget for "+key+" (£):",current);
+  if(val===null)return;
+  var n=parseFloat(val);
+  if(!isNaN(n)&&n>0){ monthBudgets[key]=Math.round(n*100); localStorage.setItem("monzo_budgets_v1",JSON.stringify(monthBudgets)); renderAll(); }
+}
+
+// ---- loadMoreHistory ----
+function loadMoreHistory(){
+  bgLimit=null;
+  var btn=document.getElementById("load-history-btn");
+  if(btn){btn.disabled=true;btn.innerHTML="Loading...";}
+  startBgFetch();
+}
+
+// ---- showCatTransactions ----
+function showCatTransactions(cat){
+  switchTab("transactions");
+  setTimeout(function(){
+    var sel=document.getElementById("ttx-cat");
+    if(sel){sel.value=cat;applyTabFilters();}
+  },100);
+}
 
 initCompact();
 if(loadConfig()) showDashboard();
