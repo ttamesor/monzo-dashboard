@@ -588,7 +588,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.2</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.4</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -655,6 +655,9 @@ body.compact .topbar{padding:0.6rem 2rem;}
     </div>
     <div class="nav-item" data-tab="roast" onclick="switchTab('roast')" style="margin-top:auto;color:var(--coral-soft);">
       <span class="nav-icon">🔥</span>Roast Me
+    </div>
+    <div class="nav-item" data-tab="nice" onclick="switchTab('nice')" style="color:var(--green);">
+      <span class="nav-icon">🌟</span>Be Nice To Me
     </div>
 
   </div>
@@ -880,6 +883,13 @@ body.compact .topbar{padding:0.6rem 2rem;}
   <!-- Roast tab -->
   <div class="tab-panel" id="tab-roast">
     <div class="tab-inner" id="roast-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Be Nice tab -->
+  <div class="tab-panel" id="tab-nice">
+    <div class="tab-inner" id="nice-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
@@ -1891,9 +1901,12 @@ function connect(){
 }
 function showError(msg){var el=document.getElementById("error-msg");el.style.display=msg?"block":"none";el.textContent=msg;}
 function showDashboard(){
-  document.getElementById("config-screen").style.display="none";
+  var cfg=document.getElementById("config-screen");
+  cfg.style.display="none";
+  cfg.style.visibility="hidden";
+  cfg.style.position="fixed";
+  cfg.style.zIndex="-1";
   document.getElementById("dashboard").style.display="flex";
-  // Call repeatedly until stable - topbar may not be measured on first call
   setTimeout(fixLayout, 0);
   setTimeout(fixLayout, 100);
   setTimeout(fixLayout, 300);
@@ -2063,7 +2076,7 @@ function bgFetchStep(){
   setProgress(syncMsg);
   // Progress bar: 80% to 99% across ~13 steps (6 months / 14-day windows)
   bgFetchStepCount=(bgFetchStepCount||0)+1;
-  var pct=Math.min(70+bgFetchStepCount*5, 95);
+  var pct=Math.min(25+bgFetchStepCount*5, 90);
   updateSyncStatus(syncMsg, pct);
 
   gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:before})
@@ -2137,14 +2150,14 @@ function loadAll(){
   var startOfThisMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
   var startOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString();
 
-  updateSyncStatus('Fetching balance and transactions...', 25);
+  updateSyncStatus('Fetching balance and transactions...', 15);
   Promise.all([
     gasCall({action:"balance",account_id:ACCOUNT_ID}),
     gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
     gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfThisMonth}),
     gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfThisMonth})
   ]).then(function(results){
-    updateSyncStatus('Processing transactions...', 50);
+    updateSyncStatus('Processing transactions...', 20);
     cachedBal=results[0].data;
 
     var allPots=Array.isArray(results[1].data&&results[1].data.pots)?results[1].data.pots:[];
@@ -2168,9 +2181,9 @@ function loadAll(){
     renderAll();
     renderPotsPanel(cachedPots,cachedSavings);
     updateHistoryBtn();
-    updateSyncStatus('Initial data loaded, syncing history...', 70);
+    updateSyncStatus('Initial data loaded, syncing history...', 25);
     startBgFetch();
-    // Show "continue anyway" after 10 seconds
+    // Show "continue anyway" after 3 seconds with confirmation
     setTimeout(function(){
       if(!document.getElementById('sync-overlay').classList.contains('hidden')&&
          !document.getElementById('sync-continue-btn')){
@@ -2180,11 +2193,15 @@ function loadAll(){
         btn.style.cssText='background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 20px;font-family:var(--font);font-size:13px;color:var(--text-muted);cursor:pointer;transition:all 0.2s;margin-top:0.5rem;';
         btn.onmouseover=function(){this.style.borderColor='var(--coral)';this.style.color='var(--coral-soft)';};
         btn.onmouseout=function(){this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='var(--text-muted)';};
-        btn.onclick=function(){ hideSyncOverlay(); };
+        btn.onclick=function(){
+          if(confirm('Sync is still in progress. Some older transactions may be missing. Continue anyway?')){
+            hideSyncOverlay();
+          }
+        };
         var overlay=document.getElementById('sync-overlay');
         if(overlay) overlay.appendChild(btn);
       }
-    }, 10000);
+    }, 3000);
 
     // If last month hit 100, paginate it fully in the background
     if(lastMo.length===100){
@@ -2603,7 +2620,8 @@ function switchTab(tab){
   if(tab==='income')renderIncome();
   if(tab==='subscriptions')renderSubscriptions();
   if(tab==='patterns')renderPatterns();
-  if(tab==='roast')renderRoast();
+  if(tab==='roast'){if(confirm('Ready to see your financial roast? Click OK to generate based on your latest data.'))renderRoast();else switchTab('dashboard');}
+  if(tab==='nice')renderNice();
   if(tab==='roast')renderRoastConfirm();
 }
 
@@ -3303,6 +3321,7 @@ renderAll=function(){
   if(currentTab==='subscriptions')renderSubscriptions();
   if(currentTab==='patterns')renderPatterns();
   if(currentTab==='roast')renderRoast();
+  if(currentTab==='nice')renderNice();
 };
 
 // Update version
@@ -5439,5 +5458,231 @@ function confirmSuperRoast(step){
     superRoastMode=true;
     renderRoast();
   }
+}
+</script>
+<script>
+var niceDays=30;
+
+function renderNice(days){
+  if(days!==undefined) niceDays=days;
+  var el=document.getElementById('nice-content');
+  if(!el)return;
+
+  var now=new Date();
+  var cutoff=new Date(now); cutoff.setDate(cutoff.getDate()-niceDays);
+  var prevCutoff=new Date(cutoff); prevCutoff.setDate(prevCutoff.getDate()-niceDays);
+
+  var allSpend=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var periodTx=allSpend.filter(function(t){return new Date(t.created)>=cutoff;});
+  var prevTx=allSpend.filter(function(t){var d=new Date(t.created);return d>=prevCutoff&&d<cutoff;});
+
+  var periodSpend=periodTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var prevSpend=prevTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+
+  var balance=cachedBal?cachedBal.balance:0;
+  var potTotal=(cachedPots||[]).reduce(function(s,p){return s+(p.balance||0);},0);
+  var savTotal=(cachedSavings||[]).reduce(function(s,p){return s+(p.balance||0);},0);
+
+  var wins=[];
+
+  // 1. Overall spend trend
+  if(prevSpend>0&&periodSpend<prevSpend){
+    var savingPct=Math.round(((prevSpend-periodSpend)/prevSpend)*100);
+    wins.push({
+      emoji:'📉',
+      title:'Spending is down',
+      text:'You spent '+fmt(periodSpend)+' in the last '+niceDays+' days - that\'s '+savingPct+'% less than the '+niceDays+' days before. You are genuinely getting better at this.'
+    });
+  } else if(prevSpend>0&&periodSpend<prevSpend*1.05){
+    wins.push({
+      emoji:'⚖️',
+      title:'Holding steady',
+      text:'Your spending is almost identical to the previous period. Consistency is underrated - you\'re in control.'
+    });
+  }
+
+  // 2. Merchant improvements - merchants where spend is down vs previous period
+  var merchantPeriod={}, merchantPrev={};
+  periodTx.forEach(function(t){var n=merchant(t);merchantPeriod[n]=(merchantPeriod[n]||0)+Math.abs(t.amount);});
+  prevTx.forEach(function(t){var n=merchant(t);merchantPrev[n]=(merchantPrev[n]||0)+Math.abs(t.amount);});
+
+  var improvements=Object.keys(merchantPrev).filter(function(n){
+    return merchantPeriod[n]&&merchantPrev[n]&&merchantPeriod[n]<merchantPrev[n]*0.8;
+  }).map(function(n){
+    var pct=Math.round(((merchantPrev[n]-merchantPeriod[n])/merchantPrev[n])*100);
+    return{name:n,prev:merchantPrev[n],cur:merchantPeriod[n],pct:pct};
+  }).sort(function(a,b){return b.pct-a.pct;}).slice(0,4);
+
+  if(improvements.length){
+    var best=improvements[0];
+    var others=improvements.slice(1).map(function(x){return x.name+' ('+x.pct+'% less)';}).join(', ');
+    wins.push({
+      emoji:'✂️',
+      title:'Cutting back where it counts',
+      text:'You spent '+best.pct+'% less at '+best.name+' compared to the previous '+niceDays+' days - down from '+fmt(best.prev)+' to '+fmt(best.cur)+'.'
+        +(others?' Also less at: '+others+'.':'')
+        +' Small changes, real money.'
+    });
+  }
+
+  // 3. Merchants visited less (fewer transactions)
+  var visitPeriod={}, visitPrev={};
+  periodTx.forEach(function(t){var n=merchant(t);visitPeriod[n]=(visitPeriod[n]||0)+1;});
+  prevTx.forEach(function(t){var n=merchant(t);visitPrev[n]=(visitPrev[n]||0)+1;});
+  var lessVisited=Object.keys(visitPrev).filter(function(n){
+    return visitPeriod[n]&&visitPrev[n]>3&&visitPeriod[n]<visitPrev[n]*0.7;
+  }).map(function(n){
+    return{name:n,prev:visitPrev[n],cur:visitPeriod[n]};
+  }).sort(function(a,b){return (b.prev-b.cur)-(a.prev-a.cur);}).slice(0,3);
+
+  if(lessVisited.length){
+    var lv=lessVisited[0];
+    wins.push({
+      emoji:'🚶',
+      title:'Breaking the habit',
+      text:'You visited '+lv.name+' '+lv.cur+' times this period, down from '+lv.prev+' last period. That\'s genuine behaviour change - not easy, and you did it.'
+    });
+  }
+
+  // 4. Category improvements
+  var catPeriod={}, catPrev={};
+  periodTx.forEach(function(t){var c=getCategory(t);catPeriod[c]=(catPeriod[c]||0)+Math.abs(t.amount);});
+  prevTx.forEach(function(t){var c=getCategory(t);catPrev[c]=(catPrev[c]||0)+Math.abs(t.amount);});
+  var catWins=Object.keys(catPrev).filter(function(c){
+    return catPeriod[c]&&catPrev[c]&&catPeriod[c]<catPrev[c]*0.85&&catPrev[c]>5000;
+  }).map(function(c){
+    var pct=Math.round(((catPrev[c]-catPeriod[c])/catPrev[c])*100);
+    return{cat:c,pct:pct,saved:catPrev[c]-catPeriod[c]};
+  }).sort(function(a,b){return b.saved-a.saved;}).slice(0,2);
+
+  catWins.forEach(function(w){
+    wins.push({
+      emoji:'🏷️',
+      title:'Less on '+w.cat.replace(/_/g,' '),
+      text:'Your '+w.cat.replace(/_/g,' ')+' spending is down '+w.pct+'% vs the previous period - saving you roughly '+fmt(w.saved)+'. That is not nothing.'
+    });
+  });
+
+  // 5. Savings pots growing
+  if(potTotal>0){
+    wins.push({
+      emoji:'🏦',
+      title:'You\'re saving',
+      text:'You have '+fmt(potTotal)+' sitting in pots right now. Future-you is grateful. That money is doing nothing except being exactly where it should be.'
+    });
+  }
+
+  // 6. Day of week - is there a day with notably lower spend?
+  var dow=calcDayOfWeek(periodTx);
+  var days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var minAvg=Math.min.apply(null,dow.avgs.filter(function(v){return v>0;}));
+  var minDay=dow.avgs.indexOf(minAvg);
+  if(minAvg>0&&dow.counts[minDay]>2){
+    wins.push({
+      emoji:'📅',
+      title:days[minDay]+' is your strongest day',
+      text:days[minDay]+' is your lowest average spend day at '+fmt(minAvg)+' per transaction. Whatever you\'re doing differently that day - keep doing it.'
+    });
+  }
+
+  // 7. Balance positive and meaningful
+  if(balance>50000){
+    wins.push({
+      emoji:'💚',
+      title:'In the green',
+      text:'Your balance is '+fmt(balance)+'. That\'s real money, sitting there, not in debt, not overdrawn. A lot of people can\'t say that.'
+    });
+  }
+
+  // 8. Low small transaction count
+  var smallCount=periodTx.filter(function(t){return Math.abs(t.amount)<500;}).length;
+  var prevSmallCount=prevTx.filter(function(t){return Math.abs(t.amount)<500;}).length;
+  if(prevSmallCount>0&&smallCount<prevSmallCount*0.8){
+    wins.push({
+      emoji:'☕',
+      title:'Less frittering',
+      text:'Fewer small impulse transactions this period ('+smallCount+' vs '+prevSmallCount+' previously). The small stuff adds up and you\'re keeping it in check.'
+    });
+  }
+
+  // 9. No late night spending
+  var lateCount=periodTx.filter(function(t){var h=new Date(t.created).getHours();return h>=22||h<4;}).length;
+  if(lateCount===0){
+    wins.push({
+      emoji:'🌙',
+      title:'No late night chaos',
+      text:'Zero transactions after 10pm this period. Your evening-self is making sensible decisions. This is a real achievement.'
+    });
+  } else if(lateCount<=2){
+    wins.push({
+      emoji:'🌙',
+      title:'Nearly night-owl free',
+      text:'Only '+lateCount+' transaction'+(lateCount>1?'s':'')+' after 10pm. Practically responsible.'
+    });
+  }
+
+  // 10. Income coming in
+  var incomeTx=allTransactions.filter(function(t){return t.amount>0&&new Date(t.created)>=cutoff;});
+  var incomeTotal=incomeTx.reduce(function(s,t){return s+t.amount;},0);
+  if(incomeTotal>0){
+    wins.push({
+      emoji:'💰',
+      title:'Money coming in',
+      text:''+fmt(incomeTotal)+' received in the last '+niceDays+' days. Income is the foundation of everything - and yours is showing up.'
+    });
+  }
+
+  if(!wins.length){
+    wins.push({
+      emoji:'🌱',
+      title:'Early days',
+      text:'Load more transaction history and we\'ll have more to work with. Come back when you\'ve got 60+ days of data for a proper comparison.'
+    });
+  }
+
+  // Build HTML
+  var signoffs=[
+    'You\'re doing better than you think.\nYour dashboard 🌟',
+    'Keep going. Seriously.\nYour dashboard 🌟',
+    'Progress is progress, no matter the size.\nYour dashboard 🌟'
+  ];
+  var signoff=signoffs[Math.floor(Math.random()*signoffs.length)];
+
+  var html='<div style="max-width:700px;">';
+
+  // Header with date filters
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:1.2rem;">';
+  html+='<div style="display:flex;align-items:center;gap:12px;">';
+  html+='<div style="font-size:36px;">🌟</div>';
+  html+='<div><h2 style="font-size:22px;font-weight:500;color:var(--green);">You\'re doing well</h2>';
+  html+='<div style="font-size:13px;color:var(--text-muted);">Last '+niceDays+' days vs the '+niceDays+' days before that.</div></div>';
+  html+='</div>';
+  html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
+  [30,60,90].forEach(function(d){
+    var active=niceDays===d;
+    html+='<button onclick="renderNice('+d+')" style="background:'+(active?'var(--green)':'transparent')+';border:1px solid '+(active?'var(--green)':'var(--navy-border)')+';border-radius:20px;padding:4px 14px;font-family:var(--font);font-size:12px;color:'+(active?'var(--navy)':'var(--text-muted)')+';cursor:pointer;font-weight:'+(active?'600':'400')+';">'+d+' days</button>';
+  });
+  html+='</div></div>';
+
+  // Win cards
+  wins.forEach(function(w){
+    html+='<div style="background:var(--navy-card);border:1px solid rgba(45,212,160,0.15);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1rem;">';
+    html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+    html+='<span style="font-size:20px;">'+w.emoji+'</span>';
+    html+='<div style="font-size:13px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.05em;">'+w.title+'</div>';
+    html+='</div>';
+    html+='<div style="font-size:15px;color:var(--text-primary);line-height:1.7;">'+w.text+'</div>';
+    html+='</div>';
+  });
+
+  // Sign off
+  html+='<div style="background:rgba(45,212,160,0.08);border:1px solid rgba(45,212,160,0.2);border-radius:12px;padding:1.2rem 1.4rem;margin-top:1.5rem;">';
+  html+='<div style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-line;">'+signoff+'</div>';
+  html+='</div>';
+
+  html+='<div style="margin-top:0.8rem;text-align:center;font-size:12px;color:var(--text-muted);">Comparing last '+niceDays+' days vs the '+niceDays+' days before. All data from your actual transactions.</div>';
+  html+='</div>';
+
+  el.innerHTML=html;
 }
 </script>
