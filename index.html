@@ -40,7 +40,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .btn-primary:hover{opacity:0.88;}.btn-primary:active{transform:scale(0.98);}
 .error-msg{background:var(--coral-dim);border:1px solid rgba(255,90,95,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--coral-soft);margin-bottom:1rem;display:none;}
 #dashboard{display:none;position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--navy-border);background:var(--navy-mid);z-index:10;flex-wrap:wrap;gap:8px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--navy-border);background:var(--navy-mid);z-index:10;flex-wrap:wrap;gap:8px;flex-shrink:0;}
 .topbar-left{display:flex;align-items:center;gap:12px;}
 .topbar-logo-mark{width:28px;height:28px;background:var(--coral);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:white;flex-shrink:0;}
 .topbar-title{font-size:15px;font-weight:500;}
@@ -53,15 +53,15 @@ input[type="text"]:focus{border-color:var(--coral);}
 .hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
-.app-body{display:flex;overflow:hidden;}
-.sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
+.app-body{display:flex;overflow:hidden;flex:1;}
+.sidebar{width:200px;min-width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
 .sidebar-section{font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
-.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;}
-.tab-panel{display:none;width:100%;}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;}
+.tab-panel{display:none;width:100%;min-height:100%;}
 .tab-panel.active{display:block;}
 .tab-inner{padding:1.5rem 2rem 4rem;max-width:1400px;margin:0 auto;}
 .main{padding:0;}
@@ -564,7 +564,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.3</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.4</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -3898,13 +3898,20 @@ function fixLayout(){
   var topH = topbar ? topbar.getBoundingClientRect().height : 0;
   var banH = (banner && banner.classList.contains('show')) ? banner.getBoundingClientRect().height : 0;
   var remaining = window.innerHeight - topH - banH;
-  if(remaining < 100) return; // not ready yet
+  if(remaining < 100) return;
+  // Set height on app-body and sidebar - NOT on tab-content
+  // tab-content must be height:auto to allow scrollHeight > clientHeight
   appBody.style.height = remaining + 'px';
   appBody.style.overflow = 'hidden';
+  appBody.style.display = 'flex';
+  // tab-content: full height of parent, overflow scroll
   tabContent.style.height = remaining + 'px';
-  tabContent.style.overflowY = 'auto';
+  tabContent.style.maxHeight = remaining + 'px';
+  tabContent.style.overflowY = 'scroll';
   tabContent.style.overflowX = 'hidden';
+  tabContent.style.boxSizing = 'border-box';
   if(sidebar) sidebar.style.height = remaining + 'px';
+  if(sidebar) sidebar.style.overflowY = 'auto';
 }
 
 initTheme();
