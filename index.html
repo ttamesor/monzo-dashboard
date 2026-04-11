@@ -60,6 +60,12 @@ input[type="text"]:focus{border-color:var(--coral);}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
+.nav-advanced-toggle{display:flex;align-items:center;justify-content:space-between;padding:9px 1.2rem;cursor:pointer;user-select:none;}
+.nav-advanced-toggle:hover{background:rgba(255,255,255,0.02);}
+.nav-advanced-arrow{font-size:16px;color:var(--text-muted);transition:transform 0.2s;display:inline-block;}
+.nav-advanced-arrow.open{transform:rotate(90deg);}
+.nav-advanced-items{overflow:hidden;max-height:0;transition:max-height 0.25s ease;}
+.nav-advanced-items.open{max-height:400px;}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
 .tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;}
 .tab-panel{display:none;width:100%;}
@@ -570,7 +576,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.8</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.0</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -635,29 +641,17 @@ body.compact .topbar{padding:0.6rem 2rem;}
   </div>
   <div class="app-body">
   <div class="sidebar" id="sidebar">
-    <div class="nav-item" data-tab="simple" onclick="switchTab('simple')" style="font-weight:600;font-size:14px;border-bottom:1px solid var(--navy-border);margin-bottom:0.5rem;padding-bottom:1rem;">
+
+    <!-- Simple View - hero item -->
+    <div class="nav-item active" data-tab="simple" onclick="switchTab('simple')">
       <span class="nav-icon">✨</span>Simple View
     </div>
+
+    <!-- Main tabs -->
     <div class="sidebar-section">Overview</div>
-    <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+    <div class="nav-item" data-tab="dashboard" onclick="switchTab('dashboard')">
       <span class="nav-icon">📊</span>Dashboard
     </div>
-    <div class="nav-item" data-tab="calendar" onclick="switchTab('calendar')">
-      <span class="nav-icon">📅</span>Calendar
-    </div>
-    <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">
-      <span class="nav-icon">📈</span>Trends
-    </div>
-    <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
-      <span class="nav-icon">📉</span>Analytics
-    </div>
-    <div class="nav-item" data-tab="merchants" onclick="switchTab('merchants')">
-      <span class="nav-icon">🏪</span>Merchants
-    </div>
-    <div class="nav-item" data-tab="merchant-compare" onclick="switchTab('merchant-compare')">
-      <span class="nav-icon">📊</span>Merchant Trends
-    </div>
-    <div class="sidebar-section">Detail</div>
     <div class="nav-item" data-tab="transactions" onclick="switchTab('transactions')">
       <span class="nav-icon">💳</span>Transactions
     </div>
@@ -674,14 +668,41 @@ body.compact .topbar{padding:0.6rem 2rem;}
     <div class="nav-item" data-tab="subscriptions" onclick="switchTab('subscriptions')">
       <span class="nav-icon">🔄</span>Typical Expenses
     </div>
-    <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">
-      <span class="nav-icon">🔍</span>Patterns<span class="nav-badge" id="fritter-badge"></span>
+
+    <!-- Advanced collapsible -->
+    <div class="nav-advanced-toggle" id="nav-advanced-toggle" onclick="toggleAdvancedNav()">
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);">Advanced</span>
+      <span class="nav-advanced-arrow" id="nav-advanced-arrow">›</span>
     </div>
-    <div class="nav-item" data-tab="roast" onclick="switchTab('roast')" style="margin-top:auto;color:var(--coral-soft);">
-      <span class="nav-icon">🔥</span>Roast Me
+    <div class="nav-advanced-items" id="nav-advanced-items">
+      <div class="nav-item" data-tab="calendar" onclick="switchTab('calendar')">
+        <span class="nav-icon">📅</span>Calendar
+      </div>
+      <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">
+        <span class="nav-icon">📈</span>Trends
+      </div>
+      <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
+        <span class="nav-icon">📉</span>Analytics
+      </div>
+      <div class="nav-item" data-tab="merchants" onclick="switchTab('merchants')">
+        <span class="nav-icon">🏪</span>Merchants
+      </div>
+      <div class="nav-item" data-tab="merchant-compare" onclick="switchTab('merchant-compare')">
+        <span class="nav-icon">📊</span>Merchant Trends
+      </div>
+      <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">
+        <span class="nav-icon">🔍</span>Patterns<span class="nav-badge" id="fritter-badge"></span>
+      </div>
     </div>
-    <div class="nav-item" data-tab="nice" onclick="switchTab('nice')" style="color:var(--green);">
-      <span class="nav-icon">🌟</span>Be Nice To Me
+
+    <!-- Fun section - always visible at bottom -->
+    <div style="margin-top:auto;">
+      <div class="nav-item" data-tab="roast" onclick="switchTab('roast')" style="color:var(--coral-soft);">
+        <span class="nav-icon">🔥</span>Roast Me
+      </div>
+      <div class="nav-item" data-tab="nice" onclick="switchTab('nice')" style="color:var(--green);">
+        <span class="nav-icon">🌟</span>Be Nice To Me
+      </div>
     </div>
 
   </div>
@@ -954,7 +975,20 @@ function toggleTheme(){
 
 // ---- Config ----
 function loadConfig(){
-  try{var c=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");if(c.gasUrl&&c.accountId){GAS_URL=c.gasUrl;ACCOUNT_ID=c.accountId;return true;}}catch(e){}return false;
+  try{
+    var c=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    if(c.gasUrl&&c.accountId){
+      GAS_URL=c.gasUrl; ACCOUNT_ID=c.accountId;
+      MONZO_STATE=c.state||localStorage.getItem("monzo_state")||"";
+      return true;
+    }
+    // gasUrl without accountId - OAuth flow just completed
+    if(c.gasUrl){
+      GAS_URL=c.gasUrl;
+      MONZO_STATE=c.state||localStorage.getItem("monzo_state")||"";
+      return true;
+    }
+  }catch(e){}return false;
 }
 function saveConfig(u,i){localStorage.setItem(STORAGE_KEY,JSON.stringify({gasUrl:u,accountId:i}));}
 function resetConfig(){localStorage.removeItem(STORAGE_KEY);location.reload();}
@@ -973,10 +1007,37 @@ function connect(){
 }
 function showError(msg){var el=document.getElementById("error-msg");el.style.display=msg?"block":"none";el.textContent=msg;}
 function showDashboard(){
-  document.getElementById("config-screen").style.display="none";
-  document.getElementById("dashboard").style.display="block";
-  document.getElementById("account-pill").textContent=ACCOUNT_ID.slice(0,18)+"...";
-  loadAll();
+  var cfg=document.getElementById("config-screen");
+  if(cfg) cfg.style.display="none";
+  var dash=document.getElementById("dashboard");
+  if(dash) dash.style.display="flex";
+  setTimeout(fixLayout,0); setTimeout(fixLayout,150); setTimeout(fixLayout,400);
+  window.addEventListener("resize",fixLayout);
+
+  var pill=document.getElementById("account-pill");
+  if(pill) pill.textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"Connecting...";
+
+  buildMonthSelector();
+
+  if(!ACCOUNT_ID){
+    // Fetch account ID - happens after OAuth
+    gasCall({action:"accounts"}).then(function(res){
+      if(res.data&&res.data.accounts&&res.data.accounts[0]){
+        ACCOUNT_ID=res.data.accounts[0].id;
+        if(pill) pill.textContent=ACCOUNT_ID.slice(0,18)+"...";
+        var stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+        stored.accountId=ACCOUNT_ID;
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(stored));
+      }
+      loadAll();
+    }).catch(function(e){
+      showError("Could not fetch account: "+e.message);
+      if(cfg) cfg.style.display="flex";
+      if(dash) dash.style.display="none";
+    });
+  } else {
+    loadAll();
+  }
 }
 
 // ---- Manual accounts ----
@@ -1548,26 +1609,6 @@ loadConfig = function(){
 };
 
 // Upgraded showDashboard
-showDashboard = function(){
-  var cfg=document.getElementById("config-screen");
-  cfg.style.display="none";
-  document.getElementById("dashboard").style.display="flex";
-  setTimeout(fixLayout,0); setTimeout(fixLayout,100); setTimeout(fixLayout,300);
-  window.addEventListener("resize", fixLayout);
-  document.getElementById("account-pill").textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"No account";
-  buildMonthSelector();
-  if(!ACCOUNT_ID){
-    gasCall({action:"accounts"}).then(function(res){
-      if(res.data&&res.data.accounts&&res.data.accounts[0]){
-        ACCOUNT_ID=res.data.accounts[0].id;
-        document.getElementById("account-pill").textContent=ACCOUNT_ID.slice(0,18)+"...";
-        var cfg2=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
-        cfg2.accountId=ACCOUNT_ID; localStorage.setItem(STORAGE_KEY,JSON.stringify(cfg2));
-      }
-      loadAll();
-    }).catch(function(e){ loadAll(); });
-  } else { loadAll(); }
-};
 
 // bg fetch functions
 function getOldestTx(){
@@ -1743,7 +1784,17 @@ function getLastMonthKey(){
 
 // ---- Tab switching ----
 var MONTH_TABS=["dashboard","calendar","trends","simple"];
+function toggleAdvancedNav(forceOpen){
+  var items=document.getElementById('nav-advanced-items');
+  var arrow=document.getElementById('nav-advanced-arrow');
+  if(!items)return;
+  var open=forceOpen!==undefined?forceOpen:!items.classList.contains('open');
+  items.classList.toggle('open',open);
+  if(arrow) arrow.classList.toggle('open',open);
+}
+
 function switchTab(tab){
+  var advancedTabs=['calendar','trends','analytics','merchants','merchant-compare','patterns'];
   currentTab=tab;
   document.querySelectorAll(".nav-item").forEach(function(el){
     el.classList.toggle("active",el.getAttribute("data-tab")===tab);
@@ -1751,11 +1802,14 @@ function switchTab(tab){
   document.querySelectorAll(".tab-panel").forEach(function(el){
     el.classList.toggle("active",el.id==="tab-"+tab);
   });
+  // Auto-open Advanced section if an advanced tab is selected
+  if(advancedTabs.indexOf(tab)>=0) toggleAdvancedNav(true);
   fixLayout();
   var sel=document.getElementById("month-select");
   if(sel) sel.style.display=MONTH_TABS.indexOf(tab)>=0?"":"none";
   fixLayout();
   if(tab==="simple")renderSimple();
+  if(tab==="calendar")setTimeout(renderCalendar,50);
   if(tab==="trends")renderTrends();
   if(tab==="analytics")renderAnalytics();
   if(tab==="merchants")renderMerchants();
@@ -1770,7 +1824,7 @@ function switchTab(tab){
   if(tab==="roast"){
     if(confirm("Ready to see your financial roast? Click OK to generate based on your latest data."))
       renderRoast();
-    else switchTab("dashboard");
+    else switchTab("simple");
   }
 }
 
