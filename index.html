@@ -55,7 +55,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
 .app-body{display:flex;overflow:hidden;}
 .sidebar{width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
-.sidebar-section{font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
+.sidebar-section{font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
@@ -227,6 +227,7 @@ input[type="text"]:focus{border-color:var(--coral);}
 /* Theme */
 body.light{--navy:#F4F6FA;--navy-mid:#FFFFFF;--navy-card:#FFFFFF;--navy-border:rgba(0,0,0,0.09);--text-primary:#0D1B2A;--text-secondary:#4A6480;--text-muted:#8BA0B4;}
 body.light .topbar{box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+body.light .sidebar-section{color:var(--text-secondary);}
 
 /* Tx filters */
 .tx-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
@@ -533,7 +534,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.8</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v3.9</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1577,6 +1578,7 @@ viewMonth=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
 // ---- Tab switching ----
 var currentTab='dashboard';
 
+var MONTH_TABS=['dashboard','calendar','trends','simple'];
 function switchTab(tab){
   currentTab=tab;
   document.querySelectorAll('.nav-item').forEach(function(el){
@@ -1585,6 +1587,9 @@ function switchTab(tab){
   document.querySelectorAll('.tab-panel').forEach(function(el){
     el.classList.toggle('active',el.id==='tab-'+tab);
   });
+  // Show month selector only on tabs that use it
+  var sel=document.getElementById('month-select');
+  if(sel) sel.style.display=MONTH_TABS.indexOf(tab)>=0?'':'none';
   if(tab==='calendar')renderCalendar();
   if(tab==='trends')renderTrends();
   if(tab==='transactions')renderTxTab();
@@ -2989,7 +2994,7 @@ function renderMerchantGrid(){
     html += '<div class="merchant-card" data-name="'+encodedName+'">'
       +'<div class="merchant-card-name">'+m.name+'</div>'
       +'<div class="merchant-card-spend">'+fmt(m.total)+'</div>'
-      +'<div class="merchant-card-meta">'+m.count+'x over '+m.months+' months</div>'
+      +'<div class="merchant-card-meta">'+m.count+' transactions over '+m.months+' months</div>'
       +'<div class="merchant-card-meta" style="color:'+recencyCol+';">'+recency+'</div>'
       +'<div style="height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:6px;">'
       +'<div style="height:100%;width:'+Math.min(pct*5,100)+'%;background:var(--coral);opacity:0.5;border-radius:2px;"></div>'
@@ -3886,29 +3891,34 @@ function renderMerchantCompare(){
   html+='<div style="font-size:10px;color:var(--text-muted);text-align:right;">Trend</div></div>';
 
   wowMerchants.forEach(function(m){
-    // Week on week % change (latest vs previous non-zero)
-    var prevSpend=m.vals[3].spend||m.vals[2].spend||m.vals[1].spend||0;
-    var delta=prevSpend>0&&m.vals[4].spend>0?Math.round(((m.vals[4].spend-prevSpend)/prevSpend)*100):null;
-    var trendCol=delta===null?'var(--text-muted)':delta>0?'var(--coral-soft)':'var(--green)';
-
     html+='<div style="display:grid;grid-template-columns:'+colTemplate+';gap:4px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03);min-width:600px;">';
     html+='<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+m.name+'">'+m.name+'</div>';
+    var maxV=Math.max.apply(null,m.vals.map(function(x){return x.spend;}))||1;
     m.vals.forEach(function(v,vi){
-      var maxV=Math.max.apply(null,m.vals.map(function(x){return x.spend;}))||1;
-      var intensity=v.spend>0?(0.1+0.5*(v.spend/maxV)).toFixed(2):0;
-      var bg=v.spend>0?(weeks[vi].isCurrent?'rgba(255,90,95,'+intensity+')':'rgba(255,255,255,'+intensity+'*0.15)'):'';
       var isCur=weeks[vi].isCurrent;
-      html+='<div style="text-align:right;padding:2px 4px;border-radius:3px;'+(v.spend>0?'background:'+(isCur?'rgba(255,90,95,'+intensity+')':'rgba(255,255,255,0.05)'):'')+';">';
+      var prev=vi>0?m.vals[vi-1].spend:0;
+      var pct=prev>0&&v.spend>0?Math.round(((v.spend-prev)/prev)*100):null;
+      var pctCol=pct===null?'':pct>0?'color:var(--coral-soft)':'color:var(--green)';
+      var intensity=v.spend>0?(0.1+0.5*(v.spend/maxV)).toFixed(2):0;
+      var bg=v.spend>0?(isCur?'rgba(255,90,95,'+intensity+')':'rgba(255,255,255,0.05)'):'';
+      html+='<div style="text-align:right;padding:2px 4px;border-radius:3px;'+(bg?'background:'+bg:'')+';">';
       if(v.spend){
         html+='<div style="font-size:12px;font-family:var(--mono);color:'+(isCur?'var(--text-primary)':'var(--text-muted)')+';">'+fmt(v.spend)+'</div>';
-        html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+'x</div>';
+        html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+' tx'
+          +(pct!==null?' <span style="'+pctCol+'">'+(pct>0?'+':'')+pct+'%</span>':'')+'</div>';
       } else {
         html+='<div style="font-size:12px;color:rgba(255,255,255,0.15);">-</div>';
       }
       html+='</div>';
     });
+    // Overall trend: first vs last non-zero
+    var nonZero=m.vals.filter(function(v){return v.spend>0;});
+    var first=nonZero[0]?nonZero[0].spend:0;
+    var last=nonZero[nonZero.length-1]?nonZero[nonZero.length-1].spend:0;
+    var overallDelta=first>0&&nonZero.length>1?Math.round(((last-first)/first)*100):null;
+    var trendCol=overallDelta===null?'var(--text-muted)':overallDelta>0?'var(--coral-soft)':'var(--green)';
     html+='<div style="text-align:right;font-size:12px;font-weight:600;color:'+trendCol+';padding-top:4px;">'
-      +(delta===null?(m.vals[4].spend>0?'New':'—'):(delta>0?'▲ +':'▼ ')+Math.abs(delta)+'%')+'</div>';
+      +(overallDelta===null?(m.vals[4].spend>0?'New':'—'):(overallDelta>0?'▲ +':'▼ ')+Math.abs(overallDelta)+'%')+'</div>';
     html+='</div>';
   });
   html+='</div>';
