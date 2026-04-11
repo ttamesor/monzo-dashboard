@@ -549,9 +549,12 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v5.9</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
+    <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
+      ✅ Already connected - <strong>click here to go to your dashboard</strong>
+    </div>
     <div id="error-msg" class="error-msg"></div>
     <label>GAS relay URL</label>
     <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
@@ -588,7 +591,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.8</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.9</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1450,6 +1453,786 @@ body.compact .topbar{padding:0.6rem 2rem;}
 </body>
 </html>
 <script>
+var STORAGE_KEY="monzo_dash_v3",MANUAL_KEY="monzo_manual_v1",THEME_KEY="monzo_theme";
+var GAS_URL="",ACCOUNT_ID="";
+var allTransactions=[],cachedPots=[],cachedSavings=[],cachedBal=null;
+var viewMonth="this",dailyChartInstance=null,compareChartInstance=null,merchantChartInstance=null;
+var txDisplayCount=30,filteredTxns=[];
+var bgLoadActive=false,bgLoadTimer=null;
+
+var CAT_EMOJI={eating_out:"\\ud83c\\udf7d",groceries:"\\ud83d\\uded2",transport:"\\ud83d\\ude8c",shopping:"\\ud83d\\udecd",entertainment:"\\ud83c\\udfac",bills:"\\ud83d\\udcc4",general:"\\ud83d\\udcb3",personal_care:"\\ud83d\\udc86",holidays:"\\u2708\\ufe0f",family:"\\ud83d\\udc6a",cash:"\\ud83d\\udcb5",charity:"\\u2764\\ufe0f",education:"\\ud83d\\udcda",expenses:"\\ud83d\\udcce",finances:"\\ud83c\\udfe6",mondo:"\\ud83d\\udcb3",transfers:"\\ud83d\\udd04",savings:"\\ud83c\\udfe6"};
+
+// ---- Theme ----
+function initTheme(){
+  var t=localStorage.getItem(THEME_KEY)||"dark";
+  applyTheme(t);
+}
+function applyTheme(t){
+  document.body.classList.toggle("light",t==="light");
+  var btn=document.getElementById("theme-btn");
+  if(btn)btn.textContent=t==="light"?"Dark":"Light";
+  localStorage.setItem(THEME_KEY,t);
+}
+function toggleTheme(){
+  applyTheme(document.body.classList.contains("light")?"dark":"light");
+}
+
+// ---- Config ----
+function loadConfig(){
+  try{var c=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");if(c.gasUrl&&c.accountId){GAS_URL=c.gasUrl;ACCOUNT_ID=c.accountId;return true;}}catch(e){}return false;
+}
+function saveConfig(u,i){localStorage.setItem(STORAGE_KEY,JSON.stringify({gasUrl:u,accountId:i}));}
+function resetConfig(){localStorage.removeItem(STORAGE_KEY);location.reload();}
+
+function connect(){
+  var url=document.getElementById("gas-url").value.trim();
+  var id=document.getElementById("account-id").value.trim();
+  if(!url||!id){showError("Please fill in both fields.");return;}
+  GAS_URL=url;ACCOUNT_ID=id;showError("");
+  var btn=document.querySelector(".btn-primary");
+  btn.textContent="Connecting...";btn.disabled=true;
+  gasCall({action:"ping"}).then(function(res){
+    if(res.status!=="ok")throw new Error("Ping failed");
+    saveConfig(url,id);showDashboard();
+  }).catch(function(e){showError("Could not connect: "+e.message);btn.textContent="Connect";btn.disabled=false;});
+}
+function showError(msg){var el=document.getElementById("error-msg");el.style.display=msg?"block":"none";el.textContent=msg;}
+function showDashboard(){
+  document.getElementById("config-screen").style.display="none";
+  document.getElementById("dashboard").style.display="block";
+  document.getElementById("account-pill").textContent=ACCOUNT_ID.slice(0,18)+"...";
+  loadAll();
+}
+
+// ---- Manual accounts ----
+function loadManualAccounts(){try{return JSON.parse(localStorage.getItem(MANUAL_KEY)||"[]");}catch(e){return[];}}
+function getManualTotalPence(){return Math.round(loadManualAccounts().reduce(function(s,a){return s+a.value;},0)*100);}
+function openAccountsModal(){
+  var accounts=loadManualAccounts();
+  document.getElementById("manual-accounts-rows").innerHTML="";
+  if(accounts.length===0){addManualRow("Investments","57948.32");}
+  else{accounts.forEach(function(a){addManualRow(a.name,a.value.toFixed(2));});}
+  document.getElementById("accounts-modal").classList.add("open");
+}
+function closeAccountsModal(){document.getElementById("accounts-modal").classList.remove("open");}
+function addManualRow(name,value){
+  var container=document.getElementById("manual-accounts-rows");
+  var div=document.createElement("div");div.className="manual-row";
+  var n=document.createElement("input");n.type="text";n.className="ma-name";n.placeholder="Account name";n.value=name||"";
+  var v=document.createElement("input");v.type="text";v.className="ma-value";v.placeholder="0.00";v.value=value||"";
+  var b=document.createElement("button");b.className="icon-btn";b.innerHTML="&times;";b.onclick=function(){this.closest(".manual-row").remove();};
+  div.appendChild(n);div.appendChild(v);div.appendChild(b);
+  container.appendChild(div);
+}
+function saveManualAccounts(){
+  var rows=document.querySelectorAll(".manual-row");
+  var accounts=[];
+  rows.forEach(function(row){
+    var name=row.querySelector(".ma-name").value.trim();
+    var val=parseFloat((row.querySelector(".ma-value").value||"").replace(/[^0-9.]/g,""));
+    if(name&&!isNaN(val)&&val>0)accounts.push({name:name,value:val});
+  });
+  localStorage.setItem(MANUAL_KEY,JSON.stringify(accounts));
+  closeAccountsModal();renderAll();
+}
+
+// ---- API ----
+function gasCall(params){
+  var qs=Object.keys(params).map(function(k){return k+"="+encodeURIComponent(params[k]);}).join("&");
+  return fetch(GAS_URL+"?"+qs).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
+}
+
+// ---- Progress pill ----
+function setProgress(text){
+  var pill=document.getElementById("progress-pill");
+  var txt=document.getElementById("progress-text");
+  if(!text){pill.classList.remove("active");}
+  else{pill.classList.add("active");txt.textContent=text;}
+}
+
+// ---- Background loader ----
+function stopBgLoad(){
+  bgLoadActive=false;
+  if(bgLoadTimer){clearTimeout(bgLoadTimer);bgLoadTimer=null;}
+  setProgress(null);
+}
+
+function startBgLoad(){
+  if(bgLoadActive)return;
+  bgLoadActive=true;
+  scheduleBgPage();
+}
+
+function scheduleBgPage(){
+  if(!bgLoadActive)return;
+  bgLoadTimer=setTimeout(function(){loadNextPage();},2000);
+}
+
+function loadNextPage(){
+  if(!bgLoadActive||allTransactions.length>=2000)return stopBgLoad();
+  // Find oldest transaction we have
+  var oldest=null;
+  for(var i=0;i<allTransactions.length;i++){
+    var d=new Date(allTransactions[i].created);
+    if(!oldest||d<oldest){oldest=d;oldestTx=allTransactions[i];}
+  }
+  if(!oldest)return stopBgLoad();
+
+  setProgress("Loading... "+allTransactions.length+" transactions");
+
+  gasCall({action:"transactions",account_id:ACCOUNT_ID,before:oldestTx.created})
+    .then(function(res){
+      if(res.status!=="ok"||!res.data||!res.data.transactions)return stopBgLoad();
+      var batch=res.data.transactions.filter(function(t){return t.amount!==0;});
+      if(batch.length===0)return stopBgLoad();
+
+      // Dedupe and merge
+      var ids={};
+      allTransactions.forEach(function(t){ids[t.id]=true;});
+      var newOnes=batch.filter(function(t){return!ids[t.id];});
+      if(newOnes.length===0)return stopBgLoad();
+
+      allTransactions=newOnes.concat(allTransactions);
+      populateCatFilter();
+      renderAll();
+
+      if(batch.length<100||allTransactions.length>=2000){
+        stopBgLoad();
+        setProgress(null);
+      } else {
+        scheduleBgPage();
+      }
+    })
+    .catch(function(){stopBgLoad();});
+}
+
+// ---- Initial load ----
+function loadAll(){
+  stopBgLoad();
+  allTransactions=[];
+  txDisplayCount=30;
+  document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1'><div class='spinner'></div></div>";
+
+  var now=new Date();
+  var startOfMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+  var startOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString();
+
+  Promise.all([
+    gasCall({action:"balance",account_id:ACCOUNT_ID}),
+    gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
+    // This month
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfMonth}),
+    // Last month
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfMonth})
+  ]).then(function(results){
+    cachedBal=results[0].data;
+
+    var allPots=Array.isArray(results[1].data&&results[1].data.pots)?results[1].data.pots:[];
+    var active=allPots.filter(function(p){return!p.deleted;});
+    var STYPES=["instant_access","flexible_savings","fixed_savings"];
+    cachedSavings=active.filter(function(p){return STYPES.indexOf(p.type)>=0||p.locked||(p.style||"").indexOf("investments_")===0;});
+    cachedPots=active.filter(function(p){return STYPES.indexOf(p.type)<0&&!p.locked&&(p.style||"").indexOf("investments_")!==0;});
+
+    var thisTx=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
+    var lastTx=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
+
+    // Combine, dedupe
+    var seen={};
+    allTransactions=[];
+    thisTx.concat(lastTx).forEach(function(t){
+      if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}
+    });
+
+    console.log("Loaded: this month="+thisTx.length+" last month="+lastTx.length);
+
+    populateCatFilter();
+    renderAll();
+    renderPotsPanel(cachedPots,cachedSavings);
+
+    // Start background loading for older history
+    startBgLoad();
+
+  }).catch(function(e){
+    document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1;color:var(--coral-soft);'>Error: "+e.message+"</div>";
+    console.error(e);
+  });
+}
+
+// ---- Month ----
+function switchMonth(which){
+  viewMonth=which;
+  txDisplayCount=30;
+  document.getElementById("tab-this").classList.toggle("active",which==="this");
+  document.getElementById("tab-last").classList.toggle("active",which==="last");
+  var now=new Date();
+  document.getElementById("month-badge").textContent=which==="this"?now.toLocaleString("default",{month:"long"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"long"});
+  renderAll();
+}
+
+function getMonthTxns(txns,which){
+  var now=new Date(),y,m;
+  if(which==="this"){y=now.getFullYear();m=now.getMonth();}
+  else{var d=new Date(now.getFullYear(),now.getMonth()-1,1);y=d.getFullYear();m=d.getMonth();}
+  return txns.filter(function(t){var dd=new Date(t.created);return dd.getFullYear()===y&&dd.getMonth()===m;});
+}
+
+function renderAll(){
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var thisTx=getMonthTxns(spendTx,"this"),lastTx=getMonthTxns(spendTx,"last");
+  var viewSpend=viewMonth==="this"?thisTx:lastTx;
+  var viewAll=getMonthTxns(allTransactions,viewMonth);
+
+  renderStatCards(cachedBal,cachedPots,cachedSavings,viewSpend,thisTx,lastTx);
+  renderInsightStrip(viewSpend,viewMonth==="this"?lastTx:thisTx);
+  renderCatCompare(thisTx,lastTx);
+  applyFilters();
+  renderDailyChart(viewSpend,thisTx,lastTx);
+}
+
+// ---- Filters ----
+function populateCatFilter(){
+  var sel=document.getElementById("tx-cat");
+  if(!sel)return;
+  var cats={};
+  allTransactions.forEach(function(t){if(t.category)cats[t.category]=true;});
+  var current=sel.value;
+  sel.innerHTML="<option value=''>All categories</option>";
+  Object.keys(cats).sort().forEach(function(c){
+    var o=document.createElement("option");
+    o.value=c;o.textContent=c.replace(/_/g," ");
+    if(c===current)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function applyFilters(){
+  var search=(document.getElementById("tx-search")||{}).value||"";
+  var cat=(document.getElementById("tx-cat")||{}).value||"";
+  var minV=parseFloat((document.getElementById("tx-min")||{}).value||"");
+  var maxV=parseFloat((document.getElementById("tx-max")||{}).value||"");
+  var viewAll=getMonthTxns(allTransactions,viewMonth);
+
+  filteredTxns=viewAll.filter(function(t){
+    if(search&&merchant(t).toLowerCase().indexOf(search.toLowerCase())<0)return false;
+    if(cat&&t.category!==cat)return false;
+    var amt=Math.abs(t.amount)/100;
+    if(!isNaN(minV)&&amt<minV)return false;
+    if(!isNaN(maxV)&&amt>maxV)return false;
+    return true;
+  }).sort(function(a,b){return new Date(b.created)-new Date(a.created);});
+
+  renderTransactions(filteredTxns,txDisplayCount);
+}
+
+function clearFilters(){
+  var ids=["tx-search","tx-min","tx-max"];
+  ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  var sel=document.getElementById("tx-cat");if(sel)sel.value="";
+  applyFilters();
+}
+
+function showMoreTx(){
+  txDisplayCount+=30;
+  renderTransactions(filteredTxns,txDisplayCount);
+}
+
+// ---- Formatting ----
+function fmt(p){return"\\u00a3"+(Math.abs(p)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtShort(p){var v=Math.abs(p)/100;return v>=1000?"\\u00a3"+(v/1000).toFixed(1)+"k":"\\u00a3"+v.toFixed(0);}
+function fmtRaw(v){return"\\u00a3"+v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function delta(a,b,low){
+  if(!b)return"";
+  var pct=((a-b)/b)*100,up=pct>0,good=low?!up:up;
+  var cls=Math.abs(pct)<1?"neutral":(good?(up?"up-good":"down-good"):(up?"up-bad":"neutral"));
+  return"<div><span class='delta "+cls+"'>"+(up?"\\u25b2":"\\u25bc")+" "+Math.abs(pct).toFixed(1)+"% vs last month</span></div>";
+}
+function merchant(t){
+  if(t.merchant&&t.merchant.name)return t.merchant.name;
+  var d=t.description||"";
+  if(d.indexOf("pot_")===0)return"Pot transfer";
+  return d.replace(/^(MONZO |SUM UP |iZettle \\*)/i,"").trim()||"Unknown";
+}
+function potLabel(p){
+  if((p.style||"").indexOf("investments_")===0)return"Investments";
+  if(p.type==="instant_access")return"Instant access";
+  if(p.type==="flexible_savings")return"Flexible savings";
+  if(p.type==="fixed_savings")return"Fixed savings";
+  if(p.locked)return"Locked";return p.type||"";
+}
+
+// ---- Stat cards ----
+function renderStatCards(bal,pots,savings,viewTx,thisTx,lastTx){
+  if(!bal)return;
+  var potTot=pots.reduce(function(s,p){return s+(p.balance||0);},0);
+  var savTot=savings.reduce(function(s,p){return s+(p.balance||0);},0);
+  var manTot=getManualTotalPence();
+  var thisSpend=thisTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var lastSpend=lastTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var viewSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var now=new Date(),dE=viewMonth==="this"?now.getDate():new Date(now.getFullYear(),now.getMonth(),0).getDate();
+  var avg=dE>0?viewSpend/dE:0;
+  var dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  var proj=viewMonth==="this"&&dE>0?(viewSpend/dE)*dim:null;
+  var net=bal.balance+potTot+savTot+manTot;
+  document.getElementById("stat-cards").innerHTML=
+    "<div class='card stat-card'><div class='stat-accent' style='background:var(--coral)'></div><div class='stat-label'>Balance</div><div class='stat-value'>"+fmt(bal.balance)+"</div><div class='stat-sub'>Net worth: "+fmt(net)+"</div></div>"
+    +"<div class='card stat-card'><div class='stat-accent' style='background:var(--green)'></div><div class='stat-label'>Pots</div><div class='stat-value'>"+fmt(potTot)+"</div><div class='stat-sub'>"+pots.length+" pot"+(pots.length!==1?"s":"")+"</div></div>"
+    +"<div class='card stat-card'><div class='stat-accent' style='background:var(--purple)'></div><div class='stat-label'>Investments</div><div class='stat-value'>"+fmt(savTot+manTot)+"</div><div class='stat-sub'>"+(manTot>0?"incl. "+fmt(manTot)+" manual":"savings pots only")+"</div></div>"
+    +"<div class='card stat-card'><div class='stat-accent' style='background:var(--amber)'></div><div class='stat-label'>Month spend</div><div class='stat-value'>"+fmt(viewSpend)+"</div>"+delta(thisSpend,lastSpend,true)+"<div class='stat-sub'>"+viewTx.length+" transactions</div></div>"
+    +"<div class='card stat-card'><div class='stat-accent' style='background:var(--coral)'></div><div class='stat-label'>Daily average</div><div class='stat-value'>"+fmt(avg)+"</div><div class='stat-sub'>"+(proj?"On pace for "+fmt(proj):"Full month avg")+"</div></div>";
+}
+
+// ---- Insight strip ----
+function renderInsightStrip(viewTx,cmpTx){
+  if(!viewTx.length){document.getElementById("insight-strip").innerHTML="<div class='insight-tile' style='grid-column:1/-1'><div class='insight-tile-label'>No spend data</div><div class='insight-tile-value' style='color:var(--text-muted)'>for this period</div></div>";return;}
+  var mc={};viewTx.forEach(function(t){var m=merchant(t);mc[m]=(mc[m]||0)+1;});
+  var top=Object.keys(mc).map(function(k){return[k,mc[k]];}).sort(function(a,b){return b[1]-a[1];})[0];
+  var big=viewTx.slice().sort(function(a,b){return Math.abs(b.amount)-Math.abs(a.amount);})[0];
+  var daily={};viewTx.forEach(function(t){var d=new Date(t.created).toDateString();daily[d]=(daily[d]||0)+Math.abs(t.amount);});
+  var busiest=Object.keys(daily).map(function(k){return[k,daily[k]];}).sort(function(a,b){return b[1]-a[1];})[0];
+  var bLabel=busiest?new Date(busiest[0]).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"-";
+  var tc={},cc={};
+  viewTx.forEach(function(t){var c=t.category||"general";tc[c]=(tc[c]||0)+Math.abs(t.amount);});
+  cmpTx.forEach(function(t){var c=t.category||"general";cc[c]=(cc[c]||0)+Math.abs(t.amount);});
+  var allc=Object.keys(Object.assign({},tc,cc));
+  var swing=allc.map(function(c){return{c:c,d:(tc[c]||0)-(cc[c]||0)};}).sort(function(a,b){return b.d-a.d;})[0];
+  document.getElementById("insight-strip").innerHTML=
+    "<div class='insight-tile'><div class='insight-tile-label'>Top merchant</div><div class='insight-tile-value'><span class='hi'>"+top[0]+"</span><br><small style='color:var(--text-muted);font-size:12px;'>"+top[1]+" visit"+(top[1]!==1?"s":"")+"</small></div></div>"
+    +"<div class='insight-tile'><div class='insight-tile-label'>Biggest spend</div><div class='insight-tile-value'><span class='hi'>"+fmt(big.amount)+"</span><br><small style='color:var(--text-muted);font-size:12px;'>"+merchant(big)+"</small></div></div>"
+    +"<div class='insight-tile'><div class='insight-tile-label'>Most expensive day</div><div class='insight-tile-value'><span class='warn'>"+bLabel+"</span><br><small style='color:var(--text-muted);font-size:12px;'>"+(busiest?fmt(busiest[1]):"")+"</small></div></div>"
+    +"<div class='insight-tile'><div class='insight-tile-label'>Biggest category increase</div><div class='insight-tile-value'>"+(swing&&swing.d>0?"<span class='hi'>+"+fmtShort(swing.d)+"</span><br><small style='color:var(--text-muted);font-size:12px;'>"+swing.c.replace(/_/g," ")+"</small>":"<span class='good'>No increases</span>")+"</div></div>";
+}
+
+// ---- Category compare ----
+function renderCatCompare(thisTx,lastTx){
+  var tc={},lc={};
+  thisTx.forEach(function(t){var c=t.category||"general";tc[c]=(tc[c]||0)+Math.abs(t.amount);});
+  lastTx.forEach(function(t){var c=t.category||"general";lc[c]=(lc[c]||0)+Math.abs(t.amount);});
+  var cur=viewMonth==="this"?tc:lc,cmp=viewMonth==="this"?lc:tc;
+  var all=Object.keys(Object.assign({},cur,cmp)).map(function(c){return{cat:c,cur:cur[c]||0,cmp:cmp[c]||0};}).sort(function(a,b){return b.cur-a.cur;}).slice(0,7);
+  var mx=Math.max.apply(null,all.map(function(x){return Math.max(x.cur,x.cmp);}));mx=mx||1;
+  document.getElementById("cat-compare").innerHTML=all.length?all.map(function(x){
+    var cp=Math.round((x.cur/mx)*100),pp=Math.round((x.cmp/mx)*100),col=x.cur>x.cmp?"var(--coral)":"var(--green)";
+    return "<div class='compare-item'><div class='compare-header'><span class='compare-name'>"+(CAT_EMOJI[x.cat]||"\\ud83d\\udcb3")+" "+x.cat.replace(/_/g," ")+"</span><span class='compare-amounts'><span class='compare-this'>"+fmtShort(x.cur)+"</span>"+(x.cmp>0?"<span class='compare-last'>/ "+fmtShort(x.cmp)+"</span>":"")+"</span></div><div class='bar-track'><div class='bar-last' style='width:"+pp+"%'></div><div class='bar-this' style='width:"+cp+"%;background:"+col+"'></div></div></div>";
+  }).join(""):"<div style='color:var(--text-muted);font-size:14px;'>No data</div>";
+}
+
+// ---- Transactions ----
+function renderTransactions(txns,limit){
+  limit=limit||30;
+  var shown=txns.slice(0,limit);
+  var badge=document.getElementById("tx-count-badge");
+  if(badge)badge.textContent=shown.length+(txns.length>shown.length?" of "+txns.length:"")+" shown";
+  var lmBtn=document.getElementById("load-more-btn");
+  if(lmBtn)lmBtn.style.display=txns.length>shown.length?"block":"none";
+
+  document.getElementById("tx-list").innerHTML=shown.length?shown.map(function(t){
+    var m=merchant(t),em=CAT_EMOJI[t.category]||"\\ud83d\\udcb3",cr=t.amount>0;
+    var dt=new Date(t.created).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+    return "<div class='tx-item'><div class='tx-icon'>"+em+"</div><div class='tx-details'><div class='tx-merchant'>"+m+"</div><div class='tx-date'>"+dt+"</div></div><div class='tx-amount "+(cr?"credit":"debit")+"'>"+(cr?"+":"-")+fmt(t.amount)+"</div></div>";
+  }).join(""):"<div style='color:var(--text-muted);font-size:14px;padding:8px 0;'>No transactions"+(document.getElementById("tx-search")&&document.getElementById("tx-search").value?" matching filters":"")+" this period</div>";
+}
+
+// ---- Pots panel ----
+function renderPotsPanel(pots,savings){
+  document.getElementById("pots-list").innerHTML=pots.length?pots.map(function(p){
+    return "<div class='pot-item'><div class='pot-left'><div class='pot-dot' style='background:var(--green)'></div><div class='pot-name'>"+p.name+"</div></div><span style='font-size:14px;font-family:var(--mono);font-weight:500;color:var(--green)'>"+fmt(p.balance||0)+"</span></div>";
+  }).join(""):"<div style='color:var(--text-muted);font-size:14px;padding:8px 0;'>No pots</div>";
+
+  var manual=loadManualAccounts();
+  var sh=savings.map(function(p){
+    var inv=(p.style||"").indexOf("investments_")===0,col=inv?"var(--amber)":"var(--purple)";
+    return "<div class='pot-item'><div class='pot-left'><div class='pot-dot' style='background:"+col+"'></div><div><div class='pot-name'>"+p.name+"</div><div class='pot-type'>"+potLabel(p)+"</div></div></div><span style='font-size:14px;font-family:var(--mono);font-weight:500;color:"+col+"'>"+fmt(p.balance||0)+"</span></div>";
+  }).join("");
+  var mh=manual.map(function(a){
+    return "<div class='pot-item'><div class='pot-left'><div class='pot-dot' style='background:var(--amber)'></div><div><div class='pot-name'>"+a.name+"</div><div class='pot-type'>Manual entry</div></div></div><span style='font-size:14px;font-family:var(--mono);font-weight:500;color:var(--amber)'>"+fmtRaw(a.value)+"</span></div>";
+  }).join("");
+  document.getElementById("investments-panel").innerHTML=(sh+mh)||"<div style='color:var(--text-muted);font-size:13px;line-height:1.6;'>Click Accounts in the toolbar to add investment values manually.</div>";
+}
+
+// ---- Charts ----
+function renderDailyChart(txns,thisTxns,lastTxns){
+  var now=new Date(),year,month,dim;
+  if(viewMonth==="this"){year=now.getFullYear();month=now.getMonth();dim=now.getDate();}
+  else{var lm=new Date(now.getFullYear(),now.getMonth()-1,1);year=lm.getFullYear();month=lm.getMonth();dim=new Date(year,month+1,0).getDate();}
+  var labels=[],data=[];
+  for(var i=1;i<=dim;i++){labels.push(i);data.push(0);}
+  txns.forEach(function(t){
+    var d=new Date(t.created);
+    if(d.getFullYear()===year&&d.getMonth()===month){var day=d.getDate();if(day>=1&&day<=dim)data[day-1]+=Math.abs(t.amount)/100;}
+  });
+  if(dailyChartInstance)dailyChartInstance.destroy();
+  var ti=viewMonth==="this"?now.getDate()-1:-1;
+  var ctx=document.getElementById("daily-chart").getContext("2d");
+  dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"\\u00a3"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"\\u00a3"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+
+  // Best/worst strip
+  var bwEl=document.getElementById("best-worst-strip");
+  if(bwEl){
+    var nonZero=data.map(function(v,i){return{v:v,i:i};}).filter(function(x){return x.v>0;});
+    if(nonZero.length>=2){
+      var best=nonZero.slice().sort(function(a,b){return a.v-b.v;})[0];
+      var worst=nonZero.slice().sort(function(a,b){return b.v-a.v;})[0];
+      var mName=viewMonth==="this"?now.toLocaleString("default",{month:"short"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"short"});
+      bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>\\u00a3"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
+        +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>\\u00a3"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
+    } else {bwEl.innerHTML="";}
+  }
+
+  renderCompareChart(thisTxns,lastTxns);
+  renderMerchantChart(txns);
+}
+
+function renderCompareChart(thisTxns,lastTxns){
+  var now=new Date();
+  var ty=now.getFullYear(),tm=now.getMonth();
+  var ld=new Date(ty,tm-1,1),ly=ld.getFullYear(),lm=ld.getMonth();
+  var daysInLast=new Date(ly,lm+1,0).getDate();
+  var daysInThis=new Date(ty,tm+1,0).getDate();
+  var numDays=Math.max(daysInLast,daysInThis);
+  var thisData=new Array(numDays).fill(0),lastData=new Array(numDays).fill(0);
+  thisTxns.forEach(function(t){var d=new Date(t.created);if(d.getFullYear()===ty&&d.getMonth()===tm){var day=d.getDate();if(day>=1&&day<=numDays)thisData[day-1]+=Math.abs(t.amount)/100;}});
+  lastTxns.forEach(function(t){var d=new Date(t.created);if(d.getFullYear()===ly&&d.getMonth()===lm){var day=d.getDate();if(day>=1&&day<=numDays)lastData[day-1]+=Math.abs(t.amount)/100;}});
+  var thisCum=[],lastCum=[],rT=0,rL=0;
+  for(var i=0;i<numDays;i++){rT+=thisData[i];thisCum.push(parseFloat(rT.toFixed(2)));rL+=lastData[i];lastCum.push(parseFloat(rL.toFixed(2)));}
+  var labels=Array.from({length:numDays},function(_,i){return i+1;});
+  if(compareChartInstance)compareChartInstance.destroy();
+  var ctx=document.getElementById("compare-chart").getContext("2d");
+  compareChartInstance=new Chart(ctx,{type:"line",data:{labels:labels,datasets:[{label:"This month",data:thisCum,borderColor:"#FF5A5F",backgroundColor:"rgba(255,90,95,0.08)",borderWidth:2,pointRadius:0,tension:0.3,fill:true},{label:"Last month",data:lastCum,borderColor:"rgba(255,255,255,0.2)",backgroundColor:"transparent",borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+": \\u00a3"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:10},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"\\u00a3"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
+}
+
+function renderMerchantChart(txns){
+  var mc={};
+  txns.filter(function(t){return t.amount<0&&t.include_in_spending!==false;}).forEach(function(t){
+    var m=merchant(t);if(m!=="Pot transfer")mc[m]=(mc[m]||0)+Math.abs(t.amount)/100;
+  });
+  var sorted=Object.keys(mc).map(function(k){return{name:k,total:mc[k]};}).sort(function(a,b){return b.total-a.total;}).slice(0,6);
+  if(merchantChartInstance)merchantChartInstance.destroy();
+  var ctx=document.getElementById("merchant-chart").getContext("2d");
+  merchantChartInstance=new Chart(ctx,{type:"bar",data:{labels:sorted.map(function(x){return x.name.length>14?x.name.slice(0,13)+"...":x.name;}),datasets:[{data:sorted.map(function(x){return parseFloat(x.total.toFixed(2));}),backgroundColor:"rgba(155,127,255,0.5)",borderColor:"rgba(155,127,255,0.8)",borderWidth:1,borderRadius:4,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"\\u00a3"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"\\u00a3"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}},y:{ticks:{color:"#8BA0B4",font:{size:10}},grid:{display:false},border:{display:false}}}}});
+}
+
+initTheme();
+
+// ---- Version / extras added in v5 ----
+var STORAGE_KEY_FULL = STORAGE_KEY;
+var OVERRIDES_KEY = "monzo_cat_overrides_v1";
+var COMPACT_KEY = "monzo_compact_v1";
+var OBFUSCATE = false;
+var _obfSeed = Math.floor(Math.random()*9000)+1000;
+var catOverrides = {};
+try { catOverrides = JSON.parse(localStorage.getItem(OVERRIDES_KEY)||"{}"); } catch(e){}
+var MONZO_STATE = "";
+var monthBudgets = {};
+try { monthBudgets = JSON.parse(localStorage.getItem("monzo_budgets_v1")||"{}"); } catch(e){}
+var activeQuickFilter = null;
+var bgFetching = false, bgCursor = null, bgLimit = null;
+var bgFetchErrors = 0, bgFetchStepCount = 0;
+var historyExhausted = false;
+var currentTab = "dashboard";
+var viewMonth = "this";
+var syncTimeoutHandle = null;
+
+function getCategory(t){ return catOverrides[t.id] || t.category || "general"; }
+function saveCatOverrides(){ localStorage.setItem(OVERRIDES_KEY, JSON.stringify(catOverrides)); }
+
+function initCompact(){
+  if(localStorage.getItem(COMPACT_KEY)==="1") document.body.classList.add("compact");
+}
+function toggleCompact(){
+  var on = document.body.classList.toggle("compact");
+  localStorage.setItem(COMPACT_KEY, on?"1":"0");
+}
+
+function toggleObfuscate(){
+  OBFUSCATE = !OBFUSCATE;
+  _obfSeed = Math.floor(Math.random()*9000)+1000;
+  var btn = document.getElementById("obfuscate-btn");
+  if(btn) btn.textContent = OBFUSCATE ? "🙈" : "👁";
+  if(typeof renderAll === "function") renderAll();
+}
+
+function _obfNum(p){
+  var real = Math.abs(p)/100;
+  var mag = real<10?10:real<100?100:real<1000?1000:real<10000?10000:100000;
+  return (((Math.abs(p)+_obfSeed)*7919)%mag)+mag*0.1;
+}
+
+// Override fmt to support obfuscation
+var _fmtOrig = fmt;
+fmt = function(p){
+  if(OBFUSCATE){ var f=_obfNum(p); return "£"+f.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  return _fmtOrig(p);
+};
+var _fmtShortOrig = fmtShort;
+fmtShort = function(p){
+  if(OBFUSCATE){ var f=_obfNum(p); return f>=1000?"£"+(f/1000).toFixed(1)+"k":"£"+f.toFixed(0); }
+  return _fmtShortOrig(p);
+};
+
+function fixLayout(){
+  var topbar = document.querySelector(".topbar");
+  var banner = document.getElementById("reauth-banner");
+  var appBody = document.querySelector(".app-body");
+  var tabContent = document.getElementById("tab-content");
+  var sidebar = document.querySelector(".sidebar");
+  if(!appBody||!tabContent)return;
+  var topH = topbar ? topbar.getBoundingClientRect().height : 0;
+  var banH = (banner&&banner.classList.contains("show")) ? banner.getBoundingClientRect().height : 0;
+  var remaining = window.innerHeight - topH - banH;
+  if(remaining < 100) return;
+  appBody.style.height = remaining+"px";
+  appBody.style.display = "flex";
+  appBody.style.overflow = "";
+  if(sidebar){ sidebar.style.height=remaining+"px"; sidebar.style.overflowY="auto"; }
+  tabContent.style.overflowY = "auto";
+  tabContent.style.overflowX = "hidden";
+  tabContent.style.flex = "1";
+  tabContent.style.minHeight = "0";
+  tabContent.style.height = "";
+  tabContent.style.maxHeight = "";
+}
+
+function showSyncOverlay(){
+  var el=document.getElementById("sync-overlay");
+  if(!el)return;
+  el.classList.remove("hidden","gone");
+  var bar=document.getElementById("sync-progress-bar");
+  if(bar) bar.style.width="10%";
+  var old=document.getElementById("sync-continue-btn"); if(old)old.remove();
+  var oldSkip=document.getElementById("sync-skip-btn"); if(oldSkip)oldSkip.remove();
+}
+function updateSyncStatus(msg, pct){
+  var sub=document.getElementById("sync-status");
+  var bar=document.getElementById("sync-progress-bar");
+  if(sub) sub.textContent=msg;
+  if(bar&&pct!==undefined) bar.style.width=Math.min(pct,100)+"%";
+}
+function hideSyncOverlay(){
+  var el=document.getElementById("sync-overlay");
+  if(!el)return;
+  el.classList.add("hidden");
+  setTimeout(function(){ el.classList.add("gone"); }, 600);
+}
+function showSyncComplete(){
+  clearSyncTimeout();
+  updateSyncStatus("All done - 6 months loaded", 100);
+  var existBtn=document.getElementById("sync-continue-btn");
+  if(existBtn)return;
+  var btn=document.createElement("button");
+  btn.id="sync-continue-btn";
+  btn.textContent="Continue to dashboard";
+  btn.style.cssText="margin-top:0.8rem;background:var(--coral);border:none;border-radius:8px;padding:11px 28px;font-family:var(--font);font-size:15px;font-weight:500;color:white;cursor:pointer;";
+  btn.onclick=function(){ hideSyncOverlay(); };
+  var overlay=document.getElementById("sync-overlay");
+  if(overlay) overlay.appendChild(btn);
+}
+function startSyncTimeout(){
+  if(syncTimeoutHandle) clearTimeout(syncTimeoutHandle);
+  syncTimeoutHandle=setTimeout(function(){ stopBgFetch(); showSyncComplete(); }, 180000);
+}
+function clearSyncTimeout(){
+  if(syncTimeoutHandle){ clearTimeout(syncTimeoutHandle); syncTimeoutHandle=null; }
+}
+function showReauthBanner(){
+  var b=document.getElementById("reauth-banner");
+  if(b){ b.classList.add("show"); fixLayout(); }
+}
+function doReauth(){
+  fetch(GAS_URL+"?action=auth_url")
+    .then(function(r){return r.json();})
+    .then(function(res){ if(res.status==="ok"&&res.data&&res.data.url) window.location.href=res.data.url; })
+    .catch(function(){ alert("Could not reach GAS relay."); });
+}
+
+// Upgraded gasCall with MONZO_STATE and error detection
+gasCall = function(params){
+  if(MONZO_STATE) params.state=MONZO_STATE;
+  var qs=Object.keys(params).map(function(k){return k+"="+encodeURIComponent(params[k]);}).join("&");
+  return fetch(GAS_URL+"?"+qs)
+    .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+    .then(function(res){
+      if(res.status==="error"){
+        if(res.message&&res.message.indexOf("verification_required")>=0) showReauthBanner();
+        throw new Error(res.message||"API error");
+      }
+      return res;
+    });
+};
+
+// Upgraded loadConfig with MONZO_STATE
+loadConfig = function(){
+  try{
+    var c=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    if(c.gasUrl&&c.accountId){
+      GAS_URL=c.gasUrl; ACCOUNT_ID=c.accountId;
+      MONZO_STATE=c.state||localStorage.getItem("monzo_state")||"";
+      return true;
+    }
+  }catch(e){}return false;
+};
+
+// Upgraded showDashboard
+showDashboard = function(){
+  var cfg=document.getElementById("config-screen");
+  cfg.style.display="none";
+  document.getElementById("dashboard").style.display="flex";
+  setTimeout(fixLayout,0); setTimeout(fixLayout,100); setTimeout(fixLayout,300);
+  window.addEventListener("resize", fixLayout);
+  document.getElementById("account-pill").textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"No account";
+  buildMonthSelector();
+  if(!ACCOUNT_ID){
+    gasCall({action:"accounts"}).then(function(res){
+      if(res.data&&res.data.accounts&&res.data.accounts[0]){
+        ACCOUNT_ID=res.data.accounts[0].id;
+        document.getElementById("account-pill").textContent=ACCOUNT_ID.slice(0,18)+"...";
+        var cfg2=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+        cfg2.accountId=ACCOUNT_ID; localStorage.setItem(STORAGE_KEY,JSON.stringify(cfg2));
+      }
+      loadAll();
+    }).catch(function(e){ loadAll(); });
+  } else { loadAll(); }
+};
+
+// bg fetch functions
+function getOldestTx(){
+  var oldest=null,oldestTx=null;
+  allTransactions.forEach(function(t){ var d=new Date(t.created); if(!oldest||d<oldest){oldest=d;oldestTx=t;} });
+  return oldestTx;
+}
+function updateHistoryBtn(){
+  var btn=document.getElementById("load-history-btn");
+  if(!btn)return;
+  if(historyExhausted||allTransactions.length===0||allTransactions.length>=2000){ btn.style.display="none"; }
+  else { btn.style.display="inline-flex"; btn.innerHTML="← Load 6 more months"; btn.disabled=false; }
+}
+function startBgFetch(){
+  if(bgFetching)return;
+  bgFetching=true; bgFetchErrors=0; bgFetchStepCount=0;
+  var oldest=getOldestTx();
+  bgCursor=oldest?oldest.created:new Date().toISOString();
+  if(!bgLimit){var d=new Date();d.setMonth(d.getMonth()-6);bgLimit=d;}
+  startSyncTimeout();
+  bgFetchStep();
+}
+function stopBgFetch(){ bgFetching=false; setProgress(null); }
+function bgFetchStep(){
+  if(!bgFetching)return;
+  var endDate=new Date(bgCursor);
+  var startDate=new Date(endDate); startDate.setDate(startDate.getDate()-14);
+  var since=startDate.toISOString(), before=bgCursor;
+  var syncMsg="Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" - "+endDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+"...";
+  setProgress(syncMsg);
+  bgFetchStepCount=(bgFetchStepCount||0)+1;
+  var pct=Math.min(25+bgFetchStepCount*5,90);
+  updateSyncStatus(syncMsg,pct);
+  gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:before})
+    .then(function(res){
+      if(!bgFetching)return;
+      if(res.status==="ok"&&res.data&&res.data.transactions){
+        var batch=res.data.transactions;
+        var ids={};allTransactions.forEach(function(t){ids[t.id]=true;});
+        var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
+        if(newOnes.length){ allTransactions=allTransactions.concat(newOnes).sort(function(a,b){return new Date(b.created)-new Date(a.created);}); populateCatFilter(); renderAll(); }
+      }
+      bgCursor=since;
+      if(new Date(bgCursor)<bgLimit){ stopBgFetch(); historyExhausted=false; updateHistoryBtn(); showSyncComplete(); return; }
+      setTimeout(bgFetchStep,400);
+    })
+    .catch(function(e){
+      if(e.message&&e.message.indexOf("verification_required")>=0){ showReauthBanner(); stopBgFetch(); showSyncComplete(); return; }
+      bgFetchErrors=(bgFetchErrors||0)+1;
+      if(bgFetchErrors>=3){ stopBgFetch(); showSyncComplete(); return; }
+      setTimeout(bgFetchStep,3000);
+    });
+}
+
+// Upgraded loadAll with sync overlay
+loadAll = function(){
+  showSyncOverlay();
+  updateSyncStatus("Connecting to Monzo...", 10);
+  stopBgFetch(); bgLimit=null; historyExhausted=false;
+  allTransactions=[]; txDisplayCount=30;
+  document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1'><div class='spinner'></div></div>";
+  updateHistoryBtn();
+  var now=new Date();
+  var thisKey=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  var lastM=new Date(now.getFullYear(),now.getMonth()-1,1);
+  var lastKey=lastM.getFullYear()+"-"+String(lastM.getMonth()+1).padStart(2,"0");
+  var startOfThisMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+  var startOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString();
+  updateSyncStatus("Fetching balance and transactions...", 15);
+  Promise.all([
+    gasCall({action:"balance",account_id:ACCOUNT_ID}),
+    gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfThisMonth}),
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfThisMonth})
+  ]).then(function(results){
+    updateSyncStatus("Processing transactions...", 20);
+    cachedBal=results[0].data;
+    var allPots=Array.isArray(results[1].data&&results[1].data.pots)?results[1].data.pots:[];
+    var active=allPots.filter(function(p){return!p.deleted;});
+    var STYPES=["instant_access","flexible_savings","fixed_savings"];
+    cachedSavings=active.filter(function(p){return STYPES.indexOf(p.type)>=0||p.locked||(p.style||"").indexOf("investments_")===0;});
+    cachedPots=active.filter(function(p){return STYPES.indexOf(p.type)<0&&!p.locked&&(p.style||"").indexOf("investments_")!==0;});
+    var thisTx=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
+    var lastTx=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
+    var seen={};allTransactions=[];
+    thisTx.concat(lastTx).forEach(function(t){if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}});
+    populateCatFilter(); renderAll(); renderPotsPanel(cachedPots,cachedSavings); updateHistoryBtn();
+    updateSyncStatus("Initial data loaded, syncing history...", 25);
+    startBgFetch();
+    setTimeout(function(){
+      if(!document.getElementById("sync-overlay").classList.contains("hidden")&&!document.getElementById("sync-continue-btn")){
+        var btn=document.createElement("button");
+        btn.id="sync-skip-btn";
+        btn.textContent="Continue anyway";
+        btn.style.cssText="background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 20px;font-family:var(--font);font-size:13px;color:var(--text-muted);cursor:pointer;margin-top:0.5rem;";
+        btn.onclick=function(){ if(confirm("Sync is still in progress. Some older transactions may be missing. Continue anyway?")) hideSyncOverlay(); };
+        var overlay=document.getElementById("sync-overlay");
+        if(overlay) overlay.appendChild(btn);
+      }
+    }, 3000);
+  }).catch(function(e){
+    document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1;color:var(--coral-soft);'> Error: "+e.message+"</div>";
+    hideSyncOverlay();
+  });
+};
+
+// connectOAuth
+function connectOAuth(){
+  var url=document.getElementById("gas-url").value.trim();
+  if(!url){showError("Please enter your GAS relay URL first.");return;}
+  GAS_URL=url;
+  localStorage.setItem("monzo_gas_url",url);
+  showError("Redirecting to Monzo...");
+  fetch(url+"?action=auth_url")
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.status!=="ok"||!res.data||!res.data.url){showError("Could not get auth URL: "+(res.message||"Check GAS relay"));return;}
+      window.location.href=res.data.url;
+    })
+    .catch(function(e){showError("Error: "+e.message);});
+}
+
+// Check if already connected on page load
+(function(){
+  try{
+    var c=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    if(c.gasUrl&&c.accountId){
+      var el=document.getElementById("already-connected");
+      if(el) el.style.display="block";
+      var inp=document.getElementById("gas-url");
+      if(inp) inp.value=c.gasUrl;
+    }
+  }catch(e){}
+})();
+
+initCompact();
+if(loadConfig()) showDashboard();
+
+</script>
+<script>
 // Merchant Compare - injected separately to avoid syntax issues
 function renderMerchantCompare(){
   var el=document.getElementById('merchant-compare-content');
@@ -2245,4 +3028,5 @@ function renderNice(days){
 
   el.innerHTML=html;
 }
+
 </script>
