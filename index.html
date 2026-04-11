@@ -54,15 +54,15 @@ input[type="text"]:focus{border-color:var(--coral);}
 .hist-btn:disabled{opacity:0.5;cursor:default;}
 .pill-btn:hover{border-color:var(--coral);color:var(--coral);}
 .account-pill{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text-muted);font-family:var(--mono);}
-.app-body{display:flex;flex:1;min-height:0;}
+.app-body{display:flex;flex:1;min-height:0;overflow:hidden;}
 .sidebar{width:200px;min-width:200px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);display:flex;flex-direction:column;padding:1rem 0;overflow-y:auto;}
 .sidebar-section{font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.06em;padding:0 1.2rem;margin:1.2rem 0 0.3rem;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.2rem;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
 .nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
 .nav-item.active{color:var(--coral-soft);border-left-color:var(--coral);background:var(--coral-dim);}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
-.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;}
-.tab-panel{display:none;width:100%;min-height:100%;}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;}
+.tab-panel{display:none;width:100%;}
 .tab-panel.active{display:block;}
 .tab-inner{padding:1.5rem 2rem 4rem;max-width:1400px;margin:0 auto;}
 .main{padding:0;}
@@ -570,7 +570,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.7</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v6.8</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -3072,10 +3072,11 @@ function renderCalendar(){
 
   var grid=document.getElementById('cal-grid');
   if(!grid)return;
-  // Keep header cells, remove day cells
-  var headers=grid.querySelectorAll('.cal-header-cell');
+  // Rebuild entirely - headers + day cells
   grid.innerHTML='';
-  headers.forEach(function(h){grid.appendChild(h);});
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d){
+    var h=document.createElement('div');h.className='cal-header-cell';h.textContent=d;grid.appendChild(h);
+  });
 
   for(var i=0;i<firstDay;i++){
     var blank=document.createElement('div');
