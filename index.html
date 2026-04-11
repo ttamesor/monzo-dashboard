@@ -566,7 +566,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 </div>
 <div id="dashboard">
   <!-- Sync overlay -->
-  <div class="sync-overlay" id="sync-overlay">
+  <div class="sync-overlay gone" id="sync-overlay">
     <div style="text-align:center;margin-bottom:0.5rem;">
       <div class="sync-logo" style="margin:0 auto 0.8rem;">M</div>
       <div class="sync-title">Loading your data</div>
@@ -588,7 +588,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.6</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.7</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -4827,7 +4827,14 @@ function clearSyncTimeout(){
 
 function showSyncOverlay(){
   var el=document.getElementById('sync-overlay');
-  if(el){el.classList.remove('hidden','gone');}
+  if(!el)return;
+  el.classList.remove('hidden','gone');
+  // Reset progress
+  var bar=document.getElementById('sync-progress-bar');
+  if(bar) bar.style.width='10%';
+  // Remove any old buttons
+  var old=document.getElementById('sync-continue-btn');if(old)old.remove();
+  var oldSkip=document.getElementById('sync-skip-btn');if(oldSkip)oldSkip.remove();
 }
 function updateSyncStatus(msg, pct){
   var sub=document.getElementById('sync-status');
@@ -5238,13 +5245,15 @@ function renderMerchantCompare(){
     if(!(nd.x===-dir.x&&nd.y===-dir.y)) nextDir=nd;
   },{passive:true});
 
-  // Start when overlay appears
+  // Start only when overlay is actually visible (not on config screen)
   var checkStart=setInterval(function(){
-    if(document.getElementById('snake-canvas')){
+    var overlay=document.getElementById('sync-overlay');
+    var canvas=document.getElementById('snake-canvas');
+    if(canvas&&overlay&&!overlay.classList.contains('gone')&&!overlay.classList.contains('hidden')){
       clearInterval(checkStart);
       init();
     }
-  },100);
+  },200);
 
   // Clean up game loop when overlay hides
   // Use setTimeout so the real hideSyncOverlay is defined before we wrap it
