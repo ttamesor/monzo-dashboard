@@ -588,7 +588,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.5</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v5.6</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -5246,12 +5246,15 @@ function renderMerchantCompare(){
     }
   },100);
 
-  // Clean up when overlay hides
-  var origHide=window.hideSyncOverlay;
-  window.hideSyncOverlay=function(){
-    if(gameLoop) clearInterval(gameLoop);
-    if(origHide) origHide();
-  };
+  // Clean up game loop when overlay hides
+  // Use setTimeout so the real hideSyncOverlay is defined before we wrap it
+  setTimeout(function(){
+    var realHide=window.hideSyncOverlay;
+    window.hideSyncOverlay=function(){
+      if(gameLoop){ clearInterval(gameLoop); gameLoop=null; }
+      if(realHide) realHide();
+    };
+  }, 500);
 })();
 </script>
 
