@@ -564,7 +564,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.1</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.2</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1101,6 +1101,8 @@ function updateHistoryBtn(){
 function startBgFetch(){
   if(bgFetching)return;
   bgFetching=true;
+  bgFetchErrors=0;
+  startSyncTimeout();
   // Start from oldest tx we have, or today if none
   var oldest=getOldestTx();
   bgCursor=oldest?oldest.created:new Date().toISOString();
@@ -1153,6 +1155,13 @@ function bgFetchStep(){
       if(e.message&&e.message.indexOf("verification_required")>=0){
         showReauthBanner();
         stopBgFetch();
+        showSyncComplete();
+        return;
+      }
+      bgFetchErrors=(bgFetchErrors||0)+1;
+      if(bgFetchErrors>=3){
+        stopBgFetch();
+        showSyncComplete();
         return;
       }
       setTimeout(bgFetchStep,3000);
@@ -3832,6 +3841,18 @@ function renderSimple(){
 
 
 // ---- Sync overlay ----
+var syncTimeoutHandle=null;
+function startSyncTimeout(){
+  if(syncTimeoutHandle) clearTimeout(syncTimeoutHandle);
+  syncTimeoutHandle=setTimeout(function(){
+    stopBgFetch();
+    showSyncComplete();
+  }, 180000); // 3 min max
+}
+function clearSyncTimeout(){
+  if(syncTimeoutHandle){ clearTimeout(syncTimeoutHandle); syncTimeoutHandle=null; }
+}
+
 function showSyncOverlay(){
   var el=document.getElementById('sync-overlay');
   if(el){el.classList.remove('hidden','gone');}
@@ -3843,6 +3864,7 @@ function updateSyncStatus(msg, pct){
   if(bar&&pct!==undefined) bar.style.width=Math.min(pct,100)+'%';
 }
 function showSyncComplete(){
+  clearSyncTimeout();
   updateSyncStatus('All done - 6 months loaded', 100);
   var msgEl=document.getElementById('snake-msg');
   if(msgEl) msgEl.textContent='Sync complete!';
@@ -4090,9 +4112,10 @@ function renderMerchantCompare(){
     // Move
     dir=nextDir;
     var head={x:snake[0].x+dir.x, y:snake[0].y+dir.y};
-    // Wrap walls
-    head.x=(head.x+COLS)%COLS;
-    head.y=(head.y+ROWS)%ROWS;
+    // Wall death
+    if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS){
+      dead=true; draw(); return;
+    }
     // Self collision
     if(snake.some(function(s){return s.x===head.x&&s.y===head.y;})){
       dead=true; draw(); return;
