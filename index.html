@@ -588,7 +588,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.5</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.6</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -652,6 +652,9 @@ body.compact .topbar{padding:0.6rem 2rem;}
     </div>
     <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">
       <span class="nav-icon">🔍</span>Patterns<span class="nav-badge" id="fritter-badge"></span>
+    </div>
+    <div class="nav-item" data-tab="roast" onclick="switchTab('roast')" style="margin-top:auto;color:var(--coral-soft);">
+      <span class="nav-icon">🔥</span>Roast Me
     </div>
     <div class="nav-item" data-tab="roast" onclick="switchTab('roast')" style="margin-top:auto;border-top:1px solid var(--navy-border);padding-top:12px;">
       <span class="nav-icon">🔥</span><span style="color:var(--coral-soft);">Roast Me</span>
@@ -872,6 +875,13 @@ body.compact .topbar{padding:0.6rem 2rem;}
   <!-- Subscriptions tab -->
   <div class="tab-panel" id="tab-subscriptions">
     <div class="tab-inner" id="subscriptions-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Roast tab -->
+  <div class="tab-panel" id="tab-roast">
+    <div class="tab-inner" id="roast-content">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
@@ -1683,6 +1693,7 @@ function switchTab(tab){
   if(tab==='income')renderIncome();
   if(tab==='subscriptions')renderSubscriptions();
   if(tab==='patterns')renderPatterns();
+  if(tab==='roast')renderRoast();
   if(tab==='roast')renderRoastConfirm();
 }
 
@@ -2381,6 +2392,7 @@ renderAll=function(){
   if(currentTab==='income')renderIncome();
   if(currentTab==='subscriptions')renderSubscriptions();
   if(currentTab==='patterns')renderPatterns();
+  if(currentTab==='roast')renderRoast();
 };
 
 // Update version
@@ -4453,5 +4465,177 @@ function renderRoastError(msg){
     +'<div class="roast-sub">'+msg+'<br><br>Load more transaction history and try again.</div>'
     +'<button class="roast-btn" onclick="renderRoastConfirm()">Back</button>'
     +'</div>';
+}
+</script>
+<script>
+function renderRoast(){
+  var el=document.getElementById('roast-content');
+  if(!el)return;
+
+  var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+  var now=new Date();
+  var thisKey=getThisMonthKey();
+  var thisMonthTx=getMonthTxns(spendTx,thisKey);
+  var thisSpend=thisMonthTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var balance=cachedBal?cachedBal.balance:0;
+  var daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  var dayOfMonth=now.getDate();
+  var dailyAvg=dayOfMonth>0?thisSpend/dayOfMonth:0;
+  var paceTotal=dayOfMonth>0?(thisSpend/dayOfMonth)*daysInMonth:thisSpend;
+
+  // Gather ammo
+  var merchants={};
+  spendTx.forEach(function(t){
+    var n=merchant(t);if(n==='Pot transfer')return;
+    if(!merchants[n])merchants[n]={spend:0,count:0};
+    merchants[n].spend+=Math.abs(t.amount);
+    merchants[n].count++;
+  });
+  var topMerchant=Object.entries(merchants).sort(function(a,b){return b[1].spend-a[1].spend;})[0];
+  var topByVisits=Object.entries(merchants).sort(function(a,b){return b[1].count-a[1].count;})[0];
+
+  // Category breakdown
+  var cats={};
+  spendTx.forEach(function(t){var c=getCategory(t);cats[c]=(cats[c]||0)+Math.abs(t.amount);});
+  var topCat=Object.entries(cats).sort(function(a,b){return b[1]-a[1];})[0];
+
+  // Small transactions (potential frittering)
+  var smallTx=spendTx.filter(function(t){return Math.abs(t.amount)<500;});
+  var smallTotal=smallTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  var smallCount=smallTx.length;
+
+  // Late night spending (after 10pm)
+  var lateNight=spendTx.filter(function(t){var h=new Date(t.created).getHours();return h>=22||h<4;});
+  var lateTotal=lateNight.reduce(function(s,t){return s+Math.abs(t.amount);},0);
+
+  // Weekend vs weekday
+  var weekend=spendTx.filter(function(t){var d=new Date(t.created).getDay();return d===0||d===6;});
+  var weekday=spendTx.filter(function(t){var d=new Date(t.created).getDay();return d>0&&d<6;});
+  var weekendAvg=weekend.length?weekend.reduce(function(s,t){return s+Math.abs(t.amount);},0)/weekend.length:0;
+  var weekdayAvg=weekday.length?weekday.reduce(function(s,t){return s+Math.abs(t.amount);},0)/weekday.length:0;
+
+  // Build roasts
+  var roasts=[];
+
+  if(topMerchant){
+    var mName=topMerchant[0],mSpend=topMerchant[1].spend,mCount=topMerchant[1].count;
+    roasts.push({
+      emoji:'🏆',
+      title:'Merchant loyalty award',
+      text:'You\'ve given '+fmtRaw(mSpend/100)+' to '+mName+' across '+mCount+' visits. They should name a table after you. Or at least send a card.'
+    });
+  }
+
+  if(topByVisits&&topByVisits[0]!==topMerchant[0]){
+    roasts.push({
+      emoji:'🚶',
+      title:'Creature of habit',
+      text:'You visited '+topByVisits[0]+' '+topByVisits[1].count+' times. That\'s not a habit, that\'s a commute.'
+    });
+  }
+
+  if(topCat){
+    var catName=topCat[0].replace(/_/g,' ');
+    var catLines={
+      eating_out:'You\'ve spent '+fmt(topCat[1])+' eating out. Your kitchen must be feeling very unloved.',
+      shopping:''+fmt(topCat[1])+' on shopping. Somewhere a warehouse worker knows your name.',
+      entertainment:''+fmt(topCat[1])+' on entertainment. At least you\'re enjoying the financial spiral.',
+      groceries:''+fmt(topCat[1])+' on groceries. Either you\'re feeding a small army or the bin is very full.',
+      family:''+fmt(topCat[1])+' on family. Love is expensive, apparently.',
+      finances:''+fmt(topCat[1])+' on finances. Paying to manage the money you\'re spending elsewhere.',
+      bills:''+fmt(topCat[1])+' on bills. The lights are on, at least.'
+    };
+    roasts.push({
+      emoji:'📊',
+      title:'Top category: '+catName,
+      text:catLines[topCat[0]]||'Your biggest category is '+catName+' at '+fmt(topCat[1])+'. Interesting choices.'
+    });
+  }
+
+  if(paceTotal>0){
+    var pacePerDay=paceTotal/(3600*24);
+    roasts.push({
+      emoji:'📈',
+      title:'Spending trajectory',
+      text:'At your current pace you\'ll spend '+fmt(paceTotal)+' this month. That\'s '+fmt(dailyAvg)+' a day. '+(dailyAvg>10000?'Impressive. Horrifying, but impressive.':dailyAvg>5000?'A solid effort at financial self-destruction.':'At least you\'re consistent.')
+    });
+  }
+
+  if(lateTotal>0){
+    roasts.push({
+      emoji:'🌙',
+      title:'Late night economist',
+      text:'You\'ve spent '+fmt(lateTotal)+' after 10pm. Nothing good was ever bought after 10pm. Nothing.'
+    });
+  }
+
+  if(weekendAvg>weekdayAvg*1.5){
+    roasts.push({
+      emoji:'🎉',
+      title:'Weekend warrior',
+      text:'You spend '+Math.round((weekendAvg/weekdayAvg-1)*100)+'% more per transaction at weekends than weekdays. Monday-you is desperately trying to compensate for Saturday-you.'
+    });
+  }
+
+  if(smallCount>20){
+    roasts.push({
+      emoji:'💸',
+      title:'Death by a thousand coffees',
+      text:smallCount+' transactions under £5 totalling '+fmt(smallTotal)+'. Each one seemed reasonable at the time. They were not.'
+    });
+  }
+
+  if(balance<thisSpend){
+    roasts.push({
+      emoji:'🚨',
+      title:'Maths check',
+      text:'Your current balance is '+fmt(balance)+' but you\'ve already spent '+fmt(thisSpend)+' this month. I\'m not a financial advisor but I am concerned.'
+    });
+  }
+
+  // Subs count
+  var subs=detectSubscriptions().filter(function(s){return s.status==='active';});
+  if(subs.length>5){
+    var subTotal=subs.reduce(function(s,x){return s+x.amount;},0);
+    roasts.push({
+      emoji:'📺',
+      title:'Subscription hoarder',
+      text:'You have '+subs.length+' active subscriptions costing '+fmt(subTotal)+' a month. How many of those did you use this week? This month? Be honest.'
+    });
+  }
+
+  // Sign off
+  var signoffs=[
+    'Financially yours,\nYour dashboard 🔥',
+    'Please don\'t shoot the messenger.\nYour dashboard 🔥',
+    'This was generated with love and mild concern.\nYour dashboard 🔥'
+  ];
+  var signoff=signoffs[Math.floor(Math.random()*signoffs.length)];
+
+  var html='<div style="max-width:700px;">';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;">';
+  html+='<div style="font-size:36px;">🔥</div>';
+  html+='<div><h2 style="font-size:22px;font-weight:500;color:var(--coral-soft);">Financial Roast</h2>';
+  html+='<div style="font-size:13px;color:var(--text-muted);">Based on your actual spending data. It\'s all true.</div></div>';
+  html+='</div>';
+
+  roasts.forEach(function(r){
+    html+='<div style="background:var(--navy-card);border:1px solid var(--navy-border);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1rem;">';
+    html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+    html+='<span style="font-size:20px;">'+r.emoji+'</span>';
+    html+='<div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">'+r.title+'</div>';
+    html+='</div>';
+    html+='<div style="font-size:15px;color:var(--text-primary);line-height:1.7;">'+r.text+'</div>';
+    html+='</div>';
+  });
+
+  html+='<div style="background:var(--coral-dim);border:1px solid rgba(255,90,95,0.2);border-radius:12px;padding:1.2rem 1.4rem;margin-top:1.5rem;">';
+  html+='<div style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-line;">'+signoff+'</div>';
+  html+='</div>';
+
+  html+='<div style="margin-top:1rem;text-align:center;font-size:12px;color:var(--text-muted);">All roasts are lovingly auto-generated from your real spending data.</div>';
+  html+='</div>';
+
+  el.innerHTML=html;
 }
 </script>
