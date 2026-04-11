@@ -564,7 +564,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.2</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.3</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -3997,7 +3997,9 @@ function renderMerchantCompare(){
       var pct=prev>0&&v.spend>0?Math.round(((v.spend-prev)/prev)*100):null;
       var pctCol=pct===null?'':pct>0?'color:var(--coral-soft)':'color:var(--green)';
       var intensity=v.spend>0?(0.1+0.5*(v.spend/maxV)).toFixed(2):0;
-      var bg=v.spend>0?(isCur?'rgba(255,90,95,'+intensity+')':'rgba(255,255,255,0.05)'):'';
+      // Green background if spending went DOWN vs prev week, coral if up, neutral if no comparison
+      var cellColor=pct===null?(isCur?'255,90,95':'255,255,255'):pct>0?'255,90,95':'45,212,160';
+      var bg=v.spend>0?'rgba('+cellColor+','+intensity+')':'';
       html+='<div style="text-align:right;padding:2px 4px;border-radius:3px;'+(bg?'background:'+bg:'')+';">';
       if(v.spend){
         html+='<div style="font-size:12px;font-family:var(--mono);color:'+(isCur?'var(--text-primary)':'var(--text-muted)')+';">'+fmt(v.spend)+'</div>';
@@ -4022,26 +4024,38 @@ function renderMerchantCompare(){
 
   // Month on month table
   html+='<div class="card" style="margin-bottom:1rem;">';
-  html+='<div class="card-header"><span class="card-title">Month by month spend</span></div>';
-  // Header
-  html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
-  html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">Merchant</th>';
-  months.forEach(function(m){html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">'+m.label+'</th>';});
-  html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);">Trend</th></tr></thead><tbody>';
+  html+='<div class="card-header"><span class="card-title">Month by month spend</span><span style="font-size:11px;color:var(--text-muted);">with transaction count</span></div>';
+  html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px;">';
+  html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:130px;">Merchant</th>';
+  months.forEach(function(mo){html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:80px;">'+mo.label+'</th>';});
+  html+='<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--navy-border);min-width:55px;">Trend</th></tr></thead><tbody>';
   merchantTotals.forEach(function(m){
-    var vals=months.map(function(mo){return m.data[mo.key]?m.data[mo.key].spend:0;});
-    var maxVal=Math.max.apply(null,vals)||1;
-    var first=vals.filter(function(v){return v>0;})[0]||0;
-    var last=vals.filter(function(v){return v>0;}).pop()||0;
-    var trend=first>0?Math.round(((last-first)/first)*100):null;
+    var vals=months.map(function(mo){return m.data[mo.key]||{spend:0,visits:0};});
+    var spendVals=vals.map(function(v){return v.spend;});
+    var maxVal=Math.max.apply(null,spendVals)||1;
+    var nonZero=spendVals.filter(function(v){return v>0;});
+    var first=nonZero[0]||0;
+    var last=nonZero[nonZero.length-1]||0;
+    var trend=first>0&&nonZero.length>1?Math.round(((last-first)/first)*100):null;
+    var trendCol=trend===null?'var(--text-muted)':trend>10?'var(--coral-soft)':trend<-10?'var(--green)':'var(--text-muted)';
     html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">';
-    html+='<td style="padding:7px 8px;color:var(--text-primary);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+m.name+'</td>';
-    vals.forEach(function(v){
-      var intensity=v>0?(0.15+0.7*(v/maxVal)).toFixed(2):0;
-      var bg=v>0?'rgba(255,90,95,'+intensity+')':'transparent';
-      html+='<td style="text-align:right;padding:7px 8px;font-family:var(--mono);background:'+bg+';border-radius:3px;">'+(v?fmt(v):'-')+'</td>';
+    html+='<td style="padding:7px 8px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;" title="'+m.name+'">'+m.name+'</td>';
+    vals.forEach(function(v,vi){
+      var intensity=v.spend>0?(0.12+0.6*(v.spend/maxVal)).toFixed(2):0;
+      var prevSpend=vi>0?vals[vi-1].spend:0;
+      var mPct=prevSpend>0&&v.spend>0?Math.round(((v.spend-prevSpend)/prevSpend)*100):null;
+      var cellCol=mPct===null?'255,90,95':mPct>0?'255,90,95':'45,212,160';
+      var bg=v.spend>0?'rgba('+cellCol+','+intensity+')':'transparent';
+      html+='<td style="text-align:right;padding:5px 8px;background:'+bg+';border-radius:3px;">';
+      if(v.spend){
+        html+='<div style="font-family:var(--mono);color:var(--text-primary);">'+fmt(v.spend)+'</div>';
+        html+='<div style="font-size:10px;color:var(--text-muted);">'+v.visits+' tx'+(mPct!==null?' <span style="color:'+(mPct>0?'var(--coral-soft)':'var(--green)')+';">'+(mPct>0?'+':'')+mPct+'%</span>':'')+'</div>';
+      } else {
+        html+='<div style="color:rgba(255,255,255,0.15);">-</div>';
+      }
+      html+='</td>';
     });
-    html+='<td style="text-align:right;padding:7px 8px;font-weight:500;color:'+(trend===null?'var(--text-muted)':trend>10?'var(--coral-soft)':trend<-10?'var(--green)':'var(--text-muted)')+'">'+(trend===null?'—':(trend>0?'▲ +':'▼ ')+Math.abs(trend)+'%')+'</td>';
+    html+='<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+trendCol+'">'+(trend===null?'—':(trend>0?'▲ +':'▼ ')+Math.abs(trend)+'%')+'</td>';
     html+='</tr>';
   });
   html+='</tbody></table></div></div>';
