@@ -394,7 +394,7 @@ body.light .sidebar-section{color:var(--text-secondary);}
 .sync-sub{font-size:14px;color:var(--text-muted);text-align:center;max-width:300px;line-height:1.6;}
 .sync-progress-wrap{width:280px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
 .sync-progress-bar{height:100%;background:var(--coral);border-radius:2px;transition:width 0.4s ease;width:0%;}
-.sync-status{font-size:12px;color:var(--text-muted);text-align:center;font-family:var(--mono);}
+.sync-status{font-size:16px;font-weight:500;color:var(--text-primary);text-align:center;font-family:var(--font);letter-spacing:0;}
 .sync-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--coral);border-radius:50%;animation:spin 0.8s linear infinite;}
 
 /* Roast */
@@ -570,7 +570,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
     <div style="text-align:center;margin-bottom:0.5rem;">
       <div class="sync-logo" style="margin:0 auto 0.8rem;">M</div>
       <div class="sync-title">Loading your data</div>
-      <div class="sync-sub" id="sync-sub" style="margin:0.3rem auto 0.8rem;">Sync in progress - play while you wait</div>
+      <div class="sync-sub" id="sync-sub" style="margin:0.3rem auto 0.8rem;font-size:15px;color:var(--text-secondary);">Sync in progress - play while you wait</div>
     </div>
     <canvas id="snake-canvas" width="280" height="280" style="border-radius:12px;background:#0D1B2A;border:1px solid rgba(255,255,255,0.08);cursor:none;display:block;"></canvas>
     <div style="display:flex;align-items:center;justify-content:space-between;width:280px;margin-top:0.5rem;">
@@ -588,7 +588,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.6</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.8</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1275,6 +1275,21 @@ function loadAll(){
     updateHistoryBtn();
     updateSyncStatus('Initial data loaded, syncing history...', 80);
     startBgFetch();
+    // Show "continue anyway" after 10 seconds
+    setTimeout(function(){
+      if(!document.getElementById('sync-overlay').classList.contains('hidden')&&
+         !document.getElementById('sync-continue-btn')){
+        var btn=document.createElement('button');
+        btn.id='sync-skip-btn';
+        btn.textContent='Continue anyway';
+        btn.style.cssText='background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 20px;font-family:var(--font);font-size:13px;color:var(--text-muted);cursor:pointer;transition:all 0.2s;margin-top:0.5rem;';
+        btn.onmouseover=function(){this.style.borderColor='var(--coral)';this.style.color='var(--coral-soft)';};
+        btn.onmouseout=function(){this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='var(--text-muted)';};
+        btn.onclick=function(){ hideSyncOverlay(); };
+        var overlay=document.getElementById('sync-overlay');
+        if(overlay) overlay.appendChild(btn);
+      }
+    }, 10000);
 
     // If last month hit 100, paginate it fully in the background
     if(lastMo.length===100){
@@ -4158,12 +4173,15 @@ function renderMerchantCompare(){
     gameLoop=setInterval(tick, 130);
   }
 
+  var waiting=true; // wait for first keypress before starting
+
   function reset(){
     snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
     dir={x:1,y:0}; nextDir={x:1,y:0};
-    score=0; running=true; dead=false;
+    score=0; running=true; dead=false; waiting=true;
     placeFood();
     updateScore();
+    draw();
   }
 
   function placeFood(){
@@ -4175,7 +4193,7 @@ function renderMerchantCompare(){
   }
 
   function tick(){
-    if(!running||dead) return;
+    if(!running||dead||waiting) return;
     // Move
     dir=nextDir;
     var head={x:snake[0].x+dir.x, y:snake[0].y+dir.y};
@@ -4226,6 +4244,18 @@ function renderMerchantCompare(){
       ctx.fill();
     });
 
+    if(waiting&&!dead){
+      ctx.fillStyle='rgba(13,27,42,0.6)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#FF5A5F';
+      ctx.font='bold 20px sans-serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('🐍 Snake', canvas.width/2, canvas.height/2-18);
+      ctx.fillStyle='rgba(255,255,255,0.7)';
+      ctx.font='14px sans-serif';
+      ctx.fillText('Press any arrow key or tap to start', canvas.width/2, canvas.height/2+12);
+    }
     if(dead){
       ctx.fillStyle='rgba(13,27,42,0.75)';
       ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -4269,10 +4299,12 @@ function renderMerchantCompare(){
              W:{x:0,y:-1},S:{x:0,y:1},A:{x:-1,y:0},D:{x:1,y:0}};
     if(e.key===' '||e.key==='Enter'){
       if(dead){reset();return;}
+      if(waiting){waiting=false;return;}
     }
     var nd=map[e.key];
-    if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){
-      nextDir=nd;
+    if(nd){
+      if(waiting) waiting=false; // start on first direction key
+      if(!(nd.x===-dir.x&&nd.y===-dir.y)) nextDir=nd;
       if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key)>=0) e.preventDefault();
     }
   }
@@ -4282,6 +4314,7 @@ function renderMerchantCompare(){
     var overlay=document.getElementById('sync-overlay');
     if(!overlay||overlay.classList.contains('hidden')) return;
     if(dead){reset();return;}
+    if(waiting){waiting=false;return;}
     if(e.touches[0]) touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
   }
   document.addEventListener('touchend',function(e){
