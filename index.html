@@ -546,7 +546,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
     <div style="text-align:center;margin-bottom:0.5rem;">
       <div class="sync-logo" style="margin:0 auto 0.8rem;">M</div>
       <div class="sync-title">Loading your data</div>
-      <div class="sync-sub" id="sync-sub" style="margin:0.3rem auto 0.8rem;">Play while you wait</div>
+      <div class="sync-sub" id="sync-sub" style="margin:0.3rem auto 0.8rem;">Sync in progress - play while you wait</div>
     </div>
     <canvas id="snake-canvas" width="280" height="280" style="border-radius:12px;background:#0D1B2A;border:1px solid rgba(255,255,255,0.08);cursor:none;display:block;"></canvas>
     <div style="display:flex;align-items:center;justify-content:space-between;width:280px;margin-top:0.5rem;">
@@ -564,7 +564,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark">M</div>
       <div>
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.0</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v4.1</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1122,7 +1122,9 @@ function bgFetchStep(){
   var since=startDate.toISOString();
   var before=bgCursor;
 
-  setProgress("Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" - "+endDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+"...");
+  var syncMsg="Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" - "+endDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+"...";
+  setProgress(syncMsg);
+  updateSyncStatus(syncMsg);
 
   gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:before})
     .then(function(res){
@@ -1142,6 +1144,7 @@ function bgFetchStep(){
         stopBgFetch();
         historyExhausted=false;
         updateHistoryBtn();
+        showSyncComplete();
         return;
       }
       setTimeout(bgFetchStep,400);
@@ -1218,8 +1221,7 @@ function loadAll(){
     renderAll();
     renderPotsPanel(cachedPots,cachedSavings);
     updateHistoryBtn();
-    updateSyncStatus('Initial data loaded', 100);
-    setTimeout(hideSyncOverlay, 600);
+    updateSyncStatus('Initial data loaded, syncing history...', 80);
     startBgFetch();
 
     // If last month hit 100, paginate it fully in the background
@@ -3839,6 +3841,23 @@ function updateSyncStatus(msg, pct){
   var bar=document.getElementById('sync-progress-bar');
   if(sub) sub.textContent=msg;
   if(bar&&pct!==undefined) bar.style.width=Math.min(pct,100)+'%';
+}
+function showSyncComplete(){
+  updateSyncStatus('All done - 6 months loaded', 100);
+  var msgEl=document.getElementById('snake-msg');
+  if(msgEl) msgEl.textContent='Sync complete!';
+  // Show continue button
+  var existBtn=document.getElementById('sync-continue-btn');
+  if(existBtn) return;
+  var btn=document.createElement('button');
+  btn.id='sync-continue-btn';
+  btn.textContent='Continue to dashboard';
+  btn.style.cssText='margin-top:0.8rem;background:var(--coral);border:none;border-radius:8px;padding:11px 28px;font-family:var(--font);font-size:15px;font-weight:500;color:white;cursor:pointer;transition:opacity 0.2s;';
+  btn.onmouseover=function(){this.style.opacity='0.88';};
+  btn.onmouseout=function(){this.style.opacity='1';};
+  btn.onclick=function(){ hideSyncOverlay(); };
+  var overlay=document.getElementById('sync-overlay');
+  if(overlay) overlay.appendChild(btn);
 }
 function hideSyncOverlay(){
   var el=document.getElementById('sync-overlay');
