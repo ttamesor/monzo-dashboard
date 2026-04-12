@@ -579,7 +579,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.2</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.6</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -621,7 +621,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark" onclick="switchTab('simple')" style="cursor:pointer;" title="Go to Simple View">M</div>
       <div style="cursor:pointer;" onclick="switchTab('simple')">
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v6.7</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.5</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -648,6 +648,9 @@ body.compact .topbar{padding:0.6rem 2rem;}
     <!-- Simple View - hero item -->
     <div class="nav-item active" data-tab="simple" onclick="switchTab('simple')" class="active">
       <span class="nav-icon">✨</span>Simple View
+    </div>
+    <div class="nav-item" data-tab="predictions" onclick="switchTab('predictions')">
+      <span class="nav-icon">🔮</span>Predictions
     </div>
 
     <!-- Predictions - just below simple -->
@@ -715,6 +718,13 @@ body.compact .topbar{padding:0.6rem 2rem;}
 
   </div>
   <div class="tab-content" id="tab-content">
+  <!-- Predictions tab -->
+  <div class="tab-panel" id="tab-predictions">
+    <div class="tab-inner" id="predictions-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
   <!-- Super Simple tab -->
   <div class="tab-panel active" id="tab-simple">
     <div class="tab-inner" id="simple-content">
@@ -1024,7 +1034,7 @@ function showDashboard(){
   if(dash) dash.style.display="flex";
   setTimeout(fixLayout,0); setTimeout(fixLayout,150); setTimeout(fixLayout,400);
   window.addEventListener("resize",fixLayout);
-  switchTab("simple");
+  setTimeout(function(){ switchTab("simple"); },0);
 
   var pill=document.getElementById("account-pill");
   if(pill) pill.textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"Connecting...";
@@ -1207,15 +1217,7 @@ function loadAll(){
 }
 
 // ---- Month ----
-function switchMonth(which){
-  viewMonth=which;
-  txDisplayCount=30;
-  document.getElementById("tab-this").classList.toggle("active",which==="this");
-  document.getElementById("tab-last").classList.toggle("active",which==="last");
-  var now=new Date();
-  document.getElementById("month-badge").textContent=which==="this"?now.toLocaleString("default",{month:"long"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"long"});
-  renderAll();
-}
+// switchMonth - see updated version below
 
 function getMonthTxns(txns,which){
   var now=new Date(),y,m;
@@ -1226,12 +1228,12 @@ function getMonthTxns(txns,which){
 
 function renderAll(){
   var spendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
-  var thisTx=getMonthTxns(spendTx,"this"),lastTx=getMonthTxns(spendTx,"last");
-  var viewSpend=viewMonth==="this"?thisTx:lastTx;
+  var thisTx=getMonthTxns(spendTx,getThisMonthKey()),lastTx=getMonthTxns(spendTx,"last");
+  var viewSpend=getMonthTxns(spendTx,viewMonth);
   var viewAll=getMonthTxns(allTransactions,viewMonth);
 
   renderStatCards(cachedBal,cachedPots,cachedSavings,viewSpend,thisTx,lastTx);
-  renderInsightStrip(viewSpend,viewMonth==="this"?lastTx:thisTx);
+  renderInsightStrip(viewSpend,viewMonth===getThisMonthKey()?lastTx:thisTx);
   renderCatCompare(thisTx,lastTx);
   applyFilters();
   renderDailyChart(viewSpend,thisTx,lastTx);
@@ -1317,10 +1319,10 @@ function renderStatCards(bal,pots,savings,viewTx,thisTx,lastTx){
   var thisSpend=thisTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
   var lastSpend=lastTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
   var viewSpend=viewTx.reduce(function(s,t){return s+Math.abs(t.amount);},0);
-  var now=new Date(),dE=viewMonth==="this"?now.getDate():new Date(now.getFullYear(),now.getMonth(),0).getDate();
+  var now=new Date(),isThisMonth=viewMonth===getThisMonthKey(),dE=isThisMonth?now.getDate():new Date(now.getFullYear(),now.getMonth(),0).getDate();
   var avg=dE>0?viewSpend/dE:0;
   var dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  var proj=viewMonth==="this"&&dE>0?(viewSpend/dE)*dim:null;
+  var proj=isThisMonth&&dE>0?(viewSpend/dE)*dim:null;
   var net=bal.balance+potTot+savTot+manTot;
   document.getElementById("stat-cards").innerHTML=
     "<div class='card stat-card'><div class='stat-accent' style='background:var(--coral)'></div><div class='stat-label'>Balance</div><div class='stat-value'>"+fmt(bal.balance)+"</div><div class='stat-sub'>Net worth: "+fmt(net)+"</div></div>"
@@ -1356,7 +1358,7 @@ function renderCatCompare(thisTx,lastTx){
   var tc={},lc={};
   thisTx.forEach(function(t){var c=t.category||"general";tc[c]=(tc[c]||0)+Math.abs(t.amount);});
   lastTx.forEach(function(t){var c=t.category||"general";lc[c]=(lc[c]||0)+Math.abs(t.amount);});
-  var cur=viewMonth==="this"?tc:lc,cmp=viewMonth==="this"?lc:tc;
+  var cur=viewMonth===getThisMonthKey()?tc:lc,cmp=viewMonth===getThisMonthKey()?lc:tc;
   var all=Object.keys(Object.assign({},cur,cmp)).map(function(c){return{cat:c,cur:cur[c]||0,cmp:cmp[c]||0};}).sort(function(a,b){return b.cur-a.cur;}).slice(0,7);
   var mx=Math.max.apply(null,all.map(function(x){return Math.max(x.cur,x.cmp);}));mx=mx||1;
   document.getElementById("cat-compare").innerHTML=all.length?all.map(function(x){
@@ -1401,7 +1403,7 @@ function renderPotsPanel(pots,savings){
 // ---- Charts ----
 function renderDailyChart(txns,thisTxns,lastTxns){
   var now=new Date(),year,month,dim;
-  if(viewMonth==="this"){year=now.getFullYear();month=now.getMonth();dim=now.getDate();}
+  if(viewMonth===getThisMonthKey()){year=now.getFullYear();month=now.getMonth();dim=now.getDate();}
   else{var lm=new Date(now.getFullYear(),now.getMonth()-1,1);year=lm.getFullYear();month=lm.getMonth();dim=new Date(year,month+1,0).getDate();}
   var labels=[],data=[];
   for(var i=1;i<=dim;i++){labels.push(i);data.push(0);}
@@ -1410,7 +1412,7 @@ function renderDailyChart(txns,thisTxns,lastTxns){
     if(d.getFullYear()===year&&d.getMonth()===month){var day=d.getDate();if(day>=1&&day<=dim)data[day-1]+=Math.abs(t.amount)/100;}
   });
   if(dailyChartInstance)dailyChartInstance.destroy();
-  var ti=viewMonth==="this"?now.getDate()-1:-1;
+  var ti=viewMonth===getThisMonthKey()?now.getDate()-1:-1;
   var ctx=document.getElementById("daily-chart").getContext("2d");
   dailyChartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{data:data,backgroundColor:data.map(function(_,i){return i===ti?"#FF5A5F":"rgba(255,90,95,0.22)";}),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"£"+c.raw.toFixed(2);}}}},scales:{x:{ticks:{color:"#4A6480",font:{size:10},autoSkip:true,maxTicksLimit:12},grid:{display:false},border:{display:false}},y:{ticks:{color:"#4A6480",font:{size:10},callback:function(v){return"£"+v.toFixed(0);}},grid:{color:"rgba(255,255,255,0.03)"},border:{display:false}}}}});
 
@@ -1421,7 +1423,7 @@ function renderDailyChart(txns,thisTxns,lastTxns){
     if(nonZero.length>=2){
       var best=nonZero.slice().sort(function(a,b){return a.v-b.v;})[0];
       var worst=nonZero.slice().sort(function(a,b){return b.v-a.v;})[0];
-      var mName=viewMonth==="this"?now.toLocaleString("default",{month:"short"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"short"});
+      var mName=viewMonth===getThisMonthKey()?now.toLocaleString("default",{month:"short"}):new Date(now.getFullYear(),now.getMonth()-1,1).toLocaleString("default",{month:"short"});
       bwEl.innerHTML="<div class='bw-tile'><div class='bw-label'>Cheapest day</div><div class='bw-value good'>£"+best.v.toFixed(2)+"</div><div class='bw-date'>"+(best.i+1)+" "+mName+"</div></div>"
         +"<div class='bw-tile'><div class='bw-label'>Most expensive day</div><div class='bw-value hi'>£"+worst.v.toFixed(2)+"</div><div class='bw-date'>"+(worst.i+1)+" "+mName+"</div></div>";
     } else {bwEl.innerHTML="";}
@@ -1531,7 +1533,7 @@ function fixLayout(){
   if(remaining < 100) return;
   appBody.style.height = remaining+"px";
   appBody.style.display = "flex";
-  appBody.style.overflow = "";
+  appBody.style.overflow = "hidden";
   if(sidebar){ sidebar.style.height=remaining+"px"; sidebar.style.overflowY="auto"; }
   tabContent.style.overflowY = "auto";
   tabContent.style.overflowX = "hidden";
@@ -1641,18 +1643,27 @@ function startBgFetch(){
   bgCursor=oldest?oldest.created:new Date().toISOString();
   if(!bgLimit){var d=new Date();d.setMonth(d.getMonth()-6);bgLimit=d;}
   startSyncTimeout();
+  // Fire first 2 steps in parallel for faster initial load feel
   bgFetchStep();
+  var cur2=new Date(bgCursor);cur2.setDate(cur2.getDate()-14);
+  if(cur2>bgLimit){
+    var saved=bgCursor;
+    bgCursor=cur2.toISOString();
+    bgFetchStep();
+    bgCursor=saved;
+  }
 }
 function stopBgFetch(){ bgFetching=false; setProgress(null); }
 function bgFetchStep(){
   if(!bgFetching)return;
   var endDate=new Date(bgCursor);
+  // Fetch 30-day windows instead of 14 - halves the number of round trips
   var startDate=new Date(endDate); startDate.setDate(startDate.getDate()-14);
   var since=startDate.toISOString(), before=bgCursor;
-  var syncMsg="Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" - "+endDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+"...";
-  setProgress(syncMsg);
   bgFetchStepCount=(bgFetchStepCount||0)+1;
-  var pct=Math.min(25+bgFetchStepCount*5,90);
+  var pct=Math.min(20+bgFetchStepCount*12,90);
+  var syncMsg="Syncing "+startDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" – "+endDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  setProgress(syncMsg);
   updateSyncStatus(syncMsg,pct);
   gasCall({action:"transactions",account_id:ACCOUNT_ID,since:since,before:before})
     .then(function(res){
@@ -1661,17 +1672,22 @@ function bgFetchStep(){
         var batch=res.data.transactions;
         var ids={};allTransactions.forEach(function(t){ids[t.id]=true;});
         var newOnes=batch.filter(function(t){return t.amount!==0&&!ids[t.id];});
-        if(newOnes.length){ allTransactions=allTransactions.concat(newOnes).sort(function(a,b){return new Date(b.created)-new Date(a.created);}); populateCatFilter(); renderAll(); }
+        if(newOnes.length){
+          allTransactions=allTransactions.concat(newOnes).sort(function(a,b){return new Date(b.created)-new Date(a.created);});
+          populateCatFilter();
+          renderAll();
+        }
       }
       bgCursor=since;
-      if(new Date(bgCursor)<bgLimit){ stopBgFetch(); historyExhausted=false; updateHistoryBtn(); showSyncComplete(); return; }
-      setTimeout(bgFetchStep,400);
+      if(new Date(bgCursor)<=bgLimit){ stopBgFetch(); historyExhausted=false; updateHistoryBtn(); showSyncComplete(); return; }
+      // No delay - fire immediately for max speed
+      bgFetchStep();
     })
     .catch(function(e){
       if(e.message&&e.message.indexOf("verification_required")>=0){ showReauthBanner(); stopBgFetch(); showSyncComplete(); return; }
       bgFetchErrors=(bgFetchErrors||0)+1;
       if(bgFetchErrors>=3){ stopBgFetch(); showSyncComplete(); return; }
-      setTimeout(bgFetchStep,3000);
+      setTimeout(bgFetchStep,2000); // back off on error only
     });
 }
 
@@ -1684,45 +1700,48 @@ loadAll = function(){
   document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1'><div class='spinner'></div></div>";
   updateHistoryBtn();
   var now=new Date();
-  var thisKey=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-  var lastM=new Date(now.getFullYear(),now.getMonth()-1,1);
-  var lastKey=lastM.getFullYear()+"-"+String(lastM.getMonth()+1).padStart(2,"0");
   var startOfThisMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
   var startOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString();
-  updateSyncStatus("Fetching balance and transactions...", 15);
+  var startOf2MonthsAgo=new Date(now.getFullYear(),now.getMonth()-2,1).toISOString();
+  updateSyncStatus("Fetching transactions...", 15);
+  // Fetch balance, pots, and 3 months of transactions all in parallel
   Promise.all([
     gasCall({action:"balance",account_id:ACCOUNT_ID}),
     gasCall({action:"pots",account_id:ACCOUNT_ID}).catch(function(){return{data:{pots:[]}};}),
     gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfThisMonth}),
-    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfThisMonth})
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOfLastMonth,before:startOfThisMonth}),
+    gasCall({action:"transactions",account_id:ACCOUNT_ID,since:startOf2MonthsAgo,before:startOfLastMonth})
   ]).then(function(results){
-    updateSyncStatus("Processing transactions...", 20);
+    updateSyncStatus("Processing...", 35);
     cachedBal=results[0].data;
     var allPots=Array.isArray(results[1].data&&results[1].data.pots)?results[1].data.pots:[];
     var active=allPots.filter(function(p){return!p.deleted;});
     var STYPES=["instant_access","flexible_savings","fixed_savings"];
     cachedSavings=active.filter(function(p){return STYPES.indexOf(p.type)>=0||p.locked||(p.style||"").indexOf("investments_")===0;});
     cachedPots=active.filter(function(p){return STYPES.indexOf(p.type)<0&&!p.locked&&(p.style||"").indexOf("investments_")!==0;});
-    var thisTx=Array.isArray(results[2].data&&results[2].data.transactions)?results[2].data.transactions:[];
-    var lastTx=Array.isArray(results[3].data&&results[3].data.transactions)?results[3].data.transactions:[];
     var seen={};allTransactions=[];
-    thisTx.concat(lastTx).forEach(function(t){if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}});
+    [results[2],results[3],results[4]].forEach(function(r){
+      var txns=Array.isArray(r.data&&r.data.transactions)?r.data.transactions:[];
+      txns.forEach(function(t){if(t.amount!==0&&!seen[t.id]){seen[t.id]=true;allTransactions.push(t);}});
+    });
+    allTransactions.sort(function(a,b){return new Date(b.created)-new Date(a.created);});
     populateCatFilter(); renderAll(); renderPotsPanel(cachedPots,cachedSavings); updateHistoryBtn();
-    updateSyncStatus("Initial data loaded, syncing history...", 25);
-    startBgFetch();
+    updateSyncStatus("3 months loaded – fetching more history...", 40);
+    // Show continue button quickly - user already has 3 months of useful data
     setTimeout(function(){
-      if(!document.getElementById("sync-overlay").classList.contains("hidden")&&!document.getElementById("sync-continue-btn")){
+      var overlay=document.getElementById("sync-overlay");
+      if(overlay&&!overlay.classList.contains("hidden")&&!document.getElementById("sync-continue-btn")){
         var btn=document.createElement("button");
         btn.id="sync-skip-btn";
-        btn.textContent="Continue anyway";
-        btn.style.cssText="background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 20px;font-family:var(--font);font-size:13px;color:var(--text-muted);cursor:pointer;margin-top:0.5rem;";
-        btn.onclick=function(){ if(confirm("Sync is still in progress. Some older transactions may be missing. Continue anyway?")) hideSyncOverlay(); };
-        var overlay=document.getElementById("sync-overlay");
-        if(overlay) overlay.appendChild(btn);
+        btn.textContent="Continue to dashboard";
+        btn.style.cssText="background:var(--coral);border:none;border-radius:8px;padding:10px 24px;font-family:var(--font);font-size:14px;font-weight:500;color:white;cursor:pointer;margin-top:0.5rem;";
+        btn.onclick=function(){ hideSyncOverlay(); };
+        overlay.appendChild(btn);
       }
-    }, 3000);
+    }, 1500);
+    startBgFetch();
   }).catch(function(e){
-    document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1;color:var(--coral-soft);'> Error: "+e.message+"</div>";
+    document.getElementById("stat-cards").innerHTML="<div class='loading' style='grid-column:1/-1;color:var(--coral-soft);'>Error: "+e.message+"</div>";
     hideSyncOverlay();
   });
 };
@@ -1795,7 +1814,7 @@ function getLastMonthKey(){
 }
 
 // ---- Tab switching ----
-var MONTH_TABS=["dashboard","calendar","trends","simple"];
+var MONTH_TABS=["dashboard","calendar","trends","simple","predictions"];
 function toggleAdvancedNav(forceOpen){
   var items=document.getElementById('nav-advanced-items');
   var arrow=document.getElementById('nav-advanced-arrow');
@@ -1834,6 +1853,7 @@ function switchTab(tab){
   if(tab==="subscriptions")renderSubscriptions();
   if(tab==="patterns")renderPatterns();
   if(tab==="nice")renderNice();
+  if(tab==="predictions")renderPredictions();
   if(tab==="roast"){
     if(confirm("Ready to see your financial roast? Click OK to generate based on your latest data."))
       renderRoast();
@@ -1886,6 +1906,7 @@ renderAll = function(){
   if(currentTab==="income") renderIncome();
   if(currentTab==="subscriptions") renderSubscriptions();
   if(currentTab==="nice") renderNice();
+  if(currentTab==="predictions") renderPredictions();
   if(currentTab==="merchants") renderMerchants();
   if(currentTab==="merchant-compare") renderMerchantCompare();
 };
@@ -1903,7 +1924,7 @@ function _safeStub(name){
 
 // ---- applyFilters for transactions tab ----
 var txTabFiltered=[];
-var txDisplayCount=30;
+txDisplayCount=30;
 function applyTabFilters(){
   var search=(document.getElementById("ttx-search")||{}).value||"";
   var cat=(document.getElementById("ttx-cat")||{}).value||"";
@@ -1914,6 +1935,8 @@ function applyTabFilters(){
     return true;
   }).sort(function(a,b){return new Date(b.created)-new Date(a.created);});
   renderTxTabList();
+  var btn=document.getElementById("tx-tab-more");
+  if(btn) btn.style.display=txTabFiltered.length>txDisplayCount?"block":"none";
 }
 function renderTxTabList(){
   var el=document.getElementById("tx-tab-list");
@@ -1947,7 +1970,47 @@ function closeSearch(){
   var el=document.getElementById("search-overlay");
   if(el) el.classList.remove("open");
 }
-function runSearch(q){ /* stub */ }
+function runSearch(q){
+  var el=document.getElementById('search-results');
+  if(!el)return;
+  if(!q||q.length<1){el.innerHTML='<div class="search-empty">Search by merchant, category, amount (e.g. 4.50)</div>';return;}
+  var ql=q.toLowerCase().trim();
+  // Detect if searching by amount: starts with £, or is a number like "4.50" or "45"
+  var amtSearch=null;
+  var amtStr=ql.replace(/^£/,'').replace(/,/g,'');
+  if(/^\d+(\.\d{0,2})?$/.test(amtStr)){
+    amtSearch=Math.round(parseFloat(amtStr)*100); // pence
+  }
+  var results=allTransactions.filter(function(t){
+    if(t.amount===0)return false;
+    if(amtSearch!==null){
+      // Match by absolute pence value, allow ±1p for float rounding
+      return Math.abs(Math.abs(t.amount)-amtSearch)<=1;
+    }
+    return merchant(t).toLowerCase().indexOf(ql)>=0||
+           (t.notes&&t.notes.toLowerCase().indexOf(ql)>=0)||
+           (t.category&&t.category.replace(/_/g,' ').toLowerCase().indexOf(ql)>=0)||
+           (t.description&&t.description.toLowerCase().indexOf(ql)>=0);
+  }).sort(function(a,b){return new Date(b.created)-new Date(a.created);}).slice(0,30);
+  if(!results.length){
+    el.innerHTML='<div class="search-empty">No results for "'+q+'"</div>';
+    return;
+  }
+  var label=amtSearch!==null
+    ?'Transactions for '+fmt(amtSearch)+' ('+results.length+' found)'
+    :'Transactions ('+results.length+' found)';
+  el.innerHTML='<div class="search-section-label">'+label+'</div>'+results.map(function(t){
+    var cr=t.amount>0;
+    var dt=new Date(t.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    var amtStr2=fmt(t.amount);
+    return '<div class="search-result-item" onclick="closeSearch()">'
+      +'<div class="search-result-icon">'+(CAT_EMOJI[getCategory(t)]||'💰')+'</div>'
+      +'<div class="search-result-main"><div class="search-result-title">'+merchant(t)+'</div>'
+      +'<div class="search-result-sub">'+dt+(t.category?' &middot; '+t.category.replace(/_/g,' '):'')+'</div></div>'
+      +'<div class="search-result-val" style="color:'+(cr?'var(--green)':'var(--coral-soft)')+'">'+(cr?'+':'')+amtStr2+'</div>'
+      +'</div>';
+  }).join('');
+}
 
 // ---- Budget modal ----
 function openBudgetModal(){
@@ -2152,6 +2215,27 @@ renderCatCompare = function(thisTx, lastTx){
     if(btn){e.stopPropagation();var c=btn.getAttribute("data-editcat");openCatBudgetModal(c,catBudgets[c]?catBudgets[c]/100:"");}
   };
 };
+
+
+function closeDayPanel(){
+  var p=document.getElementById("cal-day-panel");
+  if(p) p.classList.remove("open");
+}
+function returnToDashboard(){
+  switchTab("dashboard");
+}
+function showMoreTabTx(){
+  txDisplayCount+=50;
+  renderTxTabList();
+  var btn=document.getElementById("tx-tab-more");
+  if(btn) btn.style.display=txTabFiltered.length>txDisplayCount?"block":"none";
+}
+function clearTabFilters(){
+  var ids=["ttx-search","ttx-min","ttx-max"];
+  ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  var sel=document.getElementById("ttx-cat");if(sel)sel.value="";
+  applyTabFilters();
+}
 
 initCompact();
 if(loadConfig()) showDashboard();
@@ -3172,17 +3256,8 @@ function renderCalendar(){
   }
 }
 
-function setCalMode(mode){
-  var el=document.getElementById('calendar-content');
-  if(el){el.setAttribute('data-mode',mode);renderCalendar();}
-}
-function shiftCalMonth(dir){
-  var parts=(viewMonth||getThisMonthKey()).split('-');
-  var y=parseInt(parts[0]),m=parseInt(parts[1])-1;
-  var d=new Date(y,m+dir,1);
-  viewMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  renderCalendar();
-}
+
+
 
 function buildMonthCal(year,month,txns){
   var byDay={};
@@ -3280,7 +3355,7 @@ function openDayPanel(year,month,day){
     });
   }
   panel.innerHTML=html;
-  panel.style.transform='translateX(0)';
+  panel.classList.add('open');
 }
 
 // ---- Wealth ----
@@ -4278,5 +4353,35 @@ function buildReasons(surplus, fixedCosts, income, dailyRate, varSpentSoFar, tod
 }
 
 </script>
+
+<!-- Accounts modal -->
+<div class="modal-overlay" id="accounts-modal">
+  <div class="modal">
+    <h3>Manual accounts</h3>
+    <p class="modal-sub">Add investment accounts or assets not in Monzo. These count towards your net worth.</p>
+    <div id="manual-accounts-rows"></div>
+    <button class="add-row-btn" onclick="addManualRow('','')">+ Add account</button>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAccountsModal()">Cancel</button>
+      <button class="btn-save" onclick="saveManualAccounts()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Search overlay -->
+<div class="search-overlay" id="search-overlay">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <span style="font-size:18px;color:var(--text-muted);">🔍</span>
+      <input class="search-input" id="search-input" placeholder="Search transactions..." oninput="runSearch(this.value)">
+      <button class="pill-btn" onclick="closeSearch()" style="padding:4px 10px;font-size:12px;">✕</button>
+    </div>
+    <div class="search-results" id="search-results">
+      <div class="search-empty">Start typing to search your transactions</div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
+
+
