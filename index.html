@@ -579,7 +579,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.6</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.7</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -621,7 +621,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark" onclick="switchTab('simple')" style="cursor:pointer;" title="Go to Simple View">M</div>
       <div style="cursor:pointer;" onclick="switchTab('simple')">
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.6</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.7</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -1836,24 +1836,24 @@ function switchTab(tab){
   var sel=document.getElementById("month-select");
   if(sel) sel.style.display=MONTH_TABS.indexOf(tab)>=0?"":"none";
   fixLayout();
-  if(tab==="simple")renderSimple();
-  if(tab==="predictions")renderPredictions();
-  if(tab==="calendar")setTimeout(renderCalendar,50);
-  if(tab==="trends")renderTrends();
-  if(tab==="analytics")renderAnalytics();
-  if(tab==="merchants")renderMerchants();
-  if(tab==="merchant-compare")renderMerchantCompare();
-  if(tab==="transactions")renderTxTab();
-  if(tab==="wealth")renderWealth();
-  if(tab==="bills")renderBills();
-  if(tab==="income")renderIncome();
-  if(tab==="subscriptions")renderSubscriptions();
-  if(tab==="patterns")renderPatterns();
-  if(tab==="nice")renderNice();
-  if(tab==="predictions")renderPredictions();
+  function safe(fn){ return typeof fn==="function"?fn:function(){}; }
+  if(tab==="simple") safe(renderSimple)();
+  if(tab==="predictions") safe(renderPredictions)();
+  if(tab==="calendar") setTimeout(function(){ safe(renderCalendar)(); },50);
+  if(tab==="trends") safe(renderTrends)();
+  if(tab==="analytics") safe(renderAnalytics)();
+  if(tab==="merchants") safe(renderMerchants)();
+  if(tab==="merchant-compare") safe(renderMerchantCompare)();
+  if(tab==="transactions") safe(renderTxTab)();
+  if(tab==="wealth") safe(renderWealth)();
+  if(tab==="bills") safe(renderBills)();
+  if(tab==="income") safe(renderIncome)();
+  if(tab==="subscriptions") safe(renderSubscriptions)();
+  if(tab==="patterns") safe(renderPatterns)();
+  if(tab==="nice") safe(renderNice)();
   if(tab==="roast"){
     if(confirm("Ready to see your financial roast? Click OK to generate based on your latest data."))
-      renderRoast();
+      safe(renderRoast)();
     else switchTab("simple");
   }
 }
@@ -1890,7 +1890,14 @@ renderAll = function(){
   var prevKey2=new Date(now2.getFullYear(),now2.getMonth()-1,1);
   var prevKeyStr=prevKey2.getFullYear()+"-"+String(prevKey2.getMonth()+1).padStart(2,"0");
   var viewSpendPrev=getMonthTxns(spendTx,prevKeyStr);
-  if(typeof renderFVPanel==="function") renderFVPanel(viewSpend, viewSpendPrev);
+  // FV panel needs all history to detect recurring fixed costs - not just current month
+  if(typeof renderFVPanel==="function"){
+    var allSpendTx=allTransactions.filter(function(t){return t.amount<0&&t.include_in_spending!==false;});
+    var prevKeyFV=new Date(new Date().getFullYear(),new Date().getMonth()-1,1);
+    var prevKeyFVStr=prevKeyFV.getFullYear()+"-"+String(prevKeyFV.getMonth()+1).padStart(2,"0");
+    var prevSpendFV=getMonthTxns(allSpendTx,prevKeyFVStr);
+    renderFVPanel(allSpendTx, prevSpendFV);
+  }
   renderCatCompare(thisTx,lastTx);
   applyFilters();
   if(typeof renderDailyChart==="function") renderDailyChart(viewSpend,thisTx,lastTx,viewMonth);
@@ -2078,7 +2085,8 @@ function classifyTransactions(spendTx){
       var stddev = Math.sqrt(amounts.map(function(v){return Math.pow(v-mean,2);}).reduce(function(s,v){return s+v;},0) / amounts.length);
       var cv = mean > 0 ? stddev/mean : 1;
 
-      if(cv < 0.15){ // very consistent amount = fixed
+      // cv < 0.25 catches most bills (electricity varies, DD is exact)
+      if(cv < 0.25){
         fixed.push({name:n, amount:mean, monthCount:monthCount});
       } else {
         variable = variable.concat(txns);
