@@ -582,7 +582,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v8.2</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v8.3</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -624,7 +624,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark" onclick="switchTab('simple')" style="cursor:pointer;" title="Go to Simple View">M</div>
       <div style="cursor:pointer;" onclick="switchTab('simple')">
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v8.2</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v8.3</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -818,7 +818,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 
   <!-- Predictions tab -->
   <div class="tab-panel" id="tab-predictions" data-tab="predictions">
-    <div class="tab-inner" id="predictions-content">
+    <div class="tab-inner" id="predictions-content" style="padding:1rem 1.2rem 3rem;">
       <div class="loading"><div class="spinner"></div></div>
     </div>
   </div>
@@ -3979,29 +3979,45 @@ function renderPredictions(){
   var surplusPositive = projectedSurplus > 0;
   var surplusColor = projectedSurplus > 10000 ? 'var(--green)' : projectedSurplus > 0 ? 'var(--amber)' : 'var(--coral-soft)';
 
-  var html = '<div style="max-width:800px;">';
+  var html = '<div style="max-width:1200px;">';
 
-  // ---- HERO: End of month surplus ----
-  html += '<div style="background:var(--navy-card);border:1px solid '+(surplusPositive?'rgba(45,212,160,0.3)':'rgba(255,90,95,0.3)')+';border-radius:16px;padding:2rem;margin-bottom:1.5rem;text-align:center;">';
-  html += '<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:8px;">Projected end-of-month surplus</div>';
-  html += '<div style="font-size:52px;font-weight:500;font-family:var(--mono);color:'+surplusColor+';letter-spacing:-0.02em;line-height:1;">'+(projectedSurplus>=0?'+':'')+fmt(projectedSurplus)+'</div>';
-  html += '<div style="font-size:14px;color:var(--text-muted);margin-top:8px;">';
+  // ---- HERO: spans full width ----
+  html += '<div style="background:var(--navy-card);border:1px solid '+(surplusPositive?'rgba(45,212,160,0.3)':'rgba(255,90,95,0.3)')+';border-radius:16px;padding:1.5rem 2rem;margin-bottom:1.2rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;">';
+  html += '<div>';
+  html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:4px;">Projected end-of-month surplus</div>';
+  html += '<div style="font-size:42px;font-weight:500;font-family:var(--mono);color:'+surplusColor+';letter-spacing:-0.02em;line-height:1;">'+(projectedSurplus>=0?'+':'')+fmt(projectedSurplus)+'</div>';
+  html += '<div style="font-size:13px;color:var(--text-muted);margin-top:6px;">';
   if(projectedSurplus > 20000){
     html += '🟢 On track to transfer <strong style="color:var(--green);">'+fmt(projectedSurplus)+'</strong> to savings';
   } else if(projectedSurplus > 0){
-    html += '🟡 Slim surplus - keep variable spending in check';
+    html += '🟡 Slim surplus — keep variable spending in check';
   } else {
-    html += '🔴 Projected <strong style="color:var(--coral-soft);">'+fmt(Math.abs(projectedSurplus))+'</strong> shortfall - check fixed costs and variable spend below';
+    html += '🔴 Projected <strong style="color:var(--coral-soft);">'+fmt(Math.abs(projectedSurplus))+'</strong> shortfall';
   }
+  html += '</div></div>';
+  // Right side: pace bar
+  html += '<div style="flex:1;min-width:200px;max-width:320px;">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:5px;"><span>Day '+todayNum+' of '+daysInMonth+'</span><span>'+daysRemaining+' days left</span></div>';
+  var dayPct = Math.round((todayNum/daysInMonth)*100);
+  var spendPct = projectedTotalSpend>0 ? Math.min(Math.round((fixedThisMonth+variableSpentSoFar)/projectedTotalSpend*100),100) : 0;
+  html += '<div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;position:relative;margin-bottom:6px;">';
+  html += '<div style="height:100%;width:'+spendPct+'%;background:'+(spendPct>dayPct?'var(--coral)':'var(--green)')+';border-radius:4px;"></div>';
+  html += '<div style="position:absolute;top:-3px;left:'+dayPct+'%;width:2px;height:14px;background:rgba(255,255,255,0.3);border-radius:1px;"></div>';
   html += '</div>';
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Day '+todayNum+' of '+daysInMonth+' · '+daysRemaining+' days remaining</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">';
+  html += '<div style="font-size:11px;color:var(--text-muted);">Spent+fixed: <strong style="color:var(--text-secondary);">'+fmt(fixedThisMonth+variableSpentSoFar)+'</strong></div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);text-align:right;">Income: <strong style="color:var(--green);">'+fmt(monthlyIncome)+'</strong></div>';
+  html += '</div></div>';
   html += '</div>';
 
-  // ---- THE MATHS ----
+  // ---- TWO COLUMN BODY ----
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;">';
+
+  // ---- LEFT COLUMN: The maths ----
+  html += '<div>';
   html += '<div class="card" style="margin-bottom:1.2rem;">';
   html += '<div class="card-header"><span class="card-title">How we got there</span></div>';
 
-  // Income row
   html += '<div class="pred-section-label">Income this month</div>';
   income.forEach(function(src){
     var received = thisMonthCredits.some(function(t){
@@ -4014,13 +4030,11 @@ function renderPredictions(){
     html += predRow(src.name, src.amount, true, statusCol, statusTxt, src.count+' months detected');
   });
   if(!income.length){
-    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No recurring income detected yet. Load more history.</div>';
+    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No recurring income detected yet.</div>';
   }
   html += predDividerRow('Total expected income', monthlyIncome, true, 'var(--green)');
+  html += '<div style="height:1px;background:var(--navy-border);margin:10px 0;"></div>';
 
-  html += '<div style="height:1px;background:var(--navy-border);margin:12px 0;"></div>';
-
-  // Fixed costs
   html += '<div class="pred-section-label">Fixed costs this month</div>';
   fixedCosts.forEach(function(f){
     var paid = f.avgDay <= todayNum;
@@ -4029,83 +4043,78 @@ function renderPredictions(){
     html += predRow(f.name, -f.amount, false, statusCol, statusTxt, 'consistent across '+f.months+' months');
   });
   if(!fixedCosts.length){
-    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No fixed costs detected. Load more history.</div>';
+    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No fixed costs detected.</div>';
   }
   html += predDividerRow('Total fixed costs', -fixedThisMonth, false, 'var(--text-secondary)');
+  html += '<div style="height:1px;background:var(--navy-border);margin:10px 0;"></div>';
 
-  html += '<div style="height:1px;background:var(--navy-border);margin:12px 0;"></div>';
-
-  // Variable
   html += '<div class="pred-section-label">Variable spending</div>';
   html += predRow('Spent so far this month', -variableSpentSoFar, false, 'var(--text-secondary)', 'actual', thisMonthVariable.length+' transactions');
-  html += predRow('Remaining '+daysRemaining+' days at '+fmt(dailyVariableRate)+'/day', -projectedVariableRemaining, false, 'var(--amber)', 'projected', '3-month average daily rate');
+  html += predRow('Remaining '+daysRemaining+' days at '+fmt(dailyVariableRate)+'/day', -projectedVariableRemaining, false, 'var(--amber)', 'projected', '3-month avg daily rate');
   html += predDividerRow('Total variable (projected)', -projectedVariableTotal, false, 'var(--text-secondary)');
+  html += '<div style="height:1px;background:var(--navy-border);margin:10px 0;"></div>';
 
-  html += '<div style="height:1px;background:var(--navy-border);margin:12px 0;"></div>';
-
-  // Summary row
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">';
-  html += '<div style="font-size:15px;font-weight:600;color:var(--text-primary);">Projected surplus</div>';
-  html += '<div style="font-size:20px;font-weight:600;font-family:var(--mono);color:'+surplusColor+'">'+(projectedSurplus>=0?'+':'')+fmt(projectedSurplus)+'</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">';
+  html += '<div style="font-size:14px;font-weight:600;color:var(--text-primary);">Projected surplus</div>';
+  html += '<div style="font-size:18px;font-weight:600;font-family:var(--mono);color:'+surplusColor+'">'+(projectedSurplus>=0?'+':'')+fmt(projectedSurplus)+'</div>';
   html += '</div>';
-  html += '</div>'; // end card
+  html += '</div>'; // end maths card
+  html += '</div>'; // end left col
 
-  // ---- WHY: surplus/shortfall reasons ----
+  // ---- RIGHT COLUMN: Analysis ----
+  html += '<div>';
+
+  // Why section
   var reasons = buildReasons(projectedSurplus, fixedCosts, income, dailyVariableRate,
     variableSpentSoFar, todayNum, daysInMonth, thisMonthVariable, anomalies);
-
   html += '<div class="card" style="margin-bottom:1.2rem;">';
-  html += '<div class="card-header"><span class="card-title">'+(surplusPositive ? '✅ Why you\'re in surplus' : '⚠️ Why you\'re in deficit')+'</span></div>';
+  html += '<div class="card-header"><span class="card-title">'+(surplusPositive?'✅ Why you\'re in surplus':'⚠️ Why you\'re in deficit')+'</span></div>';
   reasons.forEach(function(r){
-    html += '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy-border);">';
-    html += '<div style="font-size:20px;flex-shrink:0;">'+r.emoji+'</div>';
+    html += '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--navy-border);">';
+    html += '<div style="font-size:18px;flex-shrink:0;">'+r.emoji+'</div>';
     html += '<div style="flex:1;"><div style="font-size:13px;font-weight:500;color:'+(r.good?'var(--green)':'var(--coral-soft)')+';">'+r.title+'</div>';
-    html += '<div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:2px;">'+r.detail+'</div></div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-top:2px;">'+r.detail+'</div></div>';
     if(r.impact) html += '<div style="font-size:13px;font-family:var(--mono);font-weight:600;color:'+(r.good?'var(--green)':'var(--coral-soft)')+';flex-shrink:0;padding-top:2px;">'+(r.good?'+':'')+fmt(r.impact)+'</div>';
     html += '</div>';
   });
   if(!reasons.length) html += '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">Load more history to generate analysis.</div>';
   html += '</div>';
 
-  // ---- MERCHANT ANOMALIES ----
-  if(anomalies.length){
-    html += '<div class="card" style="margin-bottom:1.2rem;">';
-    html += '<div class="card-header"><span class="card-title">🔍 Unusual transactions this month</span><span class="badge badge-coral">'+anomalies.length+'</span></div>';
-    anomalies.forEach(function(a){
-      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--navy-border);">';
-      html += '<div class="tx-icon">'+(CAT_EMOJI[getCategory(a.tx)]||'💰')+'</div>';
-      html += '<div style="flex:1;"><div style="font-size:13px;color:var(--text-primary);">'+merchant(a.tx)+'</div>';
-      html += '<div style="font-size:11px;color:var(--text-muted);">This transaction: '+fmt(a.tx.amount)+' — your usual: '+fmt(a.avg)+' ('+a.ratio.toFixed(1)+'× normal)</div></div>';
-      html += '<div style="text-align:right;">';
-      html += '<div style="font-size:12px;font-weight:600;color:var(--amber);">+'+fmt(a.tx.amount-a.avg)+' over</div>';
-      html += '</div>';
-      html += '</div>';
-    });
-    var anomalyImpact = anomalies.reduce(function(s,a){ return s + Math.abs(a.tx.amount) - a.avg; }, 0);
-    html += '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">These unusual transactions total <strong style="color:var(--coral-soft);">'+fmt(anomalyImpact)+'</strong> more than you\'d normally spend at these merchants.</div>';
-    html += '</div>';
-  }
-
-  // ---- FIXED COSTS STILL DUE ----
+  // Fixed costs still due
   if(fixedStillDue.length){
     html += '<div class="card" style="margin-bottom:1.2rem;">';
     html += '<div class="card-header"><span class="card-title">📅 Fixed costs still due</span></div>';
     fixedStillDue.forEach(function(f){
       var daysUntil = f.avgDay - todayNum;
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--navy-border);">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--navy-border);">';
       html += '<div><div style="font-size:13px;color:var(--text-primary);">'+f.name+'</div>';
-      html += '<div style="font-size:11px;color:var(--text-muted);">Expected around day '+f.avgDay+' ('+daysUntil+' day'+(daysUntil!==1?'s':'')+' away)</div></div>';
-      html += '<div style="font-size:14px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(-f.amount)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);">~day '+f.avgDay+' ('+daysUntil+' day'+(daysUntil!==1?'s':'')+' away)</div></div>';
+      html += '<div style="font-size:13px;font-family:var(--mono);color:var(--coral-soft);">'+fmt(-f.amount)+'</div>';
       html += '</div>';
     });
-    html += '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Total: <strong>'+fmt(-fixedStillDueTotal)+'</strong> coming out before month end.</div>';
+    html += '<div style="font-size:11px;color:var(--text-muted);padding:6px 0;">Total: <strong>'+fmt(-fixedStillDueTotal)+'</strong> before month end.</div>';
     html += '</div>';
   }
 
-  html += '<div style="font-size:11px;color:var(--text-muted);padding:0.5rem 0 2rem;line-height:1.7;">Projections based on '+allTransactions.length+' transactions. Fixed costs detected with &lt;15% amount variation across 2+ months. Variable rate is your 3-month daily average excluding fixed merchants.</div>';
-  html += '</div>';
+  // Anomalies
+  if(anomalies.length){
+    html += '<div class="card" style="margin-bottom:1.2rem;">';
+    html += '<div class="card-header"><span class="card-title">🔍 Unusual this month</span><span class="badge badge-coral">'+anomalies.length+'</span></div>';
+    anomalies.forEach(function(a){
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--navy-border);">';
+      html += '<div class="tx-icon">'+(CAT_EMOJI[getCategory(a.tx)]||'💰')+'</div>';
+      html += '<div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+merchant(a.tx)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);">'+fmt(a.tx.amount)+' vs usual '+fmt(a.avg)+' ('+a.ratio.toFixed(1)+'×)</div></div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--amber);flex-shrink:0;">+'+fmt(a.tx.amount-a.avg)+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
 
-  el.innerHTML = html;
+  html += '<div style="font-size:11px;color:var(--text-muted);line-height:1.7;padding:0 0 1rem;">Based on '+allTransactions.length+' transactions. Fixed costs = &lt;25% amount variation across 2+ months.</div>';
+  html += '</div>'; // end right col
+
+  html += '</div>'; // end two-col grid
 }
 
 // ---- Helper: single prediction row ----
