@@ -579,7 +579,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
 <body>
 <div id="config-screen">
   <div class="config-card">
-    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.7</div></div>
+    <div class="logo-row"><div class="logo-mark">M</div><div class="logo-text">Monzo Dashboard</div><div style="font-size:10px;color:var(--text-muted);margin-left:auto;font-family:var(--mono);">v7.8</div></div>
     <h2>Connect your account</h2>
     <p>Enter your GAS relay URL then click Connect with Monzo to authorise securely via OAuth. No tokens to copy.</p>
     <div id="already-connected" style="display:none;background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:1rem;cursor:pointer;" onclick="returnToDashboard()">
@@ -621,7 +621,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark" onclick="switchTab('simple')" style="cursor:pointer;" title="Go to Simple View">M</div>
       <div style="cursor:pointer;" onclick="switchTab('simple')">
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.7</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.8</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -715,13 +715,6 @@ body.compact .topbar{padding:0.6rem 2rem;}
 
   </div>
   <div class="tab-content" id="tab-content">
-  <!-- Predictions tab -->
-  <div class="tab-panel" id="tab-predictions" data-tab="predictions">
-    <div class="tab-inner" id="predictions-content">
-      <div class="loading"><div class="spinner"></div></div>
-    </div>
-  </div>
-
   <!-- Super Simple tab -->
   <div class="tab-panel active" id="tab-simple">
     <div class="tab-inner" id="simple-content">
@@ -1031,7 +1024,8 @@ function showDashboard(){
   if(dash) dash.style.display="flex";
   setTimeout(fixLayout,0); setTimeout(fixLayout,150); setTimeout(fixLayout,400);
   window.addEventListener("resize",fixLayout);
-  setTimeout(function(){ switchTab("simple"); },0);
+  // Delay enough for all script blocks to finish parsing
+  setTimeout(function(){ switchTab("simple"); },50);
 
   var pill=document.getElementById("account-pill");
   if(pill) pill.textContent=ACCOUNT_ID?ACCOUNT_ID.slice(0,18)+"...":"Connecting...";
@@ -3900,7 +3894,9 @@ function renderPredictions(){
   if(!el) return;
 
   if(!allTransactions.length || !cachedBal){
-    el.innerHTML = '<div style="color:var(--text-muted);padding:2rem;">Loading data... sync more history for accurate predictions.</div>';
+    el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem;gap:1rem;color:var(--text-muted);"><div class="spinner"></div><div>Waiting for data to load...</div><div style="font-size:12px;">Click Refresh in the toolbar if this persists.</div></div>';
+    // Auto-retry when data arrives
+    setTimeout(function(){ if(currentTab==="predictions") renderPredictions(); }, 2000);
     return;
   }
 
@@ -4149,7 +4145,7 @@ function detectFixedCosts(){
     var mean = amounts.reduce(function(s,v){ return s+v; }, 0) / amounts.length;
     var stddev = Math.sqrt(amounts.map(function(v){ return Math.pow(v-mean,2); }).reduce(function(s,v){ return s+v; }, 0) / amounts.length);
     var cv = mean > 0 ? stddev/mean : 1;
-    if(cv > 0.15) return; // too variable
+    if(cv > 0.25) return; // too variable
     var dates = txns.map(function(t){ return new Date(t.created).getDate(); });
     var avgDay = Math.round(dates.reduce(function(s,v){ return s+v; }, 0) / dates.length);
     fixed.push({
