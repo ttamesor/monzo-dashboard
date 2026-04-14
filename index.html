@@ -621,7 +621,7 @@ body.compact .topbar{padding:0.6rem 2rem;}
       <div class="topbar-logo-mark" onclick="switchTab('simple')" style="cursor:pointer;" title="Go to Simple View">M</div>
       <div style="cursor:pointer;" onclick="switchTab('simple')">
         <div class="topbar-title">Monzo Dashboard</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.5</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:1px;font-family:var(--mono);">v7.6</div>
       </div>
       <button class="hist-btn" id="load-history-btn" style="display:none;" onclick="loadMoreHistory()">&#8592; Load earlier</button>
       <div class="progress-pill" id="progress-pill"><div class="progress-dot"></div><span id="progress-text">Loading...</span></div>
@@ -4378,53 +4378,8 @@ function buildReasons(surplus, fixedCosts, income, dailyRate, varSpentSoFar, tod
     </div>
   </div>
 </div>
-  <script>
-function switchTab(tabName) {
-  // deactivate all panels
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    p.classList.remove('active');
-  });
-
-  // deactivate all nav items
-  document.querySelectorAll('.nav-item').forEach(n => {
-    n.classList.remove('active');
-  });
-
-  // activate selected panel
-  const panel = document.querySelector('.tab-panel[data-tab="' + tabName + '"]');
-  if (panel) panel.classList.add('active');
-
-  // activate selected nav
-  const nav = document.querySelector('.nav-item[data-tab="' + tabName + '"]');
-  if (nav) nav.classList.add('active');
-}
-</script>
-  <script>
-window.switchTab = function(tabName) {
-
-  // hide all panels
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    p.classList.remove('active');
-  });
-
-  // remove active from nav
-  document.querySelectorAll('.nav-item').forEach(n => {
-    n.classList.remove('active');
-  });
-
-  // show correct panel
-  const panel = document.querySelector('.tab-panel[data-tab="' + tabName + '"]');
-  if (panel) {
-    panel.classList.add('active');
-  } else {
-    console.log('No panel found for:', tabName);
-  }
-
-  // highlight nav
-  const nav = document.querySelector('.nav-item[data-tab="' + tabName + '"]');
-  if (nav) nav.classList.add('active');
-};
-</script>
+  
+  
 </body>
 </html>
 
